@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button, ImagePlaceholder, Select } from '@/components/ui';
 import type { RoomType } from '@/lib/data/rooms';
 import { formatIDR } from '@/lib/format';
+import { getIcon } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { BookingCalendar } from './BookingCalendar';
 
@@ -19,8 +20,8 @@ export function DetailPage({ room }: { room: RoomType }) {
     <div className="container-page pt-8 pb-24">
       {/* Breadcrumb */}
       <div className="text-muted text-[13px]">
-        <Link href="/penginapan">{t('nav.lodging')}</Link>{' '}
-        / <span className="text-foreground">{room.name}</span>
+        <Link href="/penginapan">{t('nav.lodging')}</Link> /{' '}
+        <span className="text-foreground">{room.name}</span>
       </div>
 
       {/* Gallery */}
@@ -45,7 +46,8 @@ export function DetailPage({ room }: { room: RoomType }) {
             {room.name}
           </h1>
           <div className="text-muted mt-2 text-[15px]">
-            👥 {t('detail.capacity')} {room.capacity} tamu · ♨️ {t('detail.hotBath')}
+            👥 {t('detail.capacity')} {room.capacity} tamu · ♨️{' '}
+            {t('detail.hotBath')}
           </div>
           <p className="text-muted-strong mt-6 text-base leading-8">
             {room.description}
@@ -56,15 +58,23 @@ export function DetailPage({ room }: { room: RoomType }) {
             {t('detail.facilities')}
           </h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {room.facilities.map((f) => (
-              <div
-                key={f.label}
-                className="text-muted-strong flex items-center gap-2.5 text-[14.5px]"
-              >
-                <span className="text-accent font-bold">✓</span>
-                {f.icon} {f.label}
-              </div>
-            ))}
+            {room.facilities.map((f) => {
+              const Icon = getIcon(f.icon);
+              return (
+                <div
+                  key={f.label}
+                  className="text-muted-strong flex items-center gap-2.5 text-[14.5px]"
+                >
+                  <Icon
+                    size={17}
+                    strokeWidth={1.5}
+                    className="text-accent shrink-0"
+                    aria-hidden
+                  />
+                  {f.label}
+                </div>
+              );
+            })}
           </div>
 
           {/* Jam */}
@@ -80,7 +90,9 @@ export function DetailPage({ room }: { room: RoomType }) {
           </div>
 
           {/* Aturan */}
-          <h2 className="mt-9 font-serif text-2xl font-bold">{t('detail.rules')}</h2>
+          <h2 className="mt-9 font-serif text-2xl font-bold">
+            {t('detail.rules')}
+          </h2>
           <ul className="text-muted-strong mt-3.5 list-disc pl-5 text-[14.5px] leading-8">
             {room.rules.map((r) => (
               <li key={r}>{r}</li>
@@ -95,7 +107,9 @@ export function DetailPage({ room }: { room: RoomType }) {
               <span className="text-forest-700 font-serif text-[28px] font-extrabold">
                 {formatIDR(room.pricePerNight)}
               </span>
-              <span className="text-muted text-[13px]">{t('common.perNight')}</span>
+              <span className="text-muted text-[13px]">
+                {t('common.perNight')}
+              </span>
             </div>
 
             <div className="mt-4">

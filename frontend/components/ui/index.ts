@@ -7,3 +7,4 @@ export { Modal } from './Modal';
 export { Table, THead, TBody, Tr, Th, Td } from './Table';
 export { DatePicker } from './DatePicker';
 export { ImagePlaceholder } from './ImagePlaceholder';
+export { InstagramIcon, FacebookIcon, TiktokIcon } from './SocialIcons';

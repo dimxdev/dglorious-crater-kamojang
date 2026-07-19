@@ -2,7 +2,10 @@
 // TODO(FASE 4/5): ganti dengan fetch ke `GET /room-types` & `GET /room-types/:slug`.
 // Konten deskripsi/aturan aslinya berasal dari tabel room_type_translations.
 
-export type RoomFacility = { icon: string; label: string };
+import type { HomeImageKey } from '@/lib/data/images';
+import type { IconName } from '@/lib/icons';
+
+export type RoomFacility = { icon: IconName; label: string };
 
 export type RoomType = {
   slug: string;
@@ -14,7 +17,10 @@ export type RoomType = {
   totalUnits: number;
   checkInTime: string;
   checkOutTime: string;
+  /** Emoji fallback untuk <ImagePlaceholder> di halaman yang belum berfoto. */
   coverIcon: string;
+  /** Foto asli — lihat lib/data/images.ts. */
+  photo: HomeImageKey;
   facilities: RoomFacility[];
   rules: string[];
   available: boolean;
@@ -33,13 +39,14 @@ export const rooms: RoomType[] = [
     checkInTime: '14.00 WIB',
     checkOutTime: '12.00 WIB',
     coverIcon: '⛺',
+    photo: 'roomGlamping',
     facilities: [
-      { icon: '♨️', label: 'Air panas alami' },
-      { icon: '🍳', label: 'Sarapan' },
-      { icon: '📶', label: 'Wi-Fi' },
-      { icon: '❄️', label: 'AC' },
-      { icon: '🚿', label: 'Kamar mandi dalam' },
-      { icon: '🅿️', label: 'Parkir' },
+      { icon: 'Flame', label: 'Air panas alami' },
+      { icon: 'UtensilsCrossed', label: 'Sarapan' },
+      { icon: 'Wifi', label: 'Wi-Fi' },
+      { icon: 'Snowflake', label: 'AC' },
+      { icon: 'ShowerHead', label: 'Kamar mandi dalam' },
+      { icon: 'CircleParking', label: 'Parkir' },
     ],
     rules: [
       'Dilarang merokok di dalam unit',
@@ -61,13 +68,14 @@ export const rooms: RoomType[] = [
     checkInTime: '14.00 WIB',
     checkOutTime: '12.00 WIB',
     coverIcon: '🏡',
+    photo: 'roomCottage',
     facilities: [
-      { icon: '♨️', label: 'Air panas alami' },
-      { icon: '🍳', label: 'Sarapan' },
-      { icon: '📶', label: 'Wi-Fi' },
-      { icon: '❄️', label: 'AC' },
-      { icon: '🍽️', label: 'Dapur' },
-      { icon: '🛋️', label: 'Ruang tamu' },
+      { icon: 'Flame', label: 'Air panas alami' },
+      { icon: 'UtensilsCrossed', label: 'Sarapan' },
+      { icon: 'Wifi', label: 'Wi-Fi' },
+      { icon: 'Snowflake', label: 'AC' },
+      { icon: 'ChefHat', label: 'Dapur' },
+      { icon: 'Sofa', label: 'Ruang tamu' },
     ],
     rules: [
       'Maksimal 4 tamu per unit',
@@ -89,10 +97,11 @@ export const rooms: RoomType[] = [
     checkInTime: '14.00 WIB',
     checkOutTime: '12.00 WIB',
     coverIcon: '⛺',
+    photo: 'roomTenda',
     facilities: [
-      { icon: '♨️', label: 'Air panas' },
-      { icon: '🍳', label: 'Sarapan' },
-      { icon: '🚻', label: 'Kamar mandi bersama' },
+      { icon: 'Flame', label: 'Air panas' },
+      { icon: 'UtensilsCrossed', label: 'Sarapan' },
+      { icon: 'ShowerHead', label: 'Kamar mandi bersama' },
     ],
     rules: [
       'Kamar mandi bersama',

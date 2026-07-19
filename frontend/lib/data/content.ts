@@ -1,33 +1,62 @@
 // Konten statis homepage & tentang (MOCK). Nanti sebagian bisa dari CMS.
 
-export const attractions = [
+import type { HomeImageKey } from '@/lib/data/images';
+import type { IconName } from '@/lib/icons';
+
+/** Urutan array ini menentukan layout: elemen pertama jadi kartu besar. */
+export type Attraction = {
+  icon: IconName;
+  photo: HomeImageKey;
+  name: string;
+  desc: string;
+};
+
+export const attractions: Attraction[] = [
   {
-    icon: '🌋',
+    icon: 'Flame',
+    photo: 'attractionKawah',
     name: 'Kawah Geothermal',
     desc: 'Saksikan uap belerang mengepul dari perut bumi di salah satu ladang panas bumi tertua Indonesia.',
   },
   {
-    icon: '♨️',
+    icon: 'WavesLadder',
+    photo: 'attractionAirPanas',
     name: 'Pemandian Air Panas',
     desc: 'Berendam di kolam air panas alami yang menenangkan otot, dikelilingi kabut pegunungan.',
   },
   {
-    icon: '⛺',
+    icon: 'Tent',
+    photo: 'attractionGlamping',
     name: 'Glamping Mewah',
     desc: 'Menginap ditemani bintang dan kabut, dengan kenyamanan setara hotel di tengah alam.',
   },
   {
-    icon: '☕',
+    icon: 'Coffee',
+    photo: 'attractionKopi',
     name: 'Kopi & Kabut',
     desc: 'Nikmati kopi robusta khas dataran tinggi sambil memandang lanskap berkabut yang syahdu.',
   },
 ];
 
-export const infoPraktis = [
-  { icon: '🕗', title: 'Jam Buka', lines: ['Setiap hari', '07.00 – 18.00 WIB'] },
-  { icon: '🎫', title: 'Tiket Masuk', lines: ['mulai Rp25.000', '/orang'] },
-  { icon: '📍', title: 'Lokasi', lines: ['Kamojang, perbatasan', 'Bandung – Garut'] },
-  { icon: '🌡️', title: 'Suhu', lines: ['Sejuk 16–22°C', 'bawa jaket ya'] },
+export type InfoItem = { icon: IconName; title: string; lines: string[] };
+
+export const infoPraktis: InfoItem[] = [
+  {
+    icon: 'Clock',
+    title: 'Jam Buka',
+    lines: ['Setiap hari', '07.00 – 18.00 WIB'],
+  },
+  { icon: 'Ticket', title: 'Tiket Masuk', lines: ['mulai Rp25.000', '/orang'] },
+  {
+    icon: 'MapPin',
+    title: 'Lokasi',
+    lines: ['Kamojang, perbatasan', 'Bandung – Garut'],
+  },
+  {
+    icon: 'Thermometer',
+    title: 'Suhu',
+    lines: ['Sejuk 16–22°C', 'bawa jaket ya'],
+  },
 ];
 
 export const galleryFacilities = [

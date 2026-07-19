@@ -3,61 +3,93 @@
 /*
   Design tokens — D'Glorious Crater Kamojang
   Tailwind v4 memakai konfigurasi CSS-first (@theme), bukan tailwind.config.js.
-  Palet brand: hijau hutan (forest), krem (cream), terakota (terracotta).
-  Setiap token di sini otomatis jadi utility, mis. `bg-forest-700`, `text-terracotta-500`.
+  Palet: "Batu Vulkanik & Air Panas" — stone (netral dingin), basalt (gelap),
+  teal (aksen tunggal, air mineral panas). Setiap token di sini otomatis jadi
+  utility, mis. `bg-basalt-800`, `text-teal-500`.
 */
 @theme {
-  /* ── Forest (primary) — base #1B4332 ── */
-  --color-forest-50: #eef4f0;
-  --color-forest-100: #d5e3db;
-  --color-forest-200: #abc7b8;
-  --color-forest-300: #7ba792;
-  --color-forest-400: #52836b;
-  --color-forest-500: #356a4f;
-  --color-forest-600: #26543e;
-  --color-forest-700: #1b4332;
-  --color-forest-800: #143026;
-  --color-forest-900: #0d2019;
+  /* ── Stone (background/surface, netral dingin) ── */
+  --color-stone-50: #f7f8f6;
+  --color-stone-100: #edeeec;
+  --color-stone-200: #e5e6e4; /* latar halaman */
+  --color-stone-300: #d6d7d2;
+  --color-stone-400: #b6b7ae;
 
-  /* ── Cream (surface / background) — base #F5F0E6 ── */
-  --color-cream-50: #fdfcf9;
-  --color-cream-100: #f5f0e6;
-  --color-cream-200: #ece3d2;
-  --color-cream-300: #ddd0b8;
-  --color-cream-400: #c9b795;
+  /* ── Basalt (netral gelap — bukan hitam murni) ── */
+  --color-basalt-900: #17140f;
+  --color-basalt-800: #221e1a; /* permukaan gelap utama / tombol / footer */
+  --color-basalt-700: #322d27;
+  --color-basalt-100: #3e3830; /* garis pemisah di atas latar gelap */
 
-  /* ── Terracotta (accent) — base #C1663F ── */
-  --color-terracotta-50: #f9ede7;
-  --color-terracotta-100: #efd0c2;
-  --color-terracotta-200: #e0a98f;
-  --color-terracotta-300: #d18a68;
-  --color-terracotta-400: #c97a52;
-  --color-terracotta-500: #c1663f;
-  --color-terracotta-600: #a5522f;
-  --color-terracotta-700: #833f24;
+  /* ── Teal (aksen tunggal — air panas bermineral) ── */
+  --color-teal-50: #e7f3f1;
+  --color-teal-100: #c3e2dd;
+  --color-teal-300: #6fbbb2;
+  --color-teal-500: #2e8c86;
+  --color-teal-600: #256f6a;
+  --color-teal-700: #1d5854;
 
-  /* ── Semantic aliases (nilai persis dari file desain) ── */
-  --color-background: #f5f0e6; /* cream utama */
+  /* ── Alias semantik ── */
+  --color-background: var(--color-stone-200);
   --color-surface: #ffffff;
-  --color-surface-alt: #fbfaf6; /* off-white panel */
-  --color-foreground: #1f2a24; /* teks utama */
-  --color-muted: #6b7a70; /* teks sekunder */
-  --color-muted-strong: #4d5a51; /* paragraf */
-  --color-border: #eee5d5; /* border kartu */
-  --color-input: #ddd4c4; /* border input */
-  --color-chip: #f2ede1; /* latar tag/chip */
-  --color-primary: var(--color-forest-700); /* #1B4332 */
-  --color-primary-hover: var(--color-forest-800);
-  --color-accent: var(--color-terracotta-500); /* #C1663F */
-  --color-accent-hover: #a4502e;
+  --color-surface-alt: var(--color-stone-100);
+  --color-foreground: #211d19;
+  --color-on-dark: var(--color-stone-50);
+  --color-muted: #6b685f;
+  --color-muted-strong: #4a473e;
+  --color-border: #dbdad4;
+  --color-input: #c7c5bd;
+  --color-chip: #e9eae6;
+  --color-primary: var(--color-basalt-800);
+  --color-primary-hover: var(--color-basalt-900);
+  /*
+    Aksen dipakai teal-600, bukan teal-500. teal-500 di atas latar stone-200
+    cuma 3.22:1 dan teks putih di atasnya 4.03:1 — dua-duanya gagal WCAG AA
+    (butuh 4.5:1 untuk teks seukuran ini). teal-600 memberi 4.71:1 dan 5.90:1.
+  */
+  --color-accent: var(--color-teal-600);
+  --color-accent-hover: var(--color-teal-700);
+
+  /*
+    ── Alias kompatibilitas (JANGAN dipakai di kode baru) ──
+    Nama lama `forest`/`cream`/`terracotta` masih dipakai ~140x di 31 file
+    (admin, owner, booking, dsb) yang berada di luar scope redesign beranda.
+    Dipetakan ke palet baru supaya halaman-halaman itu ikut berganti warna
+    tanpa diedit — kalau tokennya dihapus, utility-nya hilang dan elemen jadi
+    tak berwarna (mis. teks putih di footer gelap). Hapus setelah semua
+    halaman disapu ke nama baru.
+  */
+  --color-forest-50: var(--color-stone-100);
+  --color-forest-100: var(--color-stone-200);
+  --color-forest-200: var(--color-stone-300);
+  --color-forest-300: var(--color-stone-400);
+  --color-forest-400: var(--color-basalt-100);
+  --color-forest-500: var(--color-teal-500);
+  --color-forest-600: var(--color-basalt-700);
+  --color-forest-700: var(--color-basalt-800);
+  --color-forest-800: var(--color-basalt-900);
+  --color-forest-900: var(--color-basalt-900);
+  --color-cream-50: var(--color-stone-50);
+  --color-cream-100: var(--color-stone-100);
+  --color-cream-200: var(--color-stone-200);
+  --color-cream-300: var(--color-stone-300);
+  --color-cream-400: var(--color-stone-400);
+  --color-terracotta-50: var(--color-teal-50);
+  --color-terracotta-100: var(--color-teal-100);
+  --color-terracotta-200: var(--color-teal-100);
+  --color-terracotta-300: var(--color-teal-300);
+  --color-terracotta-400: var(--color-teal-300);
+  --color-terracotta-500: var(--color-teal-500);
+  --color-terracotta-600: var(--color-teal-600);
+  --color-terracotta-700: var(--color-teal-700);
 
   /* ── Fonts (variabel diisi oleh next/font di layout.tsx) ── */
   --font-sans:
-    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
-    'Noto Sans SC', sans-serif;
+    var(--font-public-sans), ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', 'Noto Sans SC', sans-serif;
   --font-serif:
-    var(--font-playfair), ui-serif, Georgia, 'Times New Roman', 'Noto Serif SC',
-    serif;
+    var(--font-newsreader), ui-serif, Georgia, 'Times New Roman',
+    'Noto Serif SC', serif;
 
   /* ── Radius ── */
   --radius-lg: 0.75rem;
@@ -91,11 +123,70 @@ h3,
   padding-inline: 1.75rem; /* 28px */
 }
 
-/* Eyebrow/label seksi (uppercase kecil terakota) */
+/* Eyebrow/label seksi (uppercase kecil, aksen teal) */
 @utility eyebrow {
   font-size: 0.78rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-weight: 600;
-  color: var(--color-terracotta-500);
+  color: var(--color-accent);
+}
+
+/*
+  Kabut — transisi fungsional dari foto/seksi gelap ke latar halaman.
+  Ramp-nya bertahap (bukan linear dua-stop) supaya terbaca seperti kabut yang
+  menebal, bukan pita gradien. Selalu warna latar, tidak pernah warna aksen —
+  ini scrim fungsional, bukan gradien dekoratif.
+*/
+@utility mist-edge {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 9rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-background) 0%, transparent) 0%,
+    color-mix(in oklab, var(--color-background) 10%, transparent) 40%,
+    color-mix(in oklab, var(--color-background) 38%, transparent) 65%,
+    color-mix(in oklab, var(--color-background) 74%, transparent) 85%,
+    var(--color-background) 100%
+  );
+}
+
+@utility mist-edge-top {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 7rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--color-background) 0%, transparent) 0%,
+    color-mix(in oklab, var(--color-background) 10%, transparent) 40%,
+    color-mix(in oklab, var(--color-background) 38%, transparent) 65%,
+    color-mix(in oklab, var(--color-background) 74%, transparent) 85%,
+    var(--color-background) 100%
+  );
+}
+
+/*
+  Reveal saat scroll. Seluruh aturannya ada di dalam media query
+  `no-preference`, jadi saat pengguna minta reduced-motion elemen langsung
+  tampil tanpa animasi — tanpa percabangan JSX yang bisa bikin SSR dan klien
+  tidak sinkron. JS-nya cuma membalik atribut `data-reveal`.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  [data-reveal='shown'] {
+    opacity: 1;
+    transform: none;
+  }
 }

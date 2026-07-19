@@ -1,5 +1,6 @@
 'use client';
 
+import { Menu, Mountain, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui';
@@ -19,13 +20,13 @@ export function Navbar() {
   ];
 
   return (
-    <header className="border-border/70 bg-cream-50/90 sticky top-0 z-40 border-b backdrop-blur">
+    <header className="border-border/70 sticky top-0 z-40 border-b bg-stone-50/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <Link href="/" className="flex items-center gap-2">
-          <span className="bg-forest-700 flex h-9 w-9 items-center justify-center rounded-lg text-cream-50">
-            🌋
+          <span className="bg-basalt-800 flex h-9 w-9 items-center justify-center rounded-lg text-stone-50">
+            <Mountain size={18} strokeWidth={1.5} aria-hidden />
           </span>
-          <span className="text-forest-800 font-serif text-lg leading-tight font-semibold">
+          <span className="text-basalt-900 font-serif text-lg leading-tight font-semibold">
             D&apos;Glorious
             <span className="text-muted block text-xs font-normal">
               Crater Kamojang
@@ -39,7 +40,7 @@ export function Navbar() {
             <Link
               key={l.href}
               href={l.href}
-              className="text-foreground hover:text-forest-700 text-sm font-medium transition-colors"
+              className="text-foreground text-sm font-medium transition-colors hover:text-teal-600"
             >
               {l.label}
             </Link>
@@ -52,11 +53,16 @@ export function Navbar() {
             <Button size="sm">{t('nav.book')}</Button>
           </Link>
           <button
-            className="hover:bg-cream-100 rounded-lg p-2 md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-stone-100 md:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
+            aria-expanded={open}
           >
-            <span className="block text-xl leading-none">{open ? '×' : '☰'}</span>
+            {open ? (
+              <X size={20} strokeWidth={1.5} aria-hidden />
+            ) : (
+              <Menu size={20} strokeWidth={1.5} aria-hidden />
+            )}
           </button>
         </div>
       </div>
@@ -64,7 +70,7 @@ export function Navbar() {
       {/* Mobile nav */}
       <nav
         className={cn(
-          'border-border bg-cream-50 border-t md:hidden',
+          'border-border border-t bg-stone-50 md:hidden',
           open ? 'block' : 'hidden',
         )}
       >
@@ -74,12 +80,16 @@ export function Navbar() {
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className="hover:bg-cream-100 rounded-lg px-3 py-2 text-sm font-medium"
+              className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-stone-100"
             >
               {l.label}
             </Link>
           ))}
-          <Link href="/penginapan" onClick={() => setOpen(false)} className="mt-2">
+          <Link
+            href="/penginapan"
+            onClick={() => setOpen(false)}
+            className="mt-2"
+          >
             <Button size="sm" fullWidth>
               {t('nav.book')}
             </Button>

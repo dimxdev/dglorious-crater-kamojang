@@ -17,11 +17,11 @@ export function ImagePlaceholder({
   return (
     <div
       className={cn(
-        'from-forest-700 to-forest-900 flex h-full w-full items-center justify-center bg-linear-to-br text-center',
+        'from-basalt-700 to-basalt-900 flex h-full w-full items-center justify-center bg-linear-to-br text-center',
         className,
       )}
     >
-      <div className="flex flex-col items-center gap-1.5 p-4 text-cream-100/75">
+      <div className="flex flex-col items-center gap-1.5 p-4 text-stone-50/70">
         <span className="text-3xl opacity-90">{icon}</span>
         {label && <span className="text-xs font-medium">{label}</span>}
       </div>
