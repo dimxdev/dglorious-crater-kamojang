@@ -1,0 +1,71 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/cn';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
+
+export function Sidebar({ className }: { className?: string }) {
+  const { t } = useTranslation();
+  const pathname = usePathname();
+
+  const items = [
+    { href: '/admin/penginapan', label: t('dashboard.overview'), icon: '📊', exact: true },
+    { href: '/admin/penginapan/booking', label: t('dashboard.bookings'), icon: '📋' },
+    { href: '/admin/penginapan/booking-manual', label: t('dashboard.manualBooking'), icon: '✍️' },
+    { href: '/admin/penginapan/checkin', label: t('dashboard.checkin'), icon: '✅' },
+    { href: '/admin/penginapan/kelola', label: t('dashboard.manage'), icon: '🏕️' },
+  ];
+
+  return (
+    <aside
+      className={cn(
+        'flex w-62 shrink-0 flex-col bg-[#14352A] text-[#cbd8cf]',
+        className,
+      )}
+    >
+      {/* Brand */}
+      <div className="border-b border-cream-100/10 px-5.5 py-6">
+        <div className="font-serif text-[19px] font-extrabold text-cream-100">
+          D&apos;Glorious <span className="text-terracotta-500">Crater</span>
+        </div>
+        <div className="mt-1 text-[11px] tracking-[0.14em] uppercase opacity-55">
+          {t('admin.console')}
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex flex-1 flex-col gap-1 p-3">
+        {items.map((item) => {
+          const active = item.exact
+            ? pathname === item.href
+            : pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-[10px] border-l-[3px] px-3.5 py-3 text-sm font-medium transition-colors',
+                active
+                  ? 'border-terracotta-500 bg-cream-100/[0.07] text-white'
+                  : 'border-transparent text-[#cbd8cf]/80 hover:bg-cream-100/5 hover:text-white',
+              )}
+            >
+              <span className="w-4.5 text-center">{item.icon}</span>
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Logout */}
+      <Link
+        href="/login"
+        className="m-3 flex items-center gap-3 rounded-[10px] px-3.5 py-3 text-sm font-medium text-[#9fb0a6] hover:bg-cream-100/5"
+      >
+        <span className="w-4.5 text-center">⏻</span>
+        {t('admin.logout')}
+      </Link>
+    </aside>
+  );
+}

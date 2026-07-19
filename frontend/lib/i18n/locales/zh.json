@@ -1,0 +1,47 @@
+{
+  "common": {
+    "brand": "D'Glorious Crater Kamojang",
+    "brandShort": "D'Glorious Crater",
+    "loading": "加载中...",
+    "comingSoon": "即将推出"
+  },
+  "nav": {
+    "home": "首页",
+    "about": "关于我们",
+    "lodging": "住宿",
+    "checkBooking": "查询预订",
+    "book": "立即预订"
+  },
+  "hero": {
+    "badge": "地热火山口度假 · 万隆–加鲁特",
+    "title": "入住卡莫章火山口边",
+    "subtitle": "在地热火山口、天然温泉和宁静的山林环绕中，享受难忘的住宿体验。",
+    "ctaPrimary": "预订住宿",
+    "ctaSecondary": "查看房型"
+  },
+  "footer": {
+    "tagline": "位于万隆–加鲁特边境的地热旅游与自然住宿。",
+    "explore": "探索",
+    "contact": "联系",
+    "rights": "版权所有。"
+  },
+  "preview": {
+    "title": "设计系统 — 预览",
+    "subtitle": "用于构建后续页面的基础组件与布局。",
+    "components": "基础组件",
+    "openModal": "打开弹窗",
+    "sampleTable": "预订表格示例"
+  },
+  "dashboard": {
+    "title": "住宿管理后台",
+    "overview": "概览",
+    "bookings": "预订数据",
+    "manualBooking": "手动预订",
+    "checkin": "入住登记",
+    "manage": "住宿管理",
+    "todayBookings": "今日预订",
+    "pending": "待确认",
+    "occupancy": "入住率",
+    "revenue": "本月收入"
+  }
+}

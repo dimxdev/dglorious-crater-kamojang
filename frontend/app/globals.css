@@ -1,26 +1,101 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Design tokens — D'Glorious Crater Kamojang
+  Tailwind v4 memakai konfigurasi CSS-first (@theme), bukan tailwind.config.js.
+  Palet brand: hijau hutan (forest), krem (cream), terakota (terracotta).
+  Setiap token di sini otomatis jadi utility, mis. `bg-forest-700`, `text-terracotta-500`.
+*/
+@theme {
+  /* ── Forest (primary) — base #1B4332 ── */
+  --color-forest-50: #eef4f0;
+  --color-forest-100: #d5e3db;
+  --color-forest-200: #abc7b8;
+  --color-forest-300: #7ba792;
+  --color-forest-400: #52836b;
+  --color-forest-500: #356a4f;
+  --color-forest-600: #26543e;
+  --color-forest-700: #1b4332;
+  --color-forest-800: #143026;
+  --color-forest-900: #0d2019;
+
+  /* ── Cream (surface / background) — base #F5F0E6 ── */
+  --color-cream-50: #fdfcf9;
+  --color-cream-100: #f5f0e6;
+  --color-cream-200: #ece3d2;
+  --color-cream-300: #ddd0b8;
+  --color-cream-400: #c9b795;
+
+  /* ── Terracotta (accent) — base #C1663F ── */
+  --color-terracotta-50: #f9ede7;
+  --color-terracotta-100: #efd0c2;
+  --color-terracotta-200: #e0a98f;
+  --color-terracotta-300: #d18a68;
+  --color-terracotta-400: #c97a52;
+  --color-terracotta-500: #c1663f;
+  --color-terracotta-600: #a5522f;
+  --color-terracotta-700: #833f24;
+
+  /* ── Semantic aliases (nilai persis dari file desain) ── */
+  --color-background: #f5f0e6; /* cream utama */
+  --color-surface: #ffffff;
+  --color-surface-alt: #fbfaf6; /* off-white panel */
+  --color-foreground: #1f2a24; /* teks utama */
+  --color-muted: #6b7a70; /* teks sekunder */
+  --color-muted-strong: #4d5a51; /* paragraf */
+  --color-border: #eee5d5; /* border kartu */
+  --color-input: #ddd4c4; /* border input */
+  --color-chip: #f2ede1; /* latar tag/chip */
+  --color-primary: var(--color-forest-700); /* #1B4332 */
+  --color-primary-hover: var(--color-forest-800);
+  --color-accent: var(--color-terracotta-500); /* #C1663F */
+  --color-accent-hover: #a4502e;
+
+  /* ── Fonts (variabel diisi oleh next/font di layout.tsx) ── */
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    'Noto Sans SC', sans-serif;
+  --font-serif:
+    var(--font-playfair), ui-serif, Georgia, 'Times New Roman', 'Noto Serif SC',
+    serif;
+
+  /* ── Radius ── */
+  --radius-lg: 0.75rem;
+  --radius-xl: 1.25rem; /* kartu ~20px */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Heading pakai serif secara default */
+h1,
+h2,
+h3,
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* Container halaman — lebar maks 1240px sesuai desain */
+@utility container-page {
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 1.75rem; /* 28px */
+}
+
+/* Eyebrow/label seksi (uppercase kecil terakota) */
+@utility eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-terracotta-500);
 }

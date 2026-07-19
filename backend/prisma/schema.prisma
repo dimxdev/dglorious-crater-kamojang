@@ -1,8 +1,13 @@
 // Prisma schema — D'Glorious Crater Kamojang
 // Docs: https://pris.ly/d/prisma-schema
 //
-// Model tabel (roles, users, room_types, bookings, dst.) ditulis di FASE 1.
-// File ini pada FASE 0 hanya menyiapkan koneksi & generator client.
+// Konvensi (lihat PROJECT.md §13):
+//   - Model  : PascalCase   (kode)
+//   - Field  : camelCase    (kode)  → dipetakan ke snake_case di database via @map
+//   - Tabel  : snake_case   (database) via @@map
+//
+// Aturan analytics-ready (§4.8): timestamp lengkap di setiap transisi status,
+// enum konsisten, soft delete (deleted_at), created_by untuk jejak audit.
 
 generator client {
   provider     = "prisma-client"
@@ -13,4 +18,241 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUM
+// ─────────────────────────────────────────────────────────────
+
+/// Daftar identifier role. Dipakai sebagai tipe kolom `roles.name`.
+/// (Di TASK.md disebut "enum Role"; dinamai RoleName agar tidak bentrok
+/// dengan model tabel `Role` di bawah.)
+enum RoleName {
+  SUPER_ADMIN
+  OWNER
+  ADMIN_PENGINAPAN
+  ADMIN_PORTAL // fase 2 — belum aktif, struktur disiapkan
+  ADMIN_CAFFE // fase 3 — belum aktif, struktur disiapkan
+}
+
+/// Alur normal: PENDING → WAITING_PAYMENT → PAID → CONFIRMED → CHECKED_IN → COMPLETED
+/// Cabang gagal: EXPIRED / CANCELLED / REJECTED
+enum BookingStatus {
+  PENDING
+  WAITING_PAYMENT
+  PAID
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  EXPIRED
+  CANCELLED
+  REJECTED
+}
+
+enum BookingSource {
+  ONLINE
+  WALK_IN
+}
+
+enum PaymentMethod {
+  CASH
+  QRIS
+  BANK_TRANSFER
+  VIRTUAL_ACCOUNT
+  EWALLET
+  CREDIT_CARD
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+enum RoomUnitStatus {
+  AVAILABLE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum LanguageCode {
+  ID
+  EN
+  ZH
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH & RBAC
+// ─────────────────────────────────────────────────────────────
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        RoleName @unique
+  permissions Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  roleId    Int      @map("role_id")
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  // Jejak audit (created_by / verified_by)
+  createdRoomTypes RoomType[] @relation("RoomTypeCreatedBy")
+  createdBookings  Booking[]  @relation("BookingCreatedBy")
+  verifiedPayments Payment[]  @relation("PaymentVerifiedBy")
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────
+// PENGINAPAN (room types, translations, images, physical units)
+// ─────────────────────────────────────────────────────────────
+
+model RoomType {
+  id            Int       @id @default(autoincrement())
+  slug          String    @unique
+  pricePerNight Decimal   @map("price_per_night") @db.Decimal(12, 2)
+  capacity      Int
+  totalUnits    Int       @map("total_units")
+  facilities    Json      @default("[]") // daftar key fasilitas (ikon), teks per bahasa ada di translations
+  checkInTime   String?   @map("check_in_time") // mis. "14:00" — universal, dikonfirmasi klien
+  checkOutTime  String?   @map("check_out_time") // mis. "12:00"
+  isActive      Boolean   @default(true) @map("is_active")
+  createdById   Int?      @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at") // soft delete
+
+  createdBy    User?                 @relation("RoomTypeCreatedBy", fields: [createdById], references: [id])
+  translations RoomTypeTranslation[]
+  images       RoomImage[]
+  units        RoomUnit[]
+  bookings     Booking[]
+
+  @@map("room_types")
+}
+
+/// Konten dinamis multi-bahasa (§9). Tab ID wajib, EN/中文 opsional (fallback ke ID).
+model RoomTypeTranslation {
+  id             Int          @id @default(autoincrement())
+  roomTypeId     Int          @map("room_type_id")
+  languageCode   LanguageCode @map("language_code")
+  name           String
+  description    String?
+  facilitiesText String?      @map("facilities_text")
+  rules          String?
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, languageCode])
+  @@map("room_type_translations")
+}
+
+model RoomImage {
+  id         Int     @id @default(autoincrement())
+  roomTypeId Int     @map("room_type_id")
+  imageUrl   String  @map("image_url")
+  isCover    Boolean @default(false) @map("is_cover")
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@map("room_images")
+}
+
+/// Unit fisik (kamar/tenda). Ketersediaan dihitung terhadap unit ini.
+model RoomUnit {
+  id         Int            @id @default(autoincrement())
+  roomTypeId Int            @map("room_type_id")
+  unitCode   String         @map("unit_code")
+  status     RoomUnitStatus @default(AVAILABLE)
+
+  roomType RoomType  @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@unique([roomTypeId, unitCode])
+  @@map("room_units")
+}
+
+// ─────────────────────────────────────────────────────────────
+// BOOKING, PAYMENT, TICKET
+// ─────────────────────────────────────────────────────────────
+
+model Booking {
+  id            Int           @id @default(autoincrement())
+  bookingCode   String        @unique @map("booking_code") // acak, sulit ditebak (§7)
+  roomTypeId    Int           @map("room_type_id")
+  roomUnitId    Int?          @map("room_unit_id") // unit spesifik di-assign saat konfirmasi
+  guestName     String        @map("guest_name")
+  guestPhone    String        @map("guest_phone")
+  guestEmail    String?       @map("guest_email") // nullable untuk walk-in
+  checkIn       DateTime      @map("check_in") @db.Date
+  checkOut      DateTime      @map("check_out") @db.Date
+  totalGuests   Int           @map("total_guests")
+  priceSnapshot Decimal       @map("price_snapshot") @db.Decimal(12, 2) // §4.7 snapshot harga
+  status        BookingStatus @default(PENDING)
+  bookingSource BookingSource @map("booking_source")
+  createdById   Int?          @map("created_by") // admin (walk-in); null untuk guest online
+  createdAt     DateTime      @default(now()) @map("created_at")
+  // Timestamp tiap transisi status (analytics-ready)
+  expiredAt     DateTime?     @map("expired_at")
+  paidAt        DateTime?     @map("paid_at")
+  confirmedAt   DateTime?     @map("confirmed_at")
+  checkedInAt   DateTime?     @map("checked_in_at")
+  completedAt   DateTime?     @map("completed_at")
+
+  roomType  RoomType  @relation(fields: [roomTypeId], references: [id])
+  roomUnit  RoomUnit? @relation(fields: [roomUnitId], references: [id])
+  createdBy User?     @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  payments  Payment[]
+  ticket    Ticket?
+
+  @@index([status])
+  @@index([roomTypeId])
+  @@index([checkIn, checkOut])
+  @@map("bookings")
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  bookingId       Int           @map("booking_id")
+  method          PaymentMethod
+  amount          Decimal       @db.Decimal(12, 2)
+  proofUrl        String?       @map("proof_url") // bukti transfer manual (walk-in)
+  midtransOrderId String?       @unique @map("midtrans_order_id") // idempotency webhook (§5)
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?     @map("paid_at")
+  verifiedById    Int?          @map("verified_by") // admin yang verifikasi (walk-in)
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  verifiedBy User?   @relation("PaymentVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@map("payments")
+}
+
+model Ticket {
+  id        Int      @id @default(autoincrement())
+  bookingId Int      @unique @map("booking_id") // 1 booking = 1 tiket
+  qrUrl     String?  @map("qr_url")
+  pdfUrl    String?  @map("pdf_url")
+  issuedAt  DateTime @default(now()) @map("issued_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("tickets")
 }

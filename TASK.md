@@ -6,6 +6,37 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ---
 
+## Peta Halaman (dari file desain)
+
+Daftar **semua layar** yang ada di file desain `DGlorious Crater Kamojang.dc.html`, dipetakan ke route + fase pembangunannya. Ini master-tracker halaman (belum dibangun — dicentang saat halaman selesai dibuat).
+
+### Publik
+- [x] `/` — **Homepage** (A1): hero, daya tarik (4 kartu), preview penginapan, info praktis, CTA strip *(UI; data masih mock)*
+- [x] `/tentang` — **Tentang** (A2): hero, sejarah, galeri, fasilitas lengkap
+- [x] `/penginapan` — **Listing** (A3): filter tanggal/tamu + kartu tipe *(filter belum fungsional)*
+- [x] `/penginapan/[slug]` — **Detail** (A4): galeri, fasilitas, aturan, widget booking + kalender + ringkasan harga
+- [x] `/booking` — **Form Booking** (A5): data pemesan + ringkasan + **modal pembayaran** *(simulasi UI)*
+- [x] `/cek-booking` — **Cek Booking** (A6): input kode + no. WA
+- [x] `/booking/[kode]` — **Booking Detail adaptif** (A7): `UNPAID` / `CONFIRMED` (tiket+QR) / `EXPIRED` / `COMPLETED` *(dgn tab demo)*
+- [x] **Elemen global**: navbar, footer, floating WhatsApp *(banner unpaid menyusul)*
+- [ ] ⏳ Sambungkan halaman publik ke API backend (ganti data mock) — *Fase 4/5 backend*
+
+### Admin *(UI selesai — logika & proteksi route menyusul saat backend siap)*
+- [x] `/login` — **Login** satu pintu semua role *(pilih Admin/Owner; auth asli = Fase 2)*
+- [x] `/admin/penginapan` — **Ringkasan** (B1): stat card + kalender okupansi + booking terbaru
+- [x] `/admin/penginapan/booking` — **Data Booking** (B2): tabel + filter + modal detail
+- [x] `/admin/penginapan/booking-manual` — **Booking Manual** (B3): form walk-in
+- [x] `/admin/penginapan/checkin` — **Check-in** (B4): input kode → detail → tombol (state valid/terpakai/berhasil)
+- [x] `/admin/penginapan/kelola` — **Kelola/CMS** (B5): tabel + **drawer form dengan tab bahasa ID/EN/中文** + galeri
+- [ ] ⏳ Proteksi route dashboard (RBAC) + sambungkan ke API — *butuh Fase 2*
+
+### Owner
+- [x] `/owner` — **Dashboard Owner**: filter periode, 4 stat, grafik garis/batang/2 donut (SVG), tabel transaksi lintas unit, tombol export *(UI; grafik data mock, sidebar Tiket/Cafe "SOON")*
+
+> Layout global (`PublicLayout`, `DashboardLayout`) & komponen dasar sudah dibuat di Fase 3. Desain per-halaman dibaca ulang dari MCP saat membangunnya.
+
+---
+
 ## FASE 0 — Setup Awal
 
 - [x] Inisialisasi monorepo: folder `frontend/` dan `backend/`, `.gitignore`, `README.md`
@@ -20,12 +51,12 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ## FASE 1 — Database & Model
 
-- [ ] Tulis `schema.prisma` lengkap sesuai bagian 10 di `PROJECT.md`
-- [ ] Definisikan enum: `BookingStatus`, `BookingSource`, `PaymentMethod`, `PaymentStatus`, `Role`
-- [ ] Jalankan migrasi pertama
-- [ ] Buat seeder: roles (`SUPER_ADMIN`, `OWNER`, `ADMIN_PENGINAPAN`) + 1 user per role
-- [ ] Buat seeder dummy: 3 tipe penginapan + terjemahan ID/EN + unit fisik + gambar
-- [ ] Verifikasi data masuk dengan Prisma Studio
+- [x] Tulis `schema.prisma` lengkap sesuai bagian 10 di `PROJECT.md`
+- [x] Definisikan enum: `BookingStatus`, `BookingSource`, `PaymentMethod`, `PaymentStatus`, `Role` (→ `RoleName`)
+- [x] Jalankan migrasi pertama
+- [x] Buat seeder: roles (`SUPER_ADMIN`, `OWNER`, `ADMIN_PENGINAPAN`) + 1 user per role
+- [x] Buat seeder dummy: 3 tipe penginapan + terjemahan ID/EN + unit fisik + gambar
+- [x] Verifikasi data masuk (count query; `npm run prisma:studio` untuk cek visual)
 
 ---
 
@@ -44,15 +75,15 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ## FASE 3 — Import Desain & Design System (Frontend)
 
-- [ ] Import desain via MCP `claude_design`:
-  - Server: `https://api.anthropic.com/v1/design/mcp` (auth via `/design-login`)
+- [x] Import desain via MCP `claude_design` (dibaca via tool `DesignSync`; server didaftarkan di `.mcp.json`). File desain lengkap = sumber kebenaran visual semua halaman.
+  - Server: `https://api.anthropic.com/v1/design/mcp`
   - Project: `https://claude.ai/design/p/a0d2c309-b4ef-491d-8b56-74fa0a0be3ef?file=DGlorious+Crater+Kamojang.dc.html`
   - File: `DGlorious Crater Kamojang.dc.html`
-- [ ] Ekstrak design token ke `tailwind.config.js`: warna (hijau hutan `#1B4332`, krem `#F5F0E6`, terakota `#C1663F`), font (serif heading + sans body), spacing
-- [ ] Setup font via `next/font`
-- [ ] Bangun komponen dasar: `Button`, `Card`, `Input`, `Select`, `Badge`, `Modal`, `Table`, `DatePicker`
-- [ ] Bangun layout: `PublicLayout` (navbar + footer) dan `DashboardLayout` (sidebar + header)
-- [ ] Setup i18n: file `id.json`, `en.json`, `zh.json` + language switcher (fallback ke ID)
+- [x] Ekstrak design token → **`app/globals.css` `@theme`** (Tailwind v4 tidak pakai `tailwind.config.js`): warna persis desain (forest `#1B4332`, krem `#F5F0E6`, terakota `#C1663F`, teks `#1F2A24`, muted `#6B7A70`), font **Playfair Display** (serif) + **Inter** (sans)
+- [x] Setup font via `next/font`
+- [x] Bangun komponen dasar: `Button`, `Card`, `Input`, `Select`, `Badge`, `Modal`, `Table`, `DatePicker`
+- [x] Bangun layout: `PublicLayout` (navbar + footer) dan `DashboardLayout` (sidebar + header)
+- [x] Setup i18n: file `id.json`, `en.json`, `zh.json` + language switcher (fallback ke ID)
 
 **Catatan:** kerjakan halaman satu per satu, jangan generate semua sekaligus.
 

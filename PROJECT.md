@@ -12,7 +12,7 @@ Sistem informasi & reservasi untuk destinasi wisata **D'Glorious Crater Kamojang
 
 **Fase berikutnya (belum dikerjakan, tapi struktur data harus siap):** sistem tiket masuk (portal) dan sistem transaksi cafe.
 
-**Konteks:** proyek Kerja Praktik, dikerjakan 2 orang (Dimas & Ihsan) selama 5 minggu (20 Juli – 23 Agustus 2026). Setelah KP, kemungkinan dirawat solo oleh Dimas.
+**Konteks:** proyek Kerja Praktik, dikerjakan 2 orang (Dimas & Ihsan) selama 5 minggu (20 Juli – 23 Agustus 2026).
 
 ---
 
