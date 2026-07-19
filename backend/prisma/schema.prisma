@@ -1,0 +1,16 @@
+// Prisma schema — D'Glorious Crater Kamojang
+// Docs: https://pris.ly/d/prisma-schema
+//
+// Model tabel (roles, users, room_types, bookings, dst.) ditulis di FASE 1.
+// File ini pada FASE 0 hanya menyiapkan koneksi & generator client.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
