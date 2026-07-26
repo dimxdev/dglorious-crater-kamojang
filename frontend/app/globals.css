@@ -3,31 +3,60 @@
 /*
   Design tokens — D'Glorious Crater Kamojang
   Tailwind v4 memakai konfigurasi CSS-first (@theme), bukan tailwind.config.js.
-  Palet: "Batu Vulkanik & Air Panas" — stone (netral dingin), basalt (gelap),
-  teal (aksen tunggal, air mineral panas). Setiap token di sini otomatis jadi
-  utility, mis. `bg-basalt-800`, `text-teal-500`.
+
+  Palet resmi dari klien: HIJAU (alam/hutan) · BIRU (air/kolam air panas) ·
+  ORANYE (geothermal/hangat). `green-*`, `blue-*`, `orange-*` di bawah ini
+  adalah sumber kebenarannya — pakai token ini untuk kode baru.
+
+  `stone-*` tetap netral (background/surface) — tidak perlu ikut ditintai
+  salah satu dari tiga warna brand; itu wajar, kebanyakan situs punya latar
+  netral + aksen berwarna.
+
+  `basalt-*` / `teal-*` / `terracotta-*` / `forest-*` / `cream-*` adalah nama
+  token LAMA yang masih dipakai ~140x di 30+ file (admin, owner, booking,
+  komponen dasar). Supaya halaman-halaman itu ikut berganti warna TANPA perlu
+  diedit satu-satu, semuanya di-alias ke green/blue/orange/stone di bagian
+  "Kompatibilitas" di bawah. Kalau menulis komponen baru, pakai token
+  green, blue, orange, dan stone langsung — jangan tambah pemakaian
+  basalt/teal/terracotta/forest/cream baru.
 */
 @theme {
-  /* ── Stone (background/surface, netral dingin) ── */
+  /* ── Hijau — alam/hutan (primary/brand) ── */
+  --color-green-50: #eef4f0;
+  --color-green-100: #d5e3db;
+  --color-green-200: #abc7b8;
+  --color-green-300: #7ba792;
+  --color-green-400: #52836b;
+  --color-green-500: #356a4f;
+  --color-green-600: #26543e;
+  --color-green-700: #1b4332; /* brand green utama — tombol, nav, footer */
+  --color-green-800: #143026;
+  --color-green-900: #0d2019; /* paling gelap — footer bg, hover-darken */
+
+  /* ── Biru — air / kolam air panas (aksen utama, interaktif/fokus) ── */
+  --color-blue-50: #e8f4fa;
+  --color-blue-100: #c7e5f2;
+  --color-blue-300: #7ec2e0;
+  --color-blue-500: #2e8bc0;
+  --color-blue-600: #1d6389; /* aksen dgn kontras aman utk teks putih & latar terang */
+  --color-blue-700: #164c69;
+
+  /* ── Oranye — geothermal / hangat (aksen kedua, CTA) ── */
+  --color-orange-50: #fdf1e7;
+  --color-orange-100: #fbdfc4;
+  --color-orange-200: #f5c093;
+  --color-orange-300: #eda869;
+  --color-orange-400: #e0904a;
+  --color-orange-500: #c15f1e; /* dipakai langsung sbg bg tombol CTA di banyak halaman */
+  --color-orange-600: #a04e18;
+  --color-orange-700: #7d3d14;
+
+  /* ── Stone (background/surface netral — TIDAK ikut ditintai) ── */
   --color-stone-50: #f7f8f6;
   --color-stone-100: #edeeec;
   --color-stone-200: #e5e6e4; /* latar halaman */
   --color-stone-300: #d6d7d2;
   --color-stone-400: #b6b7ae;
-
-  /* ── Basalt (netral gelap — bukan hitam murni) ── */
-  --color-basalt-900: #17140f;
-  --color-basalt-800: #221e1a; /* permukaan gelap utama / tombol / footer */
-  --color-basalt-700: #322d27;
-  --color-basalt-100: #3e3830; /* garis pemisah di atas latar gelap */
-
-  /* ── Teal (aksen tunggal — air panas bermineral) ── */
-  --color-teal-50: #e7f3f1;
-  --color-teal-100: #c3e2dd;
-  --color-teal-300: #6fbbb2;
-  --color-teal-500: #2e8c86;
-  --color-teal-600: #256f6a;
-  --color-teal-700: #1d5854;
 
   /* ── Alias semantik ── */
   --color-background: var(--color-stone-200);
@@ -40,48 +69,54 @@
   --color-border: #dbdad4;
   --color-input: #c7c5bd;
   --color-chip: #e9eae6;
-  --color-primary: var(--color-basalt-800);
-  --color-primary-hover: var(--color-basalt-900);
-  /*
-    Aksen dipakai teal-600, bukan teal-500. teal-500 di atas latar stone-200
-    cuma 3.22:1 dan teks putih di atasnya 4.03:1 — dua-duanya gagal WCAG AA
-    (butuh 4.5:1 untuk teks seukuran ini). teal-600 memberi 4.71:1 dan 5.90:1.
-  */
-  --color-accent: var(--color-teal-600);
-  --color-accent-hover: var(--color-teal-700);
+  --color-primary: var(--color-green-700);
+  --color-primary-hover: var(--color-green-900);
+  --color-accent: var(--color-blue-600);
+  --color-accent-hover: var(--color-blue-700);
 
   /*
-    ── Alias kompatibilitas (JANGAN dipakai di kode baru) ──
-    Nama lama `forest`/`cream`/`terracotta` masih dipakai ~140x di 31 file
-    (admin, owner, booking, dsb) yang berada di luar scope redesign beranda.
-    Dipetakan ke palet baru supaya halaman-halaman itu ikut berganti warna
-    tanpa diedit — kalau tokennya dihapus, utility-nya hilang dan elemen jadi
-    tak berwarna (mis. teks putih di footer gelap). Hapus setelah semua
-    halaman disapu ke nama baru.
+    ── Kompatibilitas (nama token LAMA — lihat catatan di atas) ──
+    basalt→hijau, teal→biru, terracotta→oranye, forest/cream→hijau/netral.
+    Jangan hapus token ini selama masih ada pemakaian `bg-forest-*` dkk di
+    komponen; hapus satu per satu HANYA setelah file itu disapu ke nama baru.
   */
-  --color-forest-50: var(--color-stone-100);
-  --color-forest-100: var(--color-stone-200);
-  --color-forest-200: var(--color-stone-300);
-  --color-forest-300: var(--color-stone-400);
-  --color-forest-400: var(--color-basalt-100);
-  --color-forest-500: var(--color-teal-500);
-  --color-forest-600: var(--color-basalt-700);
-  --color-forest-700: var(--color-basalt-800);
-  --color-forest-800: var(--color-basalt-900);
-  --color-forest-900: var(--color-basalt-900);
+  --color-basalt-900: var(--color-green-900);
+  --color-basalt-800: var(--color-green-700); /* permukaan gelap utama / tombol / footer */
+  --color-basalt-700: var(--color-green-600);
+  --color-basalt-100: var(--color-green-400); /* garis pemisah di atas latar gelap */
+
+  --color-teal-50: var(--color-blue-50);
+  --color-teal-100: var(--color-blue-100);
+  --color-teal-300: var(--color-blue-300);
+  --color-teal-500: var(--color-blue-500);
+  --color-teal-600: var(--color-blue-600);
+  --color-teal-700: var(--color-blue-700);
+
+  --color-forest-50: var(--color-green-50);
+  --color-forest-100: var(--color-green-100);
+  --color-forest-200: var(--color-green-200);
+  --color-forest-300: var(--color-green-300);
+  --color-forest-400: var(--color-green-400);
+  --color-forest-500: var(--color-blue-500); /* dipakai sbg warna fokus/border input — sengaja aksen (biru), bukan hijau */
+  --color-forest-600: var(--color-green-600);
+  --color-forest-700: var(--color-green-700);
+  --color-forest-800: var(--color-green-900);
+  --color-forest-900: var(--color-green-900);
+
   --color-cream-50: var(--color-stone-50);
   --color-cream-100: var(--color-stone-100);
   --color-cream-200: var(--color-stone-200);
   --color-cream-300: var(--color-stone-300);
   --color-cream-400: var(--color-stone-400);
-  --color-terracotta-50: var(--color-teal-50);
-  --color-terracotta-100: var(--color-teal-100);
-  --color-terracotta-200: var(--color-teal-100);
-  --color-terracotta-300: var(--color-teal-300);
-  --color-terracotta-400: var(--color-teal-300);
-  --color-terracotta-500: var(--color-teal-500);
-  --color-terracotta-600: var(--color-teal-600);
-  --color-terracotta-700: var(--color-teal-700);
+
+  --color-terracotta-50: var(--color-orange-50);
+  --color-terracotta-100: var(--color-orange-100);
+  --color-terracotta-200: var(--color-orange-200);
+  --color-terracotta-300: var(--color-orange-300);
+  --color-terracotta-400: var(--color-orange-400);
+  --color-terracotta-500: var(--color-orange-500);
+  --color-terracotta-600: var(--color-orange-600);
+  --color-terracotta-700: var(--color-orange-700);
 
   /* ── Fonts (variabel diisi oleh next/font di layout.tsx) ── */
   --font-sans:
@@ -123,7 +158,7 @@ h3,
   padding-inline: 1.75rem; /* 28px */
 }
 
-/* Eyebrow/label seksi (uppercase kecil, aksen teal) */
+/* Eyebrow/label seksi (uppercase kecil, aksen biru) */
 @utility eyebrow {
   font-size: 0.78rem;
   letter-spacing: 0.22em;

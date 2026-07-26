@@ -35,16 +35,3 @@ export function Badge({ tone = 'neutral', className, ...props }: BadgeProps) {
     />
   );
 }
-
-/** Pemetaan status booking → tone badge (dipakai di tabel booking). */
-export const bookingStatusTone: Record<string, Tone> = {
-  PENDING: 'neutral',
-  WAITING_PAYMENT: 'warning',
-  PAID: 'info',
-  CONFIRMED: 'success',
-  CHECKED_IN: 'forest',
-  COMPLETED: 'forest',
-  EXPIRED: 'danger',
-  CANCELLED: 'danger',
-  REJECTED: 'danger',
-};

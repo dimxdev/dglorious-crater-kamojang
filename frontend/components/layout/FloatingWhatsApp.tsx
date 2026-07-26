@@ -2,13 +2,15 @@
 
 import { MessageCircle } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { getSettings } from '@/lib/data/settings';
 
 // Fase 1 pakai link wa.me manual (WhatsApp API otomatis = fase lanjutan).
-const WA_NUMBER = '6282112345678';
+// Nomor WA diambil dari tabel `settings` (§8.3) lewat /admin/settings, bukan hardcode.
 
 export function FloatingWhatsApp() {
-  const { t } = useTranslation();
-  const href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+  const { t, locale } = useTranslation();
+  const { waNumber } = getSettings(locale);
+  const href = `https://wa.me/${waNumber}?text=${encodeURIComponent(
     "Halo D'Glorious Crater, saya ingin bertanya tentang penginapan.",
   )}`;
 

@@ -5,7 +5,10 @@ CREATE TYPE "RoleName" AS ENUM ('SUPER_ADMIN', 'OWNER', 'ADMIN_PENGINAPAN', 'ADM
 CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'WAITING_PAYMENT', 'PAID', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED', 'EXPIRED', 'CANCELLED', 'REJECTED');
 
 -- CreateEnum
-CREATE TYPE "BookingSource" AS ENUM ('ONLINE', 'WALK_IN');
+CREATE TYPE "BookingPaymentStatus" AS ENUM ('UNPAID', 'PAID');
+
+-- CreateEnum
+CREATE TYPE "BookingSource" AS ENUM ('MANUAL', 'ONLINE');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethod" AS ENUM ('CASH', 'QRIS', 'BANK_TRANSFER', 'VIRTUAL_ACCOUNT', 'EWALLET', 'CREDIT_CARD', 'OTHER');
@@ -42,15 +45,25 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
+CREATE TABLE "settings" (
+    "id" SERIAL NOT NULL,
+    "key" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_by" INTEGER,
+
+    CONSTRAINT "settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "room_types" (
     "id" SERIAL NOT NULL,
     "slug" TEXT NOT NULL,
-    "price_per_night" DECIMAL(12,2) NOT NULL,
+    "price_weekday" DECIMAL(12,2) NOT NULL,
+    "price_weekend" DECIMAL(12,2) NOT NULL,
     "capacity" INTEGER NOT NULL,
     "total_units" INTEGER NOT NULL,
     "facilities" JSONB NOT NULL DEFAULT '[]',
-    "check_in_time" TEXT,
-    "check_out_time" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_by" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -98,26 +111,44 @@ CREATE TABLE "room_units" (
 CREATE TABLE "bookings" (
     "id" SERIAL NOT NULL,
     "booking_code" TEXT NOT NULL,
-    "room_type_id" INTEGER NOT NULL,
-    "room_unit_id" INTEGER,
     "guest_name" TEXT NOT NULL,
     "guest_phone" TEXT NOT NULL,
     "guest_email" TEXT,
     "check_in" DATE NOT NULL,
     "check_out" DATE NOT NULL,
-    "total_guests" INTEGER NOT NULL,
+    "adults" INTEGER NOT NULL DEFAULT 1,
+    "children" INTEGER NOT NULL DEFAULT 0,
+    "extra_bed_qty" INTEGER NOT NULL DEFAULT 0,
+    "extra_bed_price" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "price_snapshot" DECIMAL(12,2) NOT NULL,
-    "status" "BookingStatus" NOT NULL DEFAULT 'PENDING',
+    "is_price_override" BOOLEAN NOT NULL DEFAULT false,
+    "ktp_photo_url" TEXT,
+    "status" "BookingStatus" NOT NULL DEFAULT 'CONFIRMED',
+    "payment_status" "BookingPaymentStatus" NOT NULL DEFAULT 'UNPAID',
     "booking_source" "BookingSource" NOT NULL,
+    "notes" TEXT,
     "created_by" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expired_at" TIMESTAMP(3),
-    "paid_at" TIMESTAMP(3),
     "confirmed_at" TIMESTAMP(3),
     "checked_in_at" TIMESTAMP(3),
     "completed_at" TIMESTAMP(3),
+    "cancelled_at" TIMESTAMP(3),
+    "expired_at" TIMESTAMP(3),
+    "paid_at" TIMESTAMP(3),
 
     CONSTRAINT "bookings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "booking_items" (
+    "id" SERIAL NOT NULL,
+    "booking_id" INTEGER NOT NULL,
+    "room_type_id" INTEGER NOT NULL,
+    "room_unit_id" INTEGER,
+    "qty" INTEGER NOT NULL DEFAULT 1,
+    "subtotal_snapshot" DECIMAL(12,2) NOT NULL,
+
+    CONSTRAINT "booking_items_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -154,6 +185,9 @@ CREATE UNIQUE INDEX "roles_name_key" ON "roles"("name");
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "settings_key_key" ON "settings"("key");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "room_types_slug_key" ON "room_types"("slug");
 
 -- CreateIndex
@@ -169,10 +203,13 @@ CREATE UNIQUE INDEX "bookings_booking_code_key" ON "bookings"("booking_code");
 CREATE INDEX "bookings_status_idx" ON "bookings"("status");
 
 -- CreateIndex
-CREATE INDEX "bookings_room_type_id_idx" ON "bookings"("room_type_id");
+CREATE INDEX "bookings_check_in_check_out_idx" ON "bookings"("check_in", "check_out");
 
 -- CreateIndex
-CREATE INDEX "bookings_check_in_check_out_idx" ON "bookings"("check_in", "check_out");
+CREATE INDEX "booking_items_booking_id_idx" ON "booking_items"("booking_id");
+
+-- CreateIndex
+CREATE INDEX "booking_items_room_type_id_idx" ON "booking_items"("room_type_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "payments_midtrans_order_id_key" ON "payments"("midtrans_order_id");
@@ -182,6 +219,9 @@ CREATE UNIQUE INDEX "tickets_booking_id_key" ON "tickets"("booking_id");
 
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "settings" ADD CONSTRAINT "settings_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "room_types" ADD CONSTRAINT "room_types_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -196,13 +236,16 @@ ALTER TABLE "room_images" ADD CONSTRAINT "room_images_room_type_id_fkey" FOREIGN
 ALTER TABLE "room_units" ADD CONSTRAINT "room_units_room_type_id_fkey" FOREIGN KEY ("room_type_id") REFERENCES "room_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bookings" ADD CONSTRAINT "bookings_room_type_id_fkey" FOREIGN KEY ("room_type_id") REFERENCES "room_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "bookings" ADD CONSTRAINT "bookings_room_unit_id_fkey" FOREIGN KEY ("room_unit_id") REFERENCES "room_units"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "bookings" ADD CONSTRAINT "bookings_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "booking_items" ADD CONSTRAINT "booking_items_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "booking_items" ADD CONSTRAINT "booking_items_room_type_id_fkey" FOREIGN KEY ("room_type_id") REFERENCES "room_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "booking_items" ADD CONSTRAINT "booking_items_room_unit_id_fkey" FOREIGN KEY ("room_unit_id") REFERENCES "room_units"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "payments" ADD CONSTRAINT "payments_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE CASCADE ON UPDATE CASCADE;

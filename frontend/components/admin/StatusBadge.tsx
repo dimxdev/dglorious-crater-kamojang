@@ -1,27 +1,32 @@
 import { Badge } from '@/components/ui';
-import { statusLabelId } from '@/lib/data/admin';
+import { statusLabelId, type BookingChannel, type BookingStatus } from '@/lib/data/admin';
 
-// Tone status booking untuk dashboard (Confirmed biru, Check-in hijau, dst).
-const adminTone: Record<string, React.ComponentProps<typeof Badge>['tone']> = {
-  PENDING: 'neutral',
-  WAITING_PAYMENT: 'warning',
-  PAID: 'info',
-  CONFIRMED: 'info',
+// Tone status booking Fase 1: DP kuning, Lunas biru, Check-in hijau, dst.
+const adminTone: Record<BookingStatus, React.ComponentProps<typeof Badge>['tone']> = {
+  DP: 'warning',
+  LUNAS: 'info',
   CHECKED_IN: 'success',
   COMPLETED: 'forest',
-  EXPIRED: 'danger',
-  CANCELLED: 'danger',
-  REJECTED: 'danger',
+  HANGUS: 'danger',
+  NO_SHOW: 'terracotta',
 };
 
-export function StatusBadge({ status }: { status: string }) {
-  return <Badge tone={adminTone[status] ?? 'neutral'}>{statusLabelId[status] ?? status}</Badge>;
+// Lebar tetap supaya kolom status rapi & sejajar, apapun panjang labelnya.
+export function StatusBadge({ status }: { status: BookingStatus }) {
+  return (
+    <Badge tone={adminTone[status]} className="w-21 justify-center">
+      {statusLabelId[status]}
+    </Badge>
+  );
 }
 
-export function SourceBadge({ source }: { source: 'ONLINE' | 'WALK_IN' }) {
+export function SourceBadge({ source }: { source: BookingChannel }) {
   return (
-    <Badge tone={source === 'ONLINE' ? 'info' : 'terracotta'}>
-      {source === 'ONLINE' ? 'Online' : 'Walk-in'}
+    <Badge
+      tone={source === 'WHATSAPP' ? 'info' : 'terracotta'}
+      className="w-21 justify-center"
+    >
+      {source === 'WHATSAPP' ? 'WhatsApp' : 'Walk-in'}
     </Badge>
   );
 }

@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DetailPage } from '@/components/public/DetailPage';
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { getRoomBySlug, rooms } from '@/lib/data/rooms';
+import { getRoomSource, roomSources } from '@/lib/data/rooms';
 
 export function generateStaticParams() {
-  return rooms.map((r) => ({ slug: r.slug }));
+  return roomSources.map((r) => ({ slug: r.slug }));
 }
 
 export async function generateMetadata({
@@ -14,8 +14,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const room = getRoomBySlug(slug);
-  return { title: room?.name ?? 'Penginapan' };
+  const room = getRoomSource(slug);
+  // Judul tab pakai nama Indonesia (metadata dirender di server, sebelum locale
+  // klien diketahui); konten halaman menyesuaikan bahasa di klien.
+  return { title: room?.name.id ?? 'Penginapan' };
 }
 
 export default async function RoomDetail({
@@ -24,7 +26,7 @@ export default async function RoomDetail({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const room = getRoomBySlug(slug);
+  const room = getRoomSource(slug);
   if (!room) notFound();
 
   return (

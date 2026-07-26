@@ -59,9 +59,6 @@ export function Footer() {
             <Link href="/penginapan" className="opacity-85 hover:opacity-100">
               {t('nav.lodging')}
             </Link>
-            <Link href="/cek-booking" className="opacity-85 hover:opacity-100">
-              {t('nav.checkBooking')}
-            </Link>
           </div>
         </div>
 
@@ -129,7 +126,9 @@ export function Footer() {
         <span>
           © {year} {t('common.brand')}. {t('footer.rights')}
         </span>
-        <span>{t('footer.legal')}</span>
+        <Link href="/syarat-ketentuan" className="hover:opacity-100">
+          {t('footer.legal')}
+        </Link>
       </div>
     </footer>
   );

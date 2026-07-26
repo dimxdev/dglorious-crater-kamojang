@@ -1,6 +1,16 @@
 import { cn } from '@/lib/cn';
 
-/** Bungkus tabel agar bisa scroll horizontal di layar sempit. */
+/**
+ * Bungkus tabel agar bisa scroll horizontal sendiri di layar sempit.
+ *
+ * ⚠️ Konsekuensi CSS (jangan diubah tanpa baca ini dulu): `overflow-x-auto`
+ * di sini bikin browser otomatis menghitung `overflow-y` jadi `auto` juga
+ * (aturan spec CSS Overflow, bukan bug) — artinya div ini SELALU jadi scroll
+ * ancestor, walau tingginya auto/tidak dibatasi. Akibatnya <THead sticky>
+ * TIDAK BISA nempel ke halaman dari sini (akan salah tempel — sudah pernah
+ * kejadian). Kalau butuh sticky header, itu cuma bisa didapat dengan
+ * mengorbankan scroll horizontal yang kekontain (lihat BookingsPage.tsx).
+ */
 export function Table({
   className,
   ...props

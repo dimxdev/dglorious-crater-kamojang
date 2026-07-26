@@ -1,9 +1,11 @@
 import type { Locale } from './config';
 import id from './locales/id.json';
 import en from './locales/en.json';
-import zh from './locales/zh.json';
 
-/** Kamus bersarang; daun selalu string. EN/ZH boleh parsial (fallback ke ID). */
+// zh.json sengaja TIDAK diimpor di fase 1 — Mandarin digeser ke fase berikutnya
+// (PROJECT.md §9). Filenya tetap ada, tinggal ditambahkan di sini saat aktif.
+
+/** Kamus bersarang; daun selalu string. EN boleh parsial (fallback ke ID). */
 export type Dictionary = { [key: string]: string | Dictionary };
 
-export const dictionaries: Record<Locale, Dictionary> = { id, en, zh };
+export const dictionaries: Record<Locale, Dictionary> = { id, en };

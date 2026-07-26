@@ -4,16 +4,20 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createElement } from 'react';
 import { Button } from '@/components/ui';
-import { attractions, infoPraktis } from '@/lib/data/content';
+import { getFeaturedAttractions, getInfoPraktis } from '@/lib/data/content';
 import { getImage } from '@/lib/data/images';
-import { rooms } from '@/lib/data/rooms';
+import { localizeRooms } from '@/lib/data/rooms';
 import { getIcon, type IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useReveal } from '@/lib/useReveal';
 import { RoomCard } from './RoomCard';
 
 export function HomePage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+
+  const attractions = getFeaturedAttractions(locale);
+  const infoPraktis = getInfoPraktis(locale);
+  const rooms = localizeRooms(locale);
 
   // Daya tarik pertama (kawah) jadi kartu besar — dia memang daya tarik utama
   // sekaligus asal nama tempatnya, jadi bobot visualnya punya alasan.
@@ -80,11 +84,19 @@ export function HomePage() {
         data-reveal
         className="container-page pt-24 pb-10"
       >
-        <div className="max-w-[620px]">
-          <div className="eyebrow">{t('home.attractionsEyebrow')}</div>
-          <h2 className="mt-3 font-serif text-3xl leading-tight font-normal sm:text-[2.6rem]">
-            {t('home.attractionsTitle')}
-          </h2>
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div className="max-w-155">
+            <div className="eyebrow">{t('home.attractionsEyebrow')}</div>
+            <h2 className="mt-3 font-serif text-3xl leading-tight font-normal sm:text-[2.6rem]">
+              {t('home.attractionsTitle')}
+            </h2>
+          </div>
+          <Link
+            href="/tentang#atraksi"
+            className="text-accent hover:text-accent-hover font-semibold whitespace-nowrap transition-colors"
+          >
+            {t('home.attractionsViewAll')}
+          </Link>
         </div>
 
         <div className="mt-12 grid gap-5 lg:grid-cols-[1.55fr_1fr]">
@@ -196,11 +208,8 @@ export function HomePage() {
             <div className="mt-8 grid gap-4.5 sm:grid-cols-2">
               {infoPraktis.map((info) => {
                 const Icon = getIcon(info.icon);
-                return (
-                  <div
-                    key={info.title}
-                    className="border-border rounded-2xl border bg-white p-5"
-                  >
+                const content = (
+                  <>
                     <Icon
                       size={20}
                       strokeWidth={1.5}
@@ -213,6 +222,28 @@ export function HomePage() {
                         <div key={i}>{l}</div>
                       ))}
                     </div>
+                    {info.linkLabel && (
+                      <div className="text-accent group-hover:text-accent-hover mt-2.5 flex items-center gap-1 text-sm font-semibold">
+                        {info.linkLabel}
+                        <span aria-hidden>→</span>
+                      </div>
+                    )}
+                  </>
+                );
+                return info.href ? (
+                  <Link
+                    key={info.title}
+                    href={info.href}
+                    className="border-border hover:border-accent group rounded-2xl border bg-white p-5 transition-colors"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div
+                    key={info.title}
+                    className="border-border rounded-2xl border bg-white p-5"
+                  >
+                    {content}
                   </div>
                 );
               })}

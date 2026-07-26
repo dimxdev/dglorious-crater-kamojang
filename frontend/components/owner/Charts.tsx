@@ -1,6 +1,12 @@
-// Grafik ringan berbasis SVG (tanpa library). Data statis dari lib/data/owner.
+'use client';
 
-type Segment = { label: string; value: number; color: string };
+// Grafik ringan berbasis SVG (tanpa library). Data statis dari lib/data/owner.
+import { useState } from 'react';
+import { cn } from '@/lib/cn';
+import { formatIDR } from '@/lib/format';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
+
+type Segment = { label: string; value: number; count?: number; revenue?: number; color: string };
 
 export function RevenueLineChart({ data }: { data: { m: string; v: number }[] }) {
   const W = 620,
@@ -10,8 +16,12 @@ export function RevenueLineChart({ data }: { data: { m: string; v: number }[] })
     pb = 26,
     iw = W - pl - 8,
     ih = H - pt - pb,
-    max = 340,
-    min = 140;
+    // Skala dinamis dari data asli — nilai mock lama (140–340) sengaja
+    // dihapus supaya angka pendapatan real (bisa jauh lebih kecil) tetap
+    // kebaca, bukan mepet ke garis bawah/atas grafik.
+    values = data.map((d) => d.v),
+    max = Math.max(...values, 1) * 1.15,
+    min = 0;
 
   const pts = data.map((d, i) => ({
     x: pl + (iw * i) / (data.length - 1),
@@ -25,7 +35,7 @@ export function RevenueLineChart({ data }: { data: { m: string; v: number }[] })
     ` L${pts[pts.length - 1].x.toFixed(1)},${pt + ih} Z`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 h-[230px] w-full overflow-visible">
+    <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 h-57.5 w-full overflow-visible">
       <defs>
         <linearGradient id="revgrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#1B4332" stopOpacity="0.22" />
@@ -58,31 +68,39 @@ export function UnitBarChart({
 }: {
   bars: { label: string; value: number; active: boolean }[];
 }) {
-  const max = 340;
+  const max = Math.max(...bars.map((b) => b.value), 1) * 1.15;
   return (
-    <div className="mt-4 flex h-[180px] items-end justify-around gap-2.5">
-      {bars.map((b) => (
-        <div key={b.label} className="flex h-full flex-1 flex-col items-center justify-end">
-          {b.active && (
-            <div className="text-forest-700 mb-1.5 text-xs font-bold">
-              Rp{Math.round(b.value / 1000) || b.value}jt
+    // overflow-x-auto + min-w-max: kalau bar terlalu banyak/label panjang buat
+    // muat di layar mobile, yang scroll cuma kartu chart-nya, bukan seluruh halaman.
+    <div className="mt-4 -mx-1 overflow-x-auto px-1">
+      <div className="flex h-45 min-w-max items-end justify-around gap-3 sm:gap-2.5">
+        {bars.map((b) => (
+          <div key={b.label} className="flex h-full w-12 flex-col items-center justify-end sm:w-14">
+            {b.active && (
+              <div className="text-forest-700 mb-1.5 text-xs font-bold whitespace-nowrap">
+                Rp{Math.round(b.value / 1000) || b.value}jt
+              </div>
+            )}
+            <div
+              className="w-10 rounded-t-lg sm:w-13"
+              style={{
+                height: b.active ? `${(b.value / max) * 150}px` : '4px',
+                background: b.active ? '#1B4332' : '#e2ddd0',
+              }}
+            />
+            <div className="text-muted mt-2 text-center text-[11px] leading-tight sm:text-xs">
+              {b.label}
             </div>
-          )}
-          <div
-            className="w-13 rounded-t-lg"
-            style={{
-              height: b.active ? `${(b.value / max) * 150}px` : '4px',
-              background: b.active ? '#1B4332' : '#e2ddd0',
-            }}
-          />
-          <div className="text-muted mt-2 text-center text-xs">{b.label}</div>
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 export function DonutChart({ segments }: { segments: Segment[] }) {
+  const { t } = useTranslation();
+  const [active, setActive] = useState<string | null>(null);
   const r = 54;
   const C = 2 * Math.PI * r;
   const total = segments.reduce((a, s) => a + s.value, 0);
@@ -93,6 +111,8 @@ export function DonutChart({ segments }: { segments: Segment[] }) {
     acc += s.value;
     return { ...s, len, off, pct: Math.round((s.value / total) * 100) };
   });
+
+  const toggle = (label: string) => setActive((cur) => (cur === label ? null : label));
 
   return (
     <div>
@@ -106,19 +126,41 @@ export function DonutChart({ segments }: { segments: Segment[] }) {
               r={r}
               fill="none"
               stroke={a.color}
-              strokeWidth="18"
+              strokeWidth={active === a.label ? 22 : 18}
+              strokeOpacity={active && active !== a.label ? 0.35 : 1}
               strokeDasharray={`${a.len.toFixed(1)} ${(C - a.len).toFixed(1)}`}
               strokeDashoffset={a.off.toFixed(1)}
+              className="cursor-pointer transition-all"
+              onClick={() => toggle(a.label)}
             />
           ))}
         </svg>
       </div>
-      <div className="mt-3.5 flex flex-col gap-[7px]">
+      <div className="mt-3.5 flex flex-col gap-1.75">
         {arcs.map((a) => (
-          <div key={a.label} className="flex items-center gap-2 text-[12.5px]">
-            <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: a.color }} />
-            <span className="text-muted-strong flex-1">{a.label}</span>
-            <b>{a.pct}%</b>
+          <div key={a.label}>
+            <button
+              type="button"
+              onClick={() => toggle(a.label)}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left text-[12.5px] transition-colors',
+                active === a.label ? 'bg-[#f4f1ea]' : 'hover:bg-[#f4f1ea]/60',
+              )}
+            >
+              <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ background: a.color }} />
+              <span className="text-muted-strong flex-1">{a.label}</span>
+              <b>{a.pct}%</b>
+            </button>
+            {active === a.label && (
+              <div className="text-muted flex items-center justify-between px-1.5 pb-1.5 text-[11.5px]">
+                {typeof a.count === 'number' && (
+                  <span>{t('owner.donutDetailBookings', { count: a.count })}</span>
+                )}
+                {typeof a.revenue === 'number' && (
+                  <span className="text-forest-700 font-semibold">{formatIDR(a.revenue)}</span>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

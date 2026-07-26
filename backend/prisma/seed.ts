@@ -2,7 +2,7 @@ import 'dotenv/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
-import { RoleName } from '../src/generated/prisma/enums';
+import { RoleName, BookingSource, BookingStatus, BookingPaymentStatus } from '../src/generated/prisma/enums';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -36,16 +36,43 @@ const ROLES: {
 ];
 
 // ─────────────────────────────────────────────────────────────
-// Data dummy penginapan (nama & harga masih placeholder — §11 dikonfirmasi klien)
+// Konfigurasi global (§8.3 PROJECT.md) — JANGAN hardcode di kode,
+// admin bisa ubah lewat /admin/settings nanti.
+// ─────────────────────────────────────────────────────────────
+const SETTINGS: { key: string; value: string }[] = [
+  { key: 'check_in_time', value: '14:00' },
+  { key: 'check_out_time', value: '12:00' },
+  { key: 'whatsapp_number', value: '6282112345678' },
+  { key: 'bank_account', value: 'BSI 7262292465 a/n KOPERASI ALAM LESTARI' },
+  {
+    key: 'terms_conditions',
+    value: [
+      '1. Booking dianggap sah setelah pembayaran lunas diterima.',
+      '2. Check-in pukul 14.00 WIB, check-out pukul 12.00 WIB.',
+      '3. Pembayaran dilakukan penuh (lunas) di muka, tidak ada sistem DP.',
+      '4. Kode booking wajib ditunjukkan saat check-in.',
+      '5. Pembatalan booking tidak dapat dikembalikan (no refund).',
+      '6. Kerusakan fasilitas menjadi tanggung jawab tamu.',
+      '7. Kapasitas tenda/villa wajib dipatuhi sesuai jumlah tamu efektif.',
+      '8. Kelebihan tamu dari kapasitas dikenakan extra bed / charge person / ganti tipe unit yang lebih besar.',
+      '9. Dilarang membawa hewan peliharaan tanpa izin.',
+      '10. Dilarang merokok di dalam unit.',
+      '11. Jam tenang mulai pukul 22.00 WIB.',
+      '12. Reschedule tanggal paling lambat H-7 sebelum check-in.',
+    ].join('\n'),
+  },
+];
+
+// ─────────────────────────────────────────────────────────────
+// Data dummy tenda/villa (nama & harga masih placeholder — §11 dikonfirmasi klien)
 // ─────────────────────────────────────────────────────────────
 const ROOM_TYPES = [
   {
     slug: 'glamping-deluxe',
-    pricePerNight: 850000,
+    priceWeekday: 850000,
+    priceWeekend: 1050000,
     capacity: 2,
     totalUnits: 5,
-    checkInTime: '14:00',
-    checkOutTime: '12:00',
     facilities: ['wifi', 'ac', 'private_bathroom', 'hot_water', 'breakfast'],
     unitPrefix: 'GD',
     images: [
@@ -58,24 +85,23 @@ const ROOM_TYPES = [
         description:
           'Tenda glamping mewah dengan pemandangan kawah geothermal, dilengkapi kasur nyaman dan kamar mandi air panas alami.',
         facilitiesText: 'WiFi, AC, kamar mandi dalam, air panas, sarapan',
-        rules: 'Check-in 14.00, check-out 12.00. Dilarang merokok di dalam tenda.',
+        rules: 'Dilarang merokok di dalam tenda.',
       },
       EN: {
         name: 'Deluxe Glamping',
         description:
           'Luxury glamping tent overlooking the geothermal crater, with a cozy bed and natural hot spring bathroom.',
         facilitiesText: 'WiFi, AC, private bathroom, hot water, breakfast',
-        rules: 'Check-in 2 PM, check-out 12 PM. No smoking inside the tent.',
+        rules: 'No smoking inside the tent.',
       },
     },
   },
   {
     slug: 'cottage-family',
-    pricePerNight: 1500000,
+    priceWeekday: 1500000,
+    priceWeekend: 1800000,
     capacity: 4,
     totalUnits: 3,
-    checkInTime: '14:00',
-    checkOutTime: '12:00',
     facilities: ['wifi', 'ac', 'private_bathroom', 'hot_water', 'breakfast', 'kitchen', 'living_room'],
     unitPrefix: 'CF',
     images: [
@@ -88,24 +114,23 @@ const ROOM_TYPES = [
         description:
           'Cottage kayu luas untuk keluarga, dengan ruang tamu, dapur kecil, dan teras menghadap hutan.',
         facilitiesText: 'WiFi, AC, kamar mandi dalam, air panas, sarapan, dapur, ruang tamu',
-        rules: 'Maksimal 4 tamu. Check-in 14.00, check-out 12.00.',
+        rules: 'Maksimal 4 tamu efektif per unit.',
       },
       EN: {
         name: 'Family Cottage',
         description:
           'Spacious wooden cottage for families, featuring a living room, kitchenette, and a terrace facing the forest.',
         facilitiesText: 'WiFi, AC, private bathroom, hot water, breakfast, kitchen, living room',
-        rules: 'Maximum 4 guests. Check-in 2 PM, check-out 12 PM.',
+        rules: 'Maximum 4 effective guests per unit.',
       },
     },
   },
   {
     slug: 'tenda-standar',
-    pricePerNight: 500000,
+    priceWeekday: 500000,
+    priceWeekend: 650000,
     capacity: 2,
     totalUnits: 8,
-    checkInTime: '14:00',
-    checkOutTime: '12:00',
     facilities: ['shared_bathroom', 'hot_water', 'breakfast'],
     unitPrefix: 'TS',
     images: ['https://picsum.photos/seed/tenda-standar-1/1200/800'],
@@ -115,14 +140,14 @@ const ROOM_TYPES = [
         description:
           'Tenda nyaman dengan harga terjangkau, cocok untuk backpacker yang ingin merasakan udara pegunungan Kamojang.',
         facilitiesText: 'Kamar mandi bersama, air panas, sarapan',
-        rules: 'Check-in 14.00, check-out 12.00. Kamar mandi bersama.',
+        rules: 'Kamar mandi bersama.',
       },
       EN: {
         name: 'Standard Tent',
         description:
           'A comfortable, budget-friendly tent, perfect for backpackers who want to enjoy the Kamojang mountain air.',
         facilitiesText: 'Shared bathroom, hot water, breakfast',
-        rules: 'Check-in 2 PM, check-out 12 PM. Shared bathroom.',
+        rules: 'Shared bathroom.',
       },
     },
   },
@@ -152,31 +177,40 @@ async function seedRolesAndUsers() {
   console.log(`✔ Seeded ${ROLES.length} roles + ${ROLES.length} users`);
 }
 
+async function seedSettings() {
+  for (const s of SETTINGS) {
+    await prisma.setting.upsert({
+      where: { key: s.key },
+      update: { value: s.value },
+      create: { key: s.key, value: s.value },
+    });
+  }
+  console.log(`✔ Seeded ${SETTINGS.length} settings`);
+}
+
 async function seedRoomTypes(createdById: number) {
   for (const rt of ROOM_TYPES) {
     const roomType = await prisma.roomType.upsert({
       where: { slug: rt.slug },
       update: {
-        pricePerNight: rt.pricePerNight,
+        priceWeekday: rt.priceWeekday,
+        priceWeekend: rt.priceWeekend,
         capacity: rt.capacity,
         totalUnits: rt.totalUnits,
-        checkInTime: rt.checkInTime,
-        checkOutTime: rt.checkOutTime,
         facilities: rt.facilities,
       },
       create: {
         slug: rt.slug,
-        pricePerNight: rt.pricePerNight,
+        priceWeekday: rt.priceWeekday,
+        priceWeekend: rt.priceWeekend,
         capacity: rt.capacity,
         totalUnits: rt.totalUnits,
-        checkInTime: rt.checkInTime,
-        checkOutTime: rt.checkOutTime,
         facilities: rt.facilities,
         createdById,
       },
     });
 
-    // Translations (ID wajib, EN opsional)
+    // Translations (ID wajib, EN diisi fase 1; ZH menyusul fase berikutnya)
     for (const [lang, t] of Object.entries(rt.translations)) {
       await prisma.roomTypeTranslation.upsert({
         where: {
@@ -218,13 +252,64 @@ async function seedRoomTypes(createdById: number) {
   console.log(`✔ Seeded ${ROOM_TYPES.length} room types (+ translations, units, images)`);
 }
 
+/** Contoh booking dummy — membuktikan skema baru (multi-tenda, extra bed, payment status). */
+async function seedSampleBooking(createdById: number) {
+  const glamping = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'glamping-deluxe' } });
+  const cottage = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'cottage-family' } });
+
+  const nights = 2;
+  const glampingSubtotal = Number(glamping.priceWeekday) * nights;
+  const cottageSubtotal = Number(cottage.priceWeekday) * nights;
+  const extraBedQty = 1;
+  const extraBedPrice = 150000;
+  const total = glampingSubtotal + cottageSubtotal + extraBedQty * extraBedPrice;
+
+  const bookingCode = 'DGC-SEED01';
+  const existing = await prisma.booking.findUnique({ where: { bookingCode } });
+  if (existing) {
+    console.log('✔ Sample booking sudah ada, lewati');
+    return;
+  }
+
+  await prisma.booking.create({
+    data: {
+      bookingCode,
+      guestName: 'Budi Santoso',
+      guestPhone: '081234567890',
+      adults: 3,
+      children: 1,
+      checkIn: new Date('2026-08-01'),
+      checkOut: new Date('2026-08-03'),
+      extraBedQty,
+      extraBedPrice,
+      priceSnapshot: total,
+      isPriceOverride: false,
+      status: BookingStatus.CONFIRMED,
+      paymentStatus: BookingPaymentStatus.UNPAID,
+      bookingSource: BookingSource.MANUAL,
+      notes: 'Contoh booking dummy — membuktikan multi-tenda & extra bed.',
+      createdById,
+      confirmedAt: new Date(),
+      items: {
+        create: [
+          { roomTypeId: glamping.id, qty: 1, subtotalSnapshot: glampingSubtotal },
+          { roomTypeId: cottage.id, qty: 1, subtotalSnapshot: cottageSubtotal },
+        ],
+      },
+    },
+  });
+  console.log('✔ Seeded 1 sample booking (multi-tenda + extra bed)');
+}
+
 async function main() {
   await seedRolesAndUsers();
+  await seedSettings();
 
   const superAdmin = await prisma.user.findUniqueOrThrow({
     where: { email: 'superadmin@dglorious.com' },
   });
   await seedRoomTypes(superAdmin.id);
+  await seedSampleBooking(superAdmin.id);
 
   console.log('\n🌱 Seed selesai.');
   console.log(`   Login dummy — password semua akun: "${DEFAULT_PASSWORD}"`);

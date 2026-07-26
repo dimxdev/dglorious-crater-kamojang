@@ -11,16 +11,16 @@ export function Sidebar({ className }: { className?: string }) {
 
   const items = [
     { href: '/admin/penginapan', label: t('dashboard.overview'), icon: '📊', exact: true },
+    { href: '/admin/penginapan/booking-whatsapp', label: t('dashboard.bookingWhatsapp'), icon: '💬' },
+    { href: '/admin/penginapan/walk-in', label: t('dashboard.walkin'), icon: '🚶' },
     { href: '/admin/penginapan/booking', label: t('dashboard.bookings'), icon: '📋' },
-    { href: '/admin/penginapan/booking-manual', label: t('dashboard.manualBooking'), icon: '✍️' },
-    { href: '/admin/penginapan/checkin', label: t('dashboard.checkin'), icon: '✅' },
     { href: '/admin/penginapan/kelola', label: t('dashboard.manage'), icon: '🏕️' },
   ];
 
   return (
     <aside
       className={cn(
-        'flex w-62 shrink-0 flex-col bg-[#14352A] text-[#cbd8cf]',
+        'sticky top-0 flex h-screen w-62 shrink-0 flex-col bg-[#14352A] text-[#cbd8cf]',
         className,
       )}
     >

@@ -3,12 +3,18 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Badge, Button, ImagePlaceholder, Input, Select } from '@/components/ui';
+import { FacilityListEditor, type FacilityRow } from './FacilityListEditor';
 import { cn } from '@/lib/cn';
 import { cmsRooms } from '@/lib/data/admin';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 const LANGS = ['ID', 'EN', '中文'] as const;
+
+const INITIAL_FACILITIES: FacilityRow[] = [
+  { icon: 'Wifi', label: { ID: 'Wi-Fi', EN: 'Wi-Fi', '中文': 'Wi-Fi' } },
+  { icon: 'UtensilsCrossed', label: { ID: 'Sarapan', EN: 'Breakfast', '中文': '早餐' } },
+];
 
 export function KelolaPage() {
   const { t } = useTranslation();
@@ -33,7 +39,9 @@ export function KelolaPage() {
               <tr>
                 <th className="px-4 py-3.5">{t('admin.photo')}</th>
                 <th className="px-4 py-3.5">{t('admin.name')}</th>
-                <th className="px-4 py-3.5">{t('admin.pricePerNight')}</th>
+                <th className="px-4 py-3.5">{t('admin.category')}</th>
+                <th className="px-4 py-3.5">{t('admin.priceWeekday')}</th>
+                <th className="px-4 py-3.5">{t('admin.priceWeekend')}</th>
                 <th className="px-4 py-3.5">{t('admin.capacity')}</th>
                 <th className="px-4 py-3.5">{t('admin.unit')}</th>
                 <th className="px-4 py-3.5">{t('admin.tStatus')}</th>
@@ -49,7 +57,9 @@ export function KelolaPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 font-semibold">{r.name}</td>
-                  <td className="px-4 py-3">{formatIDR(r.price)}</td>
+                  <td className="text-muted px-4 py-3">{r.category}</td>
+                  <td className="px-4 py-3">{formatIDR(r.priceWeekday)}</td>
+                  <td className="px-4 py-3">{formatIDR(r.priceWeekend)}</td>
                   <td className="text-muted px-4 py-3">{r.capacity} tamu</td>
                   <td className="text-muted px-4 py-3">{r.units}</td>
                   <td className="px-4 py-3">
@@ -81,6 +91,7 @@ export function KelolaPage() {
 function CmsDrawer({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   const [lang, setLang] = useState<(typeof LANGS)[number]>('ID');
+  const [facilities, setFacilities] = useState<FacilityRow[]>(INITIAL_FACILITIES);
 
   return (
     <div className="fixed inset-0 z-[120] flex justify-end">
@@ -123,7 +134,20 @@ function CmsDrawer({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col gap-3.5">
               <Input label={`${t('admin.cmsName')} (${lang})`} name="name" placeholder="Nama penginapan" />
               <LabeledTextarea label={`${t('admin.cmsDesc')} (${lang})`} placeholder="Deskripsi penginapan" rows={3} />
-              <Input label={`${t('admin.cmsFacilities')} (${lang})`} name="facilities" placeholder={t('admin.cmsFacilitiesHint')} />
+              <div>
+                <label className="text-foreground text-sm font-medium">
+                  {`${t('admin.cmsFacilities')} (${lang})`}
+                </label>
+                <div className="mt-1.5">
+                  <FacilityListEditor
+                    value={facilities}
+                    onChange={setFacilities}
+                    lang={lang}
+                    addLabel={t('admin.cmsAddFacility')}
+                    labelPlaceholder={t('admin.cmsFacilitiesHint')}
+                  />
+                </div>
+              </div>
               <LabeledTextarea label={`${t('admin.cmsRules')} (${lang})`} placeholder="Aturan menginap" rows={2} />
             </div>
           </div>
@@ -133,9 +157,24 @@ function CmsDrawer({ onClose }: { onClose: () => void }) {
             {t('admin.cmsUniversal')}
           </div>
           <div className="border-border mt-2.5 grid grid-cols-2 gap-3.5 rounded-[14px] border bg-white p-5">
-            <Input label={t('admin.pricePerNight')} name="price" defaultValue="Rp1.250.000" />
+            <Select
+              label={t('admin.category')}
+              name="category"
+              options={[
+                { value: 'cottage', label: 'Cottage' },
+                { value: 'glamping', label: 'Glamping' },
+                { value: 'tenda', label: 'Tenda' },
+                { value: 'area', label: 'Area Camping' },
+              ]}
+            />
             <Input label={t('admin.capacity')} name="capacity" defaultValue="4 tamu" />
-            <Input label={t('admin.cmsUnitCount')} name="units" defaultValue="8" />
+            <Input label={t('admin.priceWeekday')} name="priceWeekday" defaultValue="Rp1.000.000" />
+            <Input label={t('admin.priceWeekend')} name="priceWeekend" defaultValue="Rp1.200.000" />
+            <Input label={t('admin.cmsBedInfo')} name="bedInfo" defaultValue="1 Queen Bed" />
+            <Input label={t('admin.cmsBathroomInfo')} name="bathroomInfo" defaultValue="Kamar mandi privat" />
+            <Input label={t('admin.extraBedPrice')} name="extraBedPrice" defaultValue="Rp250.000" />
+            <Input label={t('admin.extraNoBedPrice')} name="extraNoBedPrice" defaultValue="Rp175.000" />
+            <Input label={t('admin.cmsUnitCount')} name="units" defaultValue="4" />
             <Select
               label={t('admin.tStatus')}
               name="status"

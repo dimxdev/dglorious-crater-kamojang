@@ -6,8 +6,12 @@
 //   - Field  : camelCase    (kode)  → dipetakan ke snake_case di database via @map
 //   - Tabel  : snake_case   (database) via @@map
 //
-// Aturan analytics-ready (§4.8): timestamp lengkap di setiap transisi status,
+// Aturan analytics-ready (§4.7): timestamp lengkap di setiap transisi status,
 // enum konsisten, soft delete (deleted_at), created_by untuk jejak audit.
+//
+// Scope Fase 1 (lihat PROJECT.md banner atas): company profile publik +
+// pencatatan booking internal oleh admin. Field/enum yang ditandai
+// "fase berikutnya" sudah disiapkan di skema tapi BELUM dipakai alurnya.
 
 generator client {
   provider     = "prisma-client"
@@ -31,27 +35,40 @@ enum RoleName {
   SUPER_ADMIN
   OWNER
   ADMIN_PENGINAPAN
-  ADMIN_PORTAL // fase 2 — belum aktif, struktur disiapkan
-  ADMIN_CAFFE // fase 3 — belum aktif, struktur disiapkan
+  ADMIN_PORTAL // fase berikutnya — belum aktif, struktur disiapkan
+  ADMIN_CAFFE // fase berikutnya — belum aktif, struktur disiapkan
 }
 
-/// Alur normal: PENDING → WAITING_PAYMENT → PAID → CONFIRMED → CHECKED_IN → COMPLETED
-/// Cabang gagal: EXPIRED / CANCELLED / REJECTED
+/// Fase 1 (AKTIF): CONFIRMED (langsung saat admin input booking yang sudah fix)
+/// → CHECKED_IN → COMPLETED. Cabang: CANCELLED (batal, uang hangus/no-refund,
+/// tetap tercatat untuk laporan).
+///
+/// Fase berikutnya (booking online, BELUM dipakai di fase 1): PENDING →
+/// WAITING_PAYMENT → PAID, cabang EXPIRED (auto-expire 1x24 jam) / REJECTED.
 enum BookingStatus {
-  PENDING
-  WAITING_PAYMENT
-  PAID
+  PENDING // fase berikutnya
+  WAITING_PAYMENT // fase berikutnya
+  PAID // fase berikutnya
   CONFIRMED
   CHECKED_IN
   COMPLETED
-  EXPIRED
+  EXPIRED // fase berikutnya
   CANCELLED
-  REJECTED
+  REJECTED // fase berikutnya
+}
+
+/// Status pembayaran booking (terpisah dari BookingStatus). Fase 1: pembayaran
+/// terjadi di luar sistem (WhatsApp/transfer/tunai) — admin cukup menandai
+/// manual. Sengaja 2 tingkat paling simpel (bukan 3 tingkat dengan DP);
+/// DP + upload bukti transfer = fase berikutnya.
+enum BookingPaymentStatus {
+  UNPAID
+  PAID
 }
 
 enum BookingSource {
-  ONLINE
-  WALK_IN
+  MANUAL // fase 1 — admin input booking yang sudah fix (via WhatsApp)
+  ONLINE // fase berikutnya — guest checkout mandiri (Midtrans)
 }
 
 enum PaymentMethod {
@@ -64,6 +81,8 @@ enum PaymentMethod {
   OTHER
 }
 
+/// Status transaksi pembayaran individual (tabel `payments`). Nilai terkait
+/// pembayaran online (webhook Midtrans) disiapkan untuk fase berikutnya.
 enum PaymentStatus {
   PENDING
   PAID
@@ -79,6 +98,8 @@ enum RoomUnitStatus {
   INACTIVE
 }
 
+/// Fase 1 mengisi ID + EN. ZH (Mandarin) disiapkan strukturnya, diisi di fase
+/// berikutnya — cukup menambah data, jangan hardcode / jangan jadi 2 kolom.
 enum LanguageCode {
   ID
   EN
@@ -110,43 +131,65 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  // Jejak audit (created_by / verified_by)
+  // Jejak audit (created_by / verified_by / updated_by)
   createdRoomTypes RoomType[] @relation("RoomTypeCreatedBy")
   createdBookings  Booking[]  @relation("BookingCreatedBy")
   verifiedPayments Payment[]  @relation("PaymentVerifiedBy")
+  updatedSettings  Setting[]  @relation("SettingUpdatedBy")
 
   @@map("users")
 }
 
 // ─────────────────────────────────────────────────────────────
-// PENGINAPAN (room types, translations, images, physical units)
+// SETTINGS (konfigurasi global — §8.3 PROJECT.md, JANGAN hardcode)
+// ─────────────────────────────────────────────────────────────
+
+/// Konfigurasi global yang bisa diubah admin lewat /admin/settings.
+/// Contoh key: check_in_time, check_out_time, whatsapp_number, bank_account,
+/// terms_conditions. Value disimpan sebagai teks bebas (boleh multi-baris/JSON).
+model Setting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedById Int?     @map("updated_by")
+
+  updatedBy User? @relation("SettingUpdatedBy", fields: [updatedById], references: [id])
+
+  @@map("settings")
+}
+
+// ─────────────────────────────────────────────────────────────
+// PENGINAPAN — "Tenda" / "Villa" di UI (room types, translations, images, unit)
 // ─────────────────────────────────────────────────────────────
 
 model RoomType {
-  id            Int       @id @default(autoincrement())
-  slug          String    @unique
-  pricePerNight Decimal   @map("price_per_night") @db.Decimal(12, 2)
-  capacity      Int
-  totalUnits    Int       @map("total_units")
-  facilities    Json      @default("[]") // daftar key fasilitas (ikon), teks per bahasa ada di translations
-  checkInTime   String?   @map("check_in_time") // mis. "14:00" — universal, dikonfirmasi klien
-  checkOutTime  String?   @map("check_out_time") // mis. "12:00"
-  isActive      Boolean   @default(true) @map("is_active")
-  createdById   Int?      @map("created_by")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at") // soft delete
+  id           Int       @id @default(autoincrement())
+  slug         String    @unique
+  priceWeekday Decimal   @map("price_weekday") @db.Decimal(12, 2)
+  priceWeekend Decimal   @map("price_weekend") @db.Decimal(12, 2)
+  capacity     Int
+  totalUnits   Int       @map("total_units")
+  facilities   Json      @default("[]") // daftar key fasilitas (ikon), teks per bahasa ada di translations
+  isActive     Boolean   @default(true) @map("is_active")
+  createdById  Int?      @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at") // soft delete
+
+  // Jam check-in/out TIDAK di sini — ambil dari tabel `settings` (global, §8.3).
 
   createdBy    User?                 @relation("RoomTypeCreatedBy", fields: [createdById], references: [id])
   translations RoomTypeTranslation[]
   images       RoomImage[]
   units        RoomUnit[]
-  bookings     Booking[]
+  bookingItems BookingItem[]
 
   @@map("room_types")
 }
 
-/// Konten dinamis multi-bahasa (§9). Tab ID wajib, EN/中文 opsional (fallback ke ID).
+/// Konten dinamis multi-bahasa (§9). Tab ID wajib, EN opsional (fase 1);
+/// ZH (Mandarin) disiapkan, diisi di fase berikutnya. Fallback ke ID jika kosong.
 model RoomTypeTranslation {
   id             Int          @id @default(autoincrement())
   roomTypeId     Int          @map("room_type_id")
@@ -174,15 +217,15 @@ model RoomImage {
   @@map("room_images")
 }
 
-/// Unit fisik (kamar/tenda). Ketersediaan dihitung terhadap unit ini.
+/// Unit fisik (tenda/villa). Ketersediaan dihitung terhadap unit ini.
 model RoomUnit {
   id         Int            @id @default(autoincrement())
   roomTypeId Int            @map("room_type_id")
   unitCode   String         @map("unit_code")
   status     RoomUnitStatus @default(AVAILABLE)
 
-  roomType RoomType  @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  roomType     RoomType      @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  bookingItems BookingItem[]
 
   @@unique([roomTypeId, unitCode])
   @@map("room_units")
@@ -192,39 +235,66 @@ model RoomUnit {
 // BOOKING, PAYMENT, TICKET
 // ─────────────────────────────────────────────────────────────
 
+/// Booking fase 1 = pencatatan internal oleh admin (booking yang sudah fix,
+/// nego terjadi di WhatsApp). Bisa mencakup lebih dari satu tenda → lihat
+/// BookingItem. Status langsung CONFIRMED saat dibuat (§6.1 PROJECT.md).
 model Booking {
-  id            Int           @id @default(autoincrement())
-  bookingCode   String        @unique @map("booking_code") // acak, sulit ditebak (§7)
-  roomTypeId    Int           @map("room_type_id")
-  roomUnitId    Int?          @map("room_unit_id") // unit spesifik di-assign saat konfirmasi
-  guestName     String        @map("guest_name")
-  guestPhone    String        @map("guest_phone")
-  guestEmail    String?       @map("guest_email") // nullable untuk walk-in
-  checkIn       DateTime      @map("check_in") @db.Date
-  checkOut      DateTime      @map("check_out") @db.Date
-  totalGuests   Int           @map("total_guests")
-  priceSnapshot Decimal       @map("price_snapshot") @db.Decimal(12, 2) // §4.7 snapshot harga
-  status        BookingStatus @default(PENDING)
-  bookingSource BookingSource @map("booking_source")
-  createdById   Int?          @map("created_by") // admin (walk-in); null untuk guest online
-  createdAt     DateTime      @default(now()) @map("created_at")
+  id              Int                  @id @default(autoincrement())
+  bookingCode     String               @unique @map("booking_code") // acak, sulit ditebak (§7)
+  guestName       String               @map("guest_name")
+  guestPhone      String               @map("guest_phone")
+  guestEmail      String?              @map("guest_email")
+  checkIn         DateTime             @map("check_in") @db.Date
+  checkOut        DateTime             @map("check_out") @db.Date
+  adults          Int                  @default(1) // §8.2 — dihitung sebagai orang efektif
+  children        Int                  @default(0) @map("children") // §8.2 — anak ≥6 th = 1 dewasa, dihitung manual oleh admin
+  extraBedQty     Int                  @default(0) @map("extra_bed_qty")
+  extraBedPrice   Decimal              @default(0) @map("extra_bed_price") @db.Decimal(12, 2) // tarif per bed, snapshot saat booking dibuat
+  priceSnapshot   Decimal              @map("price_snapshot") @db.Decimal(12, 2) // §4.5 total dibekukan (Σ item + extra bed)
+  isPriceOverride Boolean              @default(false) @map("is_price_override") // admin override manual (nego)
+  ktpPhotoUrl     String?              @map("ktp_photo_url") // opsional, belum wajib fase 1
+  status          BookingStatus        @default(CONFIRMED)
+  paymentStatus   BookingPaymentStatus @default(UNPAID) @map("payment_status")
+  bookingSource   BookingSource        @map("booking_source")
+  notes           String?
+  createdById     Int?                 @map("created_by") // admin yang input
+  createdAt       DateTime             @default(now()) @map("created_at")
   // Timestamp tiap transisi status (analytics-ready)
-  expiredAt     DateTime?     @map("expired_at")
-  paidAt        DateTime?     @map("paid_at")
-  confirmedAt   DateTime?     @map("confirmed_at")
-  checkedInAt   DateTime?     @map("checked_in_at")
-  completedAt   DateTime?     @map("completed_at")
+  confirmedAt     DateTime?            @map("confirmed_at")
+  checkedInAt     DateTime?            @map("checked_in_at")
+  completedAt     DateTime?            @map("completed_at")
+  cancelledAt     DateTime?            @map("cancelled_at")
+  // Fase berikutnya (booking online) — belum dipakai di fase 1
+  expiredAt       DateTime?            @map("expired_at")
+  paidAt          DateTime?            @map("paid_at")
 
-  roomType  RoomType  @relation(fields: [roomTypeId], references: [id])
-  roomUnit  RoomUnit? @relation(fields: [roomUnitId], references: [id])
-  createdBy User?     @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  createdBy User?         @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  items     BookingItem[]
   payments  Payment[]
   ticket    Ticket?
 
   @@index([status])
-  @@index([roomTypeId])
   @@index([checkIn, checkOut])
   @@map("bookings")
+}
+
+/// Satu booking bisa mencakup lebih dari satu tenda/villa (§8.1 PROJECT.md:
+/// "Tipe & jumlah tenda — bisa pilih lebih dari satu tenda").
+model BookingItem {
+  id               Int     @id @default(autoincrement())
+  bookingId        Int     @map("booking_id")
+  roomTypeId       Int     @map("room_type_id")
+  roomUnitId       Int?    @map("room_unit_id") // unit spesifik, di-assign saat konfirmasi/check-in
+  qty              Int     @default(1)
+  subtotalSnapshot Decimal @map("subtotal_snapshot") @db.Decimal(12, 2) // tarif weekday/weekend × malam × qty, dibekukan
+
+  booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  roomType RoomType  @relation(fields: [roomTypeId], references: [id])
+  roomUnit RoomUnit? @relation(fields: [roomUnitId], references: [id])
+
+  @@index([bookingId])
+  @@index([roomTypeId])
+  @@map("booking_items")
 }
 
 model Payment {
@@ -232,11 +302,11 @@ model Payment {
   bookingId       Int           @map("booking_id")
   method          PaymentMethod
   amount          Decimal       @db.Decimal(12, 2)
-  proofUrl        String?       @map("proof_url") // bukti transfer manual (walk-in)
-  midtransOrderId String?       @unique @map("midtrans_order_id") // idempotency webhook (§5)
+  proofUrl        String?       @map("proof_url") // bukti transfer — opsional fase 1, wajib fase berikutnya
+  midtransOrderId String?       @unique @map("midtrans_order_id") // fase berikutnya — idempotency webhook
   status          PaymentStatus @default(PENDING)
   paidAt          DateTime?     @map("paid_at")
-  verifiedById    Int?          @map("verified_by") // admin yang verifikasi (walk-in)
+  verifiedById    Int?          @map("verified_by") // admin yang mencatat/verifikasi
   createdAt       DateTime      @default(now()) @map("created_at")
 
   booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
@@ -245,6 +315,7 @@ model Payment {
   @@map("payments")
 }
 
+/// Struktur disiapkan; generate PDF+QR untuk tamu = fase berikutnya.
 model Ticket {
   id        Int      @id @default(autoincrement())
   bookingId Int      @unique @map("booking_id") // 1 booking = 1 tiket

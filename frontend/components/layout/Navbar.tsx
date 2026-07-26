@@ -2,22 +2,25 @@
 
 import { Menu, Mountain, X } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Button } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Navbar() {
   const { t } = useTranslation();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   const links = [
-    { href: '/', label: t('nav.home') },
+    { href: '/', label: t('nav.home'), exact: true },
     { href: '/tentang', label: t('nav.about') },
     { href: '/penginapan', label: t('nav.lodging') },
-    { href: '/cek-booking', label: t('nav.checkBooking') },
   ];
+
+  const isActive = (l: { href: string; exact?: boolean }) =>
+    l.exact ? pathname === l.href : pathname.startsWith(l.href);
 
   return (
     <header className="border-border/70 sticky top-0 z-40 border-b bg-stone-50/90 backdrop-blur">
@@ -35,12 +38,17 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="text-foreground text-sm font-medium transition-colors hover:text-teal-600"
+              className={cn(
+                'rounded-full px-3.5 py-2 text-sm font-medium transition-colors',
+                isActive(l)
+                  ? 'bg-teal-600/10 font-semibold text-teal-700'
+                  : 'text-foreground hover:bg-stone-100 hover:text-teal-600',
+              )}
             >
               {l.label}
             </Link>
@@ -49,9 +57,6 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          <Link href="/penginapan" className="hidden md:block">
-            <Button size="sm">{t('nav.book')}</Button>
-          </Link>
           <button
             className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-stone-100 md:hidden"
             onClick={() => setOpen((v) => !v)}
@@ -80,20 +85,14 @@ export function Navbar() {
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-stone-100"
+              className={cn(
+                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                isActive(l) ? 'bg-teal-600/10 font-semibold text-teal-700' : 'hover:bg-stone-100',
+              )}
             >
               {l.label}
             </Link>
           ))}
-          <Link
-            href="/penginapan"
-            onClick={() => setOpen(false)}
-            className="mt-2"
-          >
-            <Button size="sm" fullWidth>
-              {t('nav.book')}
-            </Button>
-          </Link>
         </div>
       </nav>
     </header>
