@@ -16,3 +16,12 @@ export function formatDate(date: string | Date) {
     year: 'numeric',
   }).format(new Date(date));
 }
+
+/** Ambil inisial (maks 2 huruf) dari nama lengkap, mis. "Admin Penginapan" → "AP". */
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return parts
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('');
+}

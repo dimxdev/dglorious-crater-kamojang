@@ -237,7 +237,8 @@ export function BookingsPage() {
       buildExportSummary();
 
     exportBookingExcel({
-      sheetName: t('admin.reportBookingSection'),
+      summarySheetName: t('admin.reportSheetSummary'),
+      detailSheetName: t('admin.reportSheetDetail'),
       title: t('admin.reportTitle'),
       companyName: "D'Glorious Crater Kamojang",
       periodLabel: t('admin.reportPeriod', { period: periodLabel }),
@@ -245,17 +246,22 @@ export function BookingsPage() {
         date: new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
       }),
       statsSectionTitle: t('admin.reportStatsSection'),
+      // Sengaja dikirim sebagai number (bukan string) + numFmt — kalau angka
+      // dikirim sebagai teks, Excel nandain tiap sel pakai segitiga hijau
+      // "number stored as text" dan nilainya gak bisa dipakai buat hitung.
       stats: [
-        { label: t('admin.reportStatTotalBooking'), value: String(exportBookings.length) },
-        { label: t('admin.reportStatTotalRevenue'), value: formatIDR(totalRevenue) },
-        { label: t('admin.reportStatBelumLunas'), value: String(belumLunas) },
-        { label: t('admin.reportStatMenginap'), value: String(menginap) },
+        { label: t('admin.reportStatTotalBooking'), value: exportBookings.length },
+        { label: t('admin.reportStatTotalRevenue'), value: totalRevenue, numFmt: '"Rp"#,##0' },
+        { label: t('admin.reportStatBelumLunas'), value: belumLunas },
+        { label: t('admin.reportStatMenginap'), value: menginap },
       ],
       breakdowns: [
         { title: t('admin.reportStatusBreakdown'), rows: statusBreakdown },
         { title: t('admin.reportSourceBreakdown'), rows: sourceBreakdown },
       ],
       tableSectionTitle: t('admin.reportBookingSection'),
+      totalLabel: t('admin.reportGrandTotal'),
+      footerNote: t('admin.reportFooterNote'),
       headers: [
         t('admin.tCode'),
         t('admin.tGuest'),
@@ -296,7 +302,9 @@ export function BookingsPage() {
       {/* Filter bar */}
       <div className="border-border flex flex-col gap-3 rounded-2xl border bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-50 flex-1">
+          {/* `w-full` di mobile: search ambil satu baris penuh, biar 2 dropdown
+              di bawahnya turun & kebagian lebar yang cukup buat kebaca. */}
+          <div className="w-full sm:min-w-50 sm:flex-1">
             <input
               value={search}
               onChange={(e) => {
@@ -317,7 +325,7 @@ export function BookingsPage() {
               setStatusFilter(e.target.value as BookingStatus | '');
               setPage(1);
             }}
-            className="border-input rounded-[10px] border bg-white px-3 py-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
+            className="border-input min-w-36 flex-1 rounded-[10px] border bg-white px-3 py-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 sm:flex-none"
           >
             <option value="">{t('admin.allStatus')}</option>
             {STATUSES.map((s) => (
@@ -333,7 +341,7 @@ export function BookingsPage() {
               setSourceFilter(e.target.value as BookingChannel | '');
               setPage(1);
             }}
-            className="border-input rounded-[10px] border bg-white px-3 py-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
+            className="border-input min-w-36 flex-1 rounded-[10px] border bg-white px-3 py-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 sm:flex-none"
           >
             <option value="">{t('admin.allSource')}</option>
             <option value="WHATSAPP">{t('admin.whatsapp')}</option>
@@ -347,7 +355,7 @@ export function BookingsPage() {
             searchActive && 'pointer-events-none opacity-40',
           )}
         >
-          <FilterField label={t('admin.filterPeriod')}>
+          <FilterField label={t('admin.filterPeriod')} className="w-full sm:w-auto">
             <RangeFilter
               range={range}
               onRangeChange={(r) => {
@@ -385,18 +393,19 @@ export function BookingsPage() {
           )}
         </div>
 
-        <div className="flex justify-end gap-2.5">
+        {/* Di mobile dua tombol dibagi rata biar gak numpuk mepet kanan. */}
+        <div className="flex gap-2.5 border-t border-dashed border-[#e2dccb] pt-3 sm:justify-end">
           <button
             type="button"
             onClick={handleExportExcel}
-            className="rounded-lg bg-[#1B4332] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#153728]"
+            className="flex-1 rounded-lg bg-[#1B4332] px-4 py-2 text-[13px] font-semibold whitespace-nowrap text-white hover:bg-[#153728] sm:flex-none"
           >
             {t('admin.exportExcel')}
           </button>
           <button
             type="button"
             onClick={handleExport}
-            className="bg-terracotta-500 hover:bg-terracotta-600 rounded-lg px-4 py-2 text-[13px] font-semibold text-white"
+            className="bg-terracotta-500 hover:bg-terracotta-600 flex-1 rounded-lg px-4 py-2 text-[13px] font-semibold whitespace-nowrap text-white sm:flex-none"
           >
             {t('admin.export')}
           </button>
@@ -493,9 +502,20 @@ export function BookingsPage() {
   );
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+// `min-w-0` penting: default flex item itu `min-width:auto`, jadi kolom filter
+// gak mau menyusut di bawah lebar isinya — bikin RangeFilter jebol keluar kartu
+// di layar sempit & `overflow-x-auto`-nya gak pernah kepakai.
+function FilterField({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className={cn('flex min-w-0 flex-col gap-1', className)}>
       <span className="text-muted text-[11px] font-medium tracking-[0.03em] uppercase">
         {label}
       </span>

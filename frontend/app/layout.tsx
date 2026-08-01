@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Newsreader, Public_Sans } from 'next/font/google';
+import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { I18nProvider } from '@/lib/i18n/I18nProvider';
 import './globals.css';
 
@@ -36,7 +37,9 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${newsreader.variable} ${publicSans.variable}`}>
       <body>
-        <I18nProvider>{children}</I18nProvider>
+        <I18nProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </I18nProvider>
       </body>
     </html>
   );

@@ -112,9 +112,10 @@
     "subtitle": "Portal khusus pengelola. Tamu tidak perlu akun.",
     "email": "Email",
     "password": "Kata Sandi",
-    "asRole": "Masuk sebagai:",
-    "adminBtn": "Admin Penginapan",
-    "ownerBtn": "Owner",
+    "submit": "Masuk",
+    "submitting": "Memproses...",
+    "errorInvalid": "Email atau kata sandi salah.",
+    "errorGeneric": "Terjadi kesalahan. Coba lagi.",
     "backHome": "← Kembali ke situs publik"
   },
   "admin": {
@@ -261,6 +262,9 @@
     "reportStatusBreakdown": "Distribusi Status",
     "reportSourceBreakdown": "Sumber Booking",
     "reportBookingSection": "Detail Booking (Sesuai Filter)",
+    "reportSheetSummary": "Ringkasan",
+    "reportSheetDetail": "Detail Booking",
+    "reportGrandTotal": "TOTAL",
     "reportNoBookings": "Tidak ada booking yang cocok dengan filter ini.",
     "reportFooterNote": "Dibuat otomatis oleh sistem D'Glorious Crater — bukan dokumen resmi bertanda tangan.",
     "reportPage": "Halaman {page} dari {total}"
@@ -329,6 +333,11 @@
     "bookingWhatsapp": "Booking WhatsApp",
     "walkin": "Tamu Langsung",
     "manage": "Kelola Penginapan",
+    "navShortOverview": "Ringkasan",
+    "navShortWhatsapp": "WhatsApp",
+    "navShortWalkin": "Walk-in",
+    "navShortBookings": "Booking",
+    "navShortManage": "Kelola",
     "todayBookings": "Booking Hari Ini",
     "pending": "Menunggu Konfirmasi",
     "occupancy": "Okupansi",
@@ -338,5 +347,12 @@
     "eyebrow": "Informasi Penting",
     "title": "Syarat & Ketentuan",
     "subtitle": "Mohon dibaca sebelum melakukan reservasi penginapan di D'Glorious Crater Kamojang."
+  },
+  "roles": {
+    "SUPER_ADMIN": "Super Admin",
+    "OWNER": "Owner",
+    "ADMIN_PENGINAPAN": "Admin Penginapan",
+    "ADMIN_PORTAL": "Admin Tiket Masuk",
+    "ADMIN_CAFFE": "Admin Cafe"
   }
 }

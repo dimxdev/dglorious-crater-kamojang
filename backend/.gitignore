@@ -3,3 +3,6 @@ node_modules
 .env
 
 /generated/prisma
+
+# Uploaded room images (local disk, FASE 5) — not source, don't version.
+/uploads

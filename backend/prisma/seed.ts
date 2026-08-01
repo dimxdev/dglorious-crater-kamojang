@@ -2,7 +2,13 @@ import 'dotenv/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
-import { RoleName, BookingSource, BookingStatus, BookingPaymentStatus } from '../src/generated/prisma/enums';
+import {
+  RoleName,
+  BookingSource,
+  BookingStatus,
+  BookingChannel,
+  ExtraBedType,
+} from '../src/generated/prisma/enums';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -15,7 +21,10 @@ const DEFAULT_PASSWORD = 'password123';
 // ─────────────────────────────────────────────────────────────
 const ROLES: {
   name: RoleName;
-  permissions: Record<string, unknown>;
+  // Sengaja BUKAN `Record<string, unknown>`: `unknown` gak bisa masuk ke tipe
+  // JSON-nya Prisma (`InputJsonValue`), jadi `tsc` nolak. Dipersempit ke bentuk
+  // yang emang dipakai di bawah.
+  permissions: Record<string, boolean | string[]>;
   user: { name: string; email: string };
 }[] = [
   {
@@ -64,90 +73,276 @@ const SETTINGS: { key: string; value: string }[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// Data dummy tenda/villa (nama & harga masih placeholder — §11 dikonfirmasi klien)
+// Data 6 tenda/villa ASLI — sumber: "Pricelist Penginapan DGCK" (PDF resmi
+// klien), disamakan dengan `frontend/lib/data/rooms.ts` supaya mock frontend &
+// isi database gak beda. Harga/kapasitas/tarif tambah orang SUDAH final dari
+// klien; `totalUnits` masih ESTIMASI (belum dikonfirmasi, lihat PROJECT.md §11)
+// dan URL gambar masih placeholder sampai foto asli tiap unit dikirim klien.
 // ─────────────────────────────────────────────────────────────
 const ROOM_TYPES = [
   {
-    slug: 'glamping-deluxe',
-    priceWeekday: 850000,
-    priceWeekend: 1050000,
+    slug: 'eagle-hill',
+    priceWeekday: 1999000,
+    priceWeekend: 2499000,
     capacity: 2,
-    totalUnits: 5,
-    facilities: ['wifi', 'ac', 'private_bathroom', 'hot_water', 'breakfast'],
-    unitPrefix: 'GD',
-    images: [
-      'https://picsum.photos/seed/glamping-deluxe-1/1200/800',
-      'https://picsum.photos/seed/glamping-deluxe-2/1200/800',
-    ],
-    translations: {
-      ID: {
-        name: 'Glamping Deluxe',
-        description:
-          'Tenda glamping mewah dengan pemandangan kawah geothermal, dilengkapi kasur nyaman dan kamar mandi air panas alami.',
-        facilitiesText: 'WiFi, AC, kamar mandi dalam, air panas, sarapan',
-        rules: 'Dilarang merokok di dalam tenda.',
-      },
-      EN: {
-        name: 'Deluxe Glamping',
-        description:
-          'Luxury glamping tent overlooking the geothermal crater, with a cozy bed and natural hot spring bathroom.',
-        facilitiesText: 'WiFi, AC, private bathroom, hot water, breakfast',
-        rules: 'No smoking inside the tent.',
-      },
-    },
-  },
-  {
-    slug: 'cottage-family',
-    priceWeekday: 1500000,
-    priceWeekend: 1800000,
-    capacity: 4,
     totalUnits: 3,
-    facilities: ['wifi', 'ac', 'private_bathroom', 'hot_water', 'breakfast', 'kitchen', 'living_room'],
-    unitPrefix: 'CF',
-    images: [
-      'https://picsum.photos/seed/cottage-family-1/1200/800',
-      'https://picsum.photos/seed/cottage-family-2/1200/800',
+    extraBedPrice: 300000,
+    extraNoBedPrice: 200000,
+    extraFlatPrice: null,
+    facilities: [
+      { icon: 'UtensilsCrossed', label: { id: 'Sarapan', en: 'Breakfast' } },
+      { icon: 'Wind', label: { id: 'Penghangat Ruangan', en: 'Room Heater' } },
+      { icon: 'Tv', label: { id: 'Smart TV & Netflix', en: 'Smart TV & Netflix' } },
+      { icon: 'Wifi', label: { id: 'Free Wi-Fi', en: 'Free Wi-Fi' } },
+      { icon: 'Droplets', label: { id: 'Water Heater', en: 'Water Heater' } },
+      { icon: 'Bath', label: { id: 'Toiletries, Slipper & Hairdryer', en: 'Toiletries, Slippers & Hairdryer' } },
+      { icon: 'Martini', label: { id: 'Mini Bar', en: 'Mini Bar' } },
+      { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
     ],
+    unitPrefix: 'EH',
+    images: ['https://picsum.photos/seed/eagle-hill-1/1200/800', 'https://picsum.photos/seed/eagle-hill-2/1200/800'],
     translations: {
       ID: {
-        name: 'Cottage Keluarga',
+        name: 'Eagle Hill',
+        category: 'Cottage',
+        tagline: 'Cottage privat dengan kolam air panas sendiri',
         description:
-          'Cottage kayu luas untuk keluarga, dengan ruang tamu, dapur kecil, dan teras menghadap hutan.',
-        facilitiesText: 'WiFi, AC, kamar mandi dalam, air panas, sarapan, dapur, ruang tamu',
-        rules: 'Maksimal 4 tamu efektif per unit.',
+          'Cottage kayu nyaman dengan private hot spring di teras, kasur queen empuk, dan pemandangan hutan berkabut. Dilengkapi Smart TV & Netflix, mini bar, serta pemanas ruangan untuk malam yang sejuk di Kamojang.',
+        bedInfo: '1 Queen Bed',
+        bathroomInfo: 'Kamar mandi privat + private hot spring',
+        facilitiesText: 'Sarapan, penghangat ruangan, Smart TV & Netflix, Wi-Fi, water heater, mini bar',
+        rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
       },
       EN: {
-        name: 'Family Cottage',
+        name: 'Eagle Hill',
+        category: 'Cottage',
+        tagline: 'Private cottage with your own hot spring',
         description:
-          'Spacious wooden cottage for families, featuring a living room, kitchenette, and a terrace facing the forest.',
-        facilitiesText: 'WiFi, AC, private bathroom, hot water, breakfast, kitchen, living room',
-        rules: 'Maximum 4 effective guests per unit.',
+          "A cozy wooden cottage with a private hot spring on the terrace, a plush queen bed, and misty forest views. Complete with Smart TV & Netflix, a mini bar, and a room heater for Kamojang's cool nights.",
+        bedInfo: '1 Queen Bed',
+        bathroomInfo: 'Private bathroom + private hot spring',
+        facilitiesText: 'Breakfast, room heater, Smart TV & Netflix, Wi-Fi, water heater, mini bar',
+        rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
       },
     },
   },
   {
-    slug: 'tenda-standar',
-    priceWeekday: 500000,
-    priceWeekend: 650000,
+    slug: 'royal-kahuripan',
+    priceWeekday: 1000000,
+    priceWeekend: 1200000,
     capacity: 2,
-    totalUnits: 8,
-    facilities: ['shared_bathroom', 'hot_water', 'breakfast'],
-    unitPrefix: 'TS',
-    images: ['https://picsum.photos/seed/tenda-standar-1/1200/800'],
+    totalUnits: 4,
+    extraBedPrice: 300000,
+    extraNoBedPrice: 200000,
+    extraFlatPrice: null,
+    facilities: [
+      { icon: 'UtensilsCrossed', label: { id: 'Sarapan', en: 'Breakfast' } },
+      { icon: 'Wind', label: { id: 'Penghangat Ruangan', en: 'Room Heater' } },
+      { icon: 'Tv', label: { id: 'TV Digital', en: 'Digital TV' } },
+      { icon: 'Wifi', label: { id: 'Free Wi-Fi', en: 'Free Wi-Fi' } },
+      { icon: 'Droplets', label: { id: 'Water Heater', en: 'Water Heater' } },
+      { icon: 'Bath', label: { id: 'Toiletries & Slipper', en: 'Toiletries & Slippers' } },
+      { icon: 'Martini', label: { id: 'Mini Bar', en: 'Mini Bar' } },
+      { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
+    ],
+    unitPrefix: 'RK',
+    images: ['https://picsum.photos/seed/royal-kahuripan-1/1200/800', 'https://picsum.photos/seed/royal-kahuripan-2/1200/800'],
     translations: {
       ID: {
-        name: 'Tenda Standar',
+        name: 'Royal Kahuripan',
+        category: 'Glamping',
+        tagline: 'Glamping nyaman ala hotel bintang',
         description:
-          'Tenda nyaman dengan harga terjangkau, cocok untuk backpacker yang ingin merasakan udara pegunungan Kamojang.',
-        facilitiesText: 'Kamar mandi bersama, air panas, sarapan',
-        rules: 'Kamar mandi bersama.',
+          'Tenda glamping dengan kasur queen empuk, kamar mandi privat berair panas, dan fasilitas selengkap kamar hotel — TV digital, mini bar, hingga meja santai di depan tenda.',
+        bedInfo: '1 Queen Bed',
+        bathroomInfo: 'Kamar mandi privat',
+        facilitiesText: 'Sarapan, penghangat ruangan, TV digital, Wi-Fi, water heater, mini bar',
+        rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
       },
       EN: {
-        name: 'Standard Tent',
+        name: 'Royal Kahuripan',
+        category: 'Glamping',
+        tagline: 'Hotel-comfort glamping',
         description:
-          'A comfortable, budget-friendly tent, perfect for backpackers who want to enjoy the Kamojang mountain air.',
-        facilitiesText: 'Shared bathroom, hot water, breakfast',
-        rules: 'Shared bathroom.',
+          'A glamping tent with a plush queen bed, a private hot-water bathroom, and amenities as complete as a hotel room — digital TV, a mini bar, and a lounge table right outside the tent.',
+        bedInfo: '1 Queen Bed',
+        bathroomInfo: 'Private bathroom',
+        facilitiesText: 'Breakfast, room heater, digital TV, Wi-Fi, water heater, mini bar',
+        rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
+      },
+    },
+  },
+  {
+    slug: 'camp-jamuju',
+    priceWeekday: 1200000,
+    priceWeekend: 1500000,
+    capacity: 4,
+    totalUnits: 5,
+    extraBedPrice: 250000,
+    extraNoBedPrice: 175000,
+    extraFlatPrice: null,
+    facilities: [
+      { icon: 'UtensilsCrossed', label: { id: 'Sarapan', en: 'Breakfast' } },
+      { icon: 'Flame', label: { id: 'Kayu Bakar & Bonfire (Bersama)', en: 'Firewood & Bonfire (Shared)' } },
+      { icon: 'Trees', label: { id: 'Area Halaman Samping', en: 'Side Yard Area' } },
+      { icon: 'Wifi', label: { id: 'Free Wi-Fi', en: 'Free Wi-Fi' } },
+      { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
+      { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
+    ],
+    unitPrefix: 'CJ',
+    images: ['https://picsum.photos/seed/camp-jamuju-1/1200/800', 'https://picsum.photos/seed/camp-jamuju-2/1200/800'],
+    translations: {
+      ID: {
+        name: 'Camp Jamuju',
+        category: 'Tenda',
+        tagline: 'Tenda keluarga dengan halaman luas',
+        description:
+          'Tenda kanvas untuk 4 orang dengan area halaman samping yang lega, api unggun bersama, dan coffee corner untuk menghangatkan badan sebelum tidur.',
+        bedInfo: '4 Single Bed',
+        bathroomInfo: 'Kamar mandi bersama (air panas)',
+        facilitiesText: 'Sarapan, api unggun bersama, coffee corner, Wi-Fi, air panas',
+        rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
+      },
+      EN: {
+        name: 'Camp Jamuju',
+        category: 'Tent',
+        tagline: 'Family tent with a spacious yard',
+        description:
+          'A canvas tent for 4, with a spacious side yard, a shared bonfire, and a coffee corner to warm up before sleep.',
+        bedInfo: '4 Single Beds',
+        bathroomInfo: 'Shared bathroom (hot water)',
+        facilitiesText: 'Breakfast, shared bonfire, coffee corner, Wi-Fi, hot water',
+        rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
+      },
+    },
+  },
+  {
+    slug: 'camp-rasamala',
+    priceWeekday: 800000,
+    priceWeekend: 950000,
+    capacity: 4,
+    totalUnits: 4,
+    extraBedPrice: 250000,
+    extraNoBedPrice: 175000,
+    extraFlatPrice: null,
+    facilities: [
+      { icon: 'UtensilsCrossed', label: { id: 'Sarapan', en: 'Breakfast' } },
+      { icon: 'Flame', label: { id: 'Kayu Bakar & Bonfire Private', en: 'Firewood & Private Bonfire' } },
+      { icon: 'Wifi', label: { id: 'Free Wi-Fi', en: 'Free Wi-Fi' } },
+      { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
+      { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
+    ],
+    unitPrefix: 'CR',
+    images: ['https://picsum.photos/seed/camp-rasamala-1/1200/800', 'https://picsum.photos/seed/camp-rasamala-2/1200/800'],
+    translations: {
+      ID: {
+        name: 'Camp Rasamala',
+        category: 'Tenda',
+        tagline: 'Tenda dengan api unggun privat',
+        description:
+          'Tenda kanvas untuk 4 orang dengan bonfire privat sendiri — cocok untuk keluarga atau rombongan yang ingin bersantai di api unggun tanpa berbagi dengan tamu lain.',
+        bedInfo: '4 Single Bed',
+        bathroomInfo: 'Kamar mandi bersama (air panas)',
+        facilitiesText: 'Sarapan, api unggun privat, coffee corner, Wi-Fi, air panas',
+        rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
+      },
+      EN: {
+        name: 'Camp Rasamala',
+        category: 'Tent',
+        tagline: 'Tent with a private bonfire',
+        description:
+          'A canvas tent for 4, with your own private bonfire — ideal for families or groups who want to unwind by the fire without sharing with other guests.',
+        bedInfo: '4 Single Beds',
+        bathroomInfo: 'Shared bathroom (hot water)',
+        facilitiesText: 'Breakfast, private bonfire, coffee corner, Wi-Fi, hot water',
+        rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
+      },
+    },
+  },
+  {
+    slug: 'camp-cakrawala',
+    priceWeekday: 600000,
+    priceWeekend: 725000,
+    capacity: 3,
+    totalUnits: 6,
+    extraBedPrice: 250000,
+    extraNoBedPrice: 175000,
+    extraFlatPrice: null,
+    facilities: [
+      { icon: 'UtensilsCrossed', label: { id: 'Sarapan', en: 'Breakfast' } },
+      { icon: 'Flame', label: { id: 'Kayu Bakar & Bonfire (Bersama)', en: 'Firewood & Bonfire (Shared)' } },
+      { icon: 'Wifi', label: { id: 'Free Wi-Fi', en: 'Free Wi-Fi' } },
+      { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
+      { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
+    ],
+    unitPrefix: 'CC',
+    images: ['https://picsum.photos/seed/camp-cakrawala-1/1200/800', 'https://picsum.photos/seed/camp-cakrawala-2/1200/800'],
+    translations: {
+      ID: {
+        name: 'Camp Cakrawala',
+        category: 'Tenda',
+        tagline: 'Tenda ringkas untuk berdua-tiga',
+        description:
+          'Tenda kanvas ringkas untuk 3 orang, pilihan pas untuk yang datang berdua atau bertiga dan ingin merasakan berkemah santai tanpa ribet.',
+        bedInfo: '2 Single Bed',
+        bathroomInfo: 'Kamar mandi bersama (air panas)',
+        facilitiesText: 'Sarapan, coffee corner, Wi-Fi, air panas',
+        rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
+      },
+      EN: {
+        name: 'Camp Cakrawala',
+        category: 'Tent',
+        tagline: 'Compact tent for two or three',
+        description:
+          'A compact canvas tent for 3, a great fit for couples or small groups who want a relaxed camping experience without the hassle.',
+        bedInfo: '2 Single Beds',
+        bathroomInfo: 'Shared bathroom (hot water)',
+        facilitiesText: 'Breakfast, coffee corner, Wi-Fi, hot water',
+        rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
+      },
+    },
+  },
+  {
+    slug: 'glorious-campervan',
+    priceWeekday: 350000,
+    priceWeekend: 400000,
+    capacity: 4,
+    totalUnits: 8,
+    // Campervan beda sendiri: tarif tambah orang FLAT, tidak kenal opsi
+    // dengan/tanpa kasur (lihat `extraBedRate` di frontend/lib/pricing.ts).
+    extraBedPrice: null,
+    extraNoBedPrice: null,
+    extraFlatPrice: 55000,
+    facilities: [
+      { icon: 'Flame', label: { id: 'Kayu Bakar & Bonfire (Bersama)', en: 'Firewood & Bonfire (Shared)' } },
+      { icon: 'Plug', label: { id: 'Sumber Listrik', en: 'Power Source' } },
+      { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
+      { icon: 'Wifi', label: { id: 'Free Wi-Fi', en: 'Free Wi-Fi' } },
+    ],
+    unitPrefix: 'GC',
+    images: ['https://picsum.photos/seed/glorious-campervan-1/1200/800', 'https://picsum.photos/seed/glorious-campervan-2/1200/800'],
+    translations: {
+      ID: {
+        name: 'Glorious Campervan',
+        category: 'Area Camping',
+        tagline: 'Bawa mobil & tendamu sendiri',
+        description:
+          'Kavling terbuka 5×7 meter untuk campervan atau tenda pribadimu sendiri, lengkap dengan sumber listrik, coffee corner, dan akses ke semua fasilitas umum DGCK.',
+        bedInfo: 'Kavling 5×7 Meter',
+        bathroomInfo: 'Kamar mandi bersama',
+        facilitiesText: 'Sumber listrik, coffee corner, Wi-Fi, kamar mandi bersama',
+        rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Tambah orang dikenakan tarif flat per orang.',
+      },
+      EN: {
+        name: 'Glorious Campervan',
+        category: 'Camping Area',
+        tagline: 'Bring your own car & tent',
+        description:
+          'An open 5×7 m plot for your own campervan or tent, complete with a power source, a coffee corner, and access to all DGCK common facilities.',
+        bedInfo: '5×7 m Plot',
+        bathroomInfo: 'Shared bathroom',
+        facilitiesText: 'Power source, coffee corner, Wi-Fi, shared bathroom',
+        rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged a flat per-person rate.',
       },
     },
   },
@@ -190,24 +385,20 @@ async function seedSettings() {
 
 async function seedRoomTypes(createdById: number) {
   for (const rt of ROOM_TYPES) {
+    const pricing = {
+      priceWeekday: rt.priceWeekday,
+      priceWeekend: rt.priceWeekend,
+      capacity: rt.capacity,
+      totalUnits: rt.totalUnits,
+      extraBedPrice: rt.extraBedPrice,
+      extraNoBedPrice: rt.extraNoBedPrice,
+      extraFlatPrice: rt.extraFlatPrice,
+      facilities: rt.facilities,
+    };
     const roomType = await prisma.roomType.upsert({
       where: { slug: rt.slug },
-      update: {
-        priceWeekday: rt.priceWeekday,
-        priceWeekend: rt.priceWeekend,
-        capacity: rt.capacity,
-        totalUnits: rt.totalUnits,
-        facilities: rt.facilities,
-      },
-      create: {
-        slug: rt.slug,
-        priceWeekday: rt.priceWeekday,
-        priceWeekend: rt.priceWeekend,
-        capacity: rt.capacity,
-        totalUnits: rt.totalUnits,
-        facilities: rt.facilities,
-        createdById,
-      },
+      update: pricing,
+      create: { slug: rt.slug, ...pricing, createdById },
     });
 
     // Translations (ID wajib, EN diisi fase 1; ZH menyusul fase berikutnya)
@@ -252,53 +443,90 @@ async function seedRoomTypes(createdById: number) {
   console.log(`✔ Seeded ${ROOM_TYPES.length} room types (+ translations, units, images)`);
 }
 
-/** Contoh booking dummy — membuktikan skema baru (multi-tenda, extra bed, payment status). */
-async function seedSampleBooking(createdById: number) {
-  const glamping = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'glamping-deluxe' } });
-  const cottage = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'cottage-family' } });
+/**
+ * Contoh booking dummy — sengaja 2 baris supaya dua jalur pencatatan yang
+ * beda kelihatan: WhatsApp (tamu belum tiba, masih DP, `createdAt` beberapa
+ * hari sebelum check-in) & Walk-in (tamu langsung datang, sudah lunas &
+ * CHECKED_IN, `createdAt` = tanggal check-in). Yang WhatsApp juga multi-tenda
+ * + extra bed, buat membuktikan `booking_items` & tarif tambah orang.
+ */
+async function seedSampleBookings(createdById: number) {
+  const eagleHill = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'eagle-hill' } });
+  const royal = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'royal-kahuripan' } });
+  const jamuju = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'camp-jamuju' } });
 
+  // ── 1. Jalur WhatsApp: multi-tenda, masih DP, tamu belum tiba ──
   const nights = 2;
-  const glampingSubtotal = Number(glamping.priceWeekday) * nights;
-  const cottageSubtotal = Number(cottage.priceWeekday) * nights;
+  const eagleSubtotal = Number(eagleHill.priceWeekday) * nights;
+  const royalSubtotal = Number(royal.priceWeekday) * nights;
   const extraBedQty = 1;
-  const extraBedPrice = 150000;
-  const total = glampingSubtotal + cottageSubtotal + extraBedQty * extraBedPrice;
+  // Pakai tarif "dengan kasur tambahan" milik tipe tenda-nya, bukan angka karangan.
+  const extraBedPrice = Number(eagleHill.extraBedPrice ?? 0);
+  const waTotal = eagleSubtotal + royalSubtotal + extraBedQty * extraBedPrice * nights;
 
-  const bookingCode = 'DGC-SEED01';
-  const existing = await prisma.booking.findUnique({ where: { bookingCode } });
-  if (existing) {
-    console.log('✔ Sample booking sudah ada, lewati');
-    return;
+  const waCode = 'DGC-SEED01';
+  if (!(await prisma.booking.findUnique({ where: { bookingCode: waCode } }))) {
+    await prisma.booking.create({
+      data: {
+        bookingCode: waCode,
+        guestName: 'Budi Santoso',
+        guestPhone: '081234567890',
+        adults: 3,
+        children: 1,
+        createdAt: new Date('2026-07-24'), // dicatat 8 hari sebelum check-in
+        checkIn: new Date('2026-08-01'),
+        checkOut: new Date('2026-08-03'),
+        extraBedQty,
+        extraBedType: ExtraBedType.WITH_BED,
+        extraBedPrice,
+        priceSnapshot: waTotal,
+        isPriceOverride: false,
+        status: BookingStatus.DP,
+        bookingChannel: BookingChannel.WHATSAPP,
+        bookingSource: BookingSource.MANUAL,
+        notes: 'Contoh booking dummy — multi-tenda + extra bed, masih DP.',
+        createdById,
+        items: {
+          create: [
+            { roomTypeId: eagleHill.id, qty: 1, subtotalSnapshot: eagleSubtotal },
+            { roomTypeId: royal.id, qty: 1, subtotalSnapshot: royalSubtotal },
+          ],
+        },
+      },
+    });
   }
 
-  await prisma.booking.create({
-    data: {
-      bookingCode,
-      guestName: 'Budi Santoso',
-      guestPhone: '081234567890',
-      adults: 3,
-      children: 1,
-      checkIn: new Date('2026-08-01'),
-      checkOut: new Date('2026-08-03'),
-      extraBedQty,
-      extraBedPrice,
-      priceSnapshot: total,
-      isPriceOverride: false,
-      status: BookingStatus.CONFIRMED,
-      paymentStatus: BookingPaymentStatus.UNPAID,
-      bookingSource: BookingSource.MANUAL,
-      notes: 'Contoh booking dummy — membuktikan multi-tenda & extra bed.',
-      createdById,
-      confirmedAt: new Date(),
-      items: {
-        create: [
-          { roomTypeId: glamping.id, qty: 1, subtotalSnapshot: glampingSubtotal },
-          { roomTypeId: cottage.id, qty: 1, subtotalSnapshot: cottageSubtotal },
-        ],
+  // ── 2. Jalur Walk-in: langsung lunas & check-in di hari yang sama ──
+  const walkinCode = 'DGC-SEED02';
+  if (!(await prisma.booking.findUnique({ where: { bookingCode: walkinCode } }))) {
+    const walkinSubtotal = Number(jamuju.priceWeekday) * 1;
+    const checkInDate = new Date('2026-07-26');
+    await prisma.booking.create({
+      data: {
+        bookingCode: walkinCode,
+        guestName: 'Citra Lestari',
+        guestPhone: '082177881122',
+        adults: 4,
+        children: 0,
+        createdAt: checkInDate, // walk-in: dicatat persis saat tamu datang
+        checkIn: checkInDate,
+        checkOut: new Date('2026-07-27'),
+        extraBedQty: 0,
+        extraBedPrice: 0,
+        priceSnapshot: walkinSubtotal,
+        status: BookingStatus.CHECKED_IN,
+        bookingChannel: BookingChannel.WALK_IN,
+        bookingSource: BookingSource.MANUAL,
+        notes: 'Contoh booking dummy — tamu langsung, lunas & check-in seketika.',
+        createdById,
+        lunasAt: checkInDate,
+        checkedInAt: checkInDate,
+        items: { create: [{ roomTypeId: jamuju.id, qty: 1, subtotalSnapshot: walkinSubtotal }] },
       },
-    },
-  });
-  console.log('✔ Seeded 1 sample booking (multi-tenda + extra bed)');
+    });
+  }
+
+  console.log('✔ Seeded 2 sample bookings (WhatsApp multi-tenda + Walk-in)');
 }
 
 async function main() {
@@ -309,7 +537,7 @@ async function main() {
     where: { email: 'superadmin@dglorious.com' },
   });
   await seedRoomTypes(superAdmin.id);
-  await seedSampleBooking(superAdmin.id);
+  await seedSampleBookings(superAdmin.id);
 
   console.log('\n🌱 Seed selesai.');
   console.log(`   Login dummy — password semua akun: "${DEFAULT_PASSWORD}"`);

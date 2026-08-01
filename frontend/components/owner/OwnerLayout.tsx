@@ -2,11 +2,15 @@
 
 import { Mountain } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
-import { cn } from '@/lib/cn';
-import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { roleLabelKey } from '@/lib/auth/roleLabel';
+import { useRequireRole } from '@/lib/auth/useRequireRole';
+import { cn } from '@/lib/cn';
+import { initials } from '@/lib/format';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 type NavItem = {
   href: string;
@@ -25,11 +29,19 @@ export function Panel({ className, children }: { className?: string; children: R
   );
 }
 
-/** Shell dashboard Owner: sidebar + header, dipakai tiap halaman `/owner/*` (route asli, bukan tab-switch di satu komponen). */
+/**
+ * Shell dashboard Owner: sidebar + header, dipakai tiap halaman `/owner/*`
+ * (route asli, bukan tab-switch di satu komponen). Eksklusif OWNER +
+ * SUPER_ADMIN (§5 PROJECT.md) — ADMIN_PENGINAPAN dipentalkan balik ke
+ * dashboardnya sendiri.
+ */
 export function OwnerLayout({ title, children }: { title: string; children: React.ReactNode }) {
   const { t } = useTranslation();
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { logout } = useAuth();
+  const { user, isAllowed } = useRequireRole(['SUPER_ADMIN', 'OWNER']);
 
   const navItems: NavItem[] = [
     { href: '/owner', icon: '▦', label: t('owner.navRingkasan'), exact: true },
@@ -37,6 +49,18 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
     { href: '/owner/tiket', icon: '🎫', label: t('owner.navTiket'), soon: true },
     { href: '/owner/cafe', icon: '☕', label: t('owner.navCafe'), soon: true },
   ];
+
+  function handleLogout() {
+    logout();
+    router.push('/login');
+  }
+
+  if (!user || !isAllowed) {
+    return <div className="min-h-screen bg-[#f4f1ea]" />;
+  }
+
+  const displayName = user.name;
+  const roleLabel = t(roleLabelKey(user.role));
 
   return (
     <div className="flex min-h-screen bg-[#f4f1ea]">
@@ -84,13 +108,14 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
             );
           })}
         </nav>
-        <Link
-          href="/login"
-          className="m-3 flex items-center gap-3 rounded-[10px] px-3.5 py-3 text-sm font-medium text-[#b8ab9c] hover:bg-[#D4A04A]/10"
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="m-3 flex items-center gap-3 rounded-[10px] px-3.5 py-3 text-left text-sm font-medium text-[#b8ab9c] hover:bg-[#D4A04A]/10"
         >
           <span className="w-4.5 text-center">⏻</span>
           {t('admin.logout')}
-        </Link>
+        </button>
       </aside>
 
       {/* Main */}
@@ -113,12 +138,12 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
             <LanguageSwitcher />
             <div className="hidden items-center gap-2.5 md:flex">
               <div className="flex h-9.5 w-9.5 items-center justify-center rounded-full bg-[#1a1410] text-sm font-bold text-[#D4A04A]">
-                {t('owner.role').slice(0, 2).toUpperCase()}
+                {initials(displayName)}
               </div>
               <div>
-                <div className="text-[13.5px] leading-tight font-semibold">{t('owner.genericName')}</div>
+                <div className="text-[13.5px] leading-tight font-semibold">{displayName}</div>
                 <div className="mt-0.5 inline-block rounded-full bg-[#f6ecd8] px-2 py-0.5 text-[11px] text-[#9a7420]">
-                  {t('owner.role')}
+                  {roleLabel}
                 </div>
               </div>
             </div>
@@ -130,7 +155,7 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
                 onClick={() => setMenuOpen((v) => !v)}
                 className="flex h-9.5 w-9.5 items-center justify-center rounded-full bg-[#1a1410] text-sm font-bold text-[#D4A04A]"
               >
-                {t('owner.role').slice(0, 2).toUpperCase()}
+                {initials(displayName)}
               </button>
               {menuOpen && (
                 <>
@@ -142,18 +167,19 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
                   />
                   <div className="absolute top-12 right-0 z-40 w-44 rounded-xl border border-[#ece6d8] bg-white p-2 shadow-lg">
                     <div className="px-2.5 py-2">
-                      <div className="text-[13px] leading-tight font-semibold">{t('owner.genericName')}</div>
+                      <div className="text-[13px] leading-tight font-semibold">{displayName}</div>
                       <div className="mt-1 inline-block rounded-full bg-[#f6ecd8] px-2 py-0.5 text-[11px] text-[#9a7420]">
-                        {t('owner.role')}
+                        {roleLabel}
                       </div>
                     </div>
-                    <Link
-                      href="/login"
-                      className="text-muted-strong mt-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] font-medium hover:bg-[#f6ecd8]/60"
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="text-muted-strong mt-1 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium hover:bg-[#f6ecd8]/60"
                     >
                       <span>⏻</span>
                       {t('admin.logout')}
-                    </Link>
+                    </button>
                   </div>
                 </>
               )}

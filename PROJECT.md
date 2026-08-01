@@ -340,3 +340,8 @@ Menegakkan S&K poin 7 & 8:
 - Setiap endpoint terproteksi wajib: `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(...)`.
 - DTO + `class-validator` untuk semua input di NestJS.
 - Commit message: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`.
+- **Struktur folder `backend/src/` — per UNIT BISNIS, bukan per role (keputusan 2026-08-01).** Modul dikelompokkan berdasarkan area dashboard admin (cocok dengan RBAC §5 & route frontend `/admin/*`), bukan folder per role:
+  - `penginapan/` — semua modul milik dashboard Penginapan (`room-types/`, nanti `bookings/`, dll). Endpoint publik (katalog tanpa login) **tetap di dalam** folder ini sebagai controller terpisah tanpa guard (mis. `room-types-public.controller.ts`) — datanya tetap milik domain Penginapan, cuma beda syarat akses.
+  - `portal/`, `cafe/` — *(fase berikutnya)* pola yang sama untuk `ADMIN_PORTAL`/`ADMIN_CAFFE`.
+  - Lintas-unit-bisnis dapat folder sendiri di root `src/`, bukan masuk ke salah satu unit: `auth/`, `settings/` (dipakai semua unit), dan nanti `owner/` khusus endpoint agregat (mis. total pendapatan gabungan 3 unit bisnis) yang tidak dimiliki satu unit saja.
+  - **Alasan bukan folder-per-role:** satu resource (mis. `room-types`) di-CRUD banyak role sekaligus (`SUPER_ADMIN`, `OWNER`, `ADMIN_PENGINAPAN` — lihat tabel §5). Folder per role akan memaksa duplikasi service atau balik lagi butuh satu sumber logic bersama. Role tetap ditegakkan lewat `@Roles(...)` di tiap controller (§4.2) — bukan lewat lokasi file.

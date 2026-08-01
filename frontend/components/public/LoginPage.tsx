@@ -2,13 +2,41 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ImagePlaceholder, Input } from '@/components/ui';
+import { ApiError } from '@/lib/api/client';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { roleHomePath } from '@/lib/auth/roleHome';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
-// TODO(FASE 2): ganti dengan POST /auth/login (JWT). Ini simulasi UI.
 export function LoginPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setPending(true);
+    try {
+      const user = await login(email, password);
+      router.push(roleHomePath(user.role));
+    } catch (err) {
+      // 401 = wrong email/password (backend gives the same message for both,
+      // see backend/src/auth/auth.service.ts). Anything else is unexpected.
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? t('login.errorInvalid')
+          : t('login.errorGeneric'),
+      );
+      setPending(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -36,26 +64,40 @@ export function LoginPage() {
         <div className="mt-10 font-serif text-3xl font-bold">{t('login.title')}</div>
         <div className="text-muted mt-1.5 text-sm">{t('login.subtitle')}</div>
 
-        <div className="mt-7 flex flex-col gap-4.5">
-          <Input label={t('login.email')} name="email" type="email" defaultValue="admin@dglorious.id" />
-          <Input label={t('login.password')} name="password" type="password" defaultValue="123456" />
-        </div>
+        <form onSubmit={handleSubmit} className="mt-7 flex flex-col gap-4.5">
+          <Input
+            label={t('login.email')}
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Input
+            label={t('login.password')}
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-        <div className="text-muted mt-4 text-[13px]">{t('login.asRole')}</div>
-        <div className="mt-2 flex gap-2.5">
+          {error && (
+            <p role="alert" className="text-sm font-medium text-red-600">
+              {error}
+            </p>
+          )}
+
           <button
-            onClick={() => router.push('/admin/penginapan')}
-            className="bg-forest-700 hover:bg-forest-800 flex-1 rounded-xl py-3.5 text-sm font-semibold text-white transition-colors"
+            type="submit"
+            disabled={pending}
+            className="bg-forest-700 hover:bg-forest-800 mt-1 rounded-xl py-3.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {t('login.adminBtn')}
+            {pending ? t('login.submitting') : t('login.submit')}
           </button>
-          <button
-            onClick={() => router.push('/owner')}
-            className="border-terracotta-500 text-terracotta-500 hover:bg-terracotta-50 flex-1 rounded-xl border bg-white py-3.5 text-sm font-semibold transition-colors"
-          >
-            {t('login.ownerBtn')}
-          </button>
-        </div>
+        </form>
 
         <Link href="/" className="text-muted mt-6 text-[13px] hover:text-forest-700">
           {t('login.backHome')}
