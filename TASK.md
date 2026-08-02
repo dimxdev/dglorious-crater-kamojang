@@ -146,15 +146,18 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - **Keputusan desain (facilities JSON):** `RoomType.facilities` disimpan sebagai `{icon: string, label: {id: string, en?: string}}[]` — label per-bahasa inline di tiap item, BUKAN kunci saja + lookup terpisah — karena itu yang sudah dibangun form CMS (`FacilityListEditor.tsx`) dan mock (`rooms.ts`). Kolom `RoomTypeTranslation.facilitiesText` (satu blob teks per bahasa) jadi otomatis tidak terpakai jalur ini — dibiarkan ada di skema (tidak dihapus, belum tentu tidak kepake nanti), bukan migrasi baru
 - Diverifikasi end-to-end via curl (bukan cuma baca kode): create/update/soft-delete, slug conflict → 409, validasi wajib → 400, upload gambar asli + tolak non-gambar → 400, set-cover & delete-image (reassign cover otomatis), unit duplikat → 409, availability dihitung benar terhadap booking seed (`DGC-SEED01`), semua endpoint admin 401 tanpa token, katalog publik menyembunyikan unit yang di-soft-delete
 
-### Frontend — Admin (`/admin/penginapan/kelola`)
-- [ ] Tabel + tombol tambah
-- [ ] Form tambah/edit dengan **tab bahasa ID / EN** *(中文 = fase berikutnya, tab disiapkan)*
-  - Multi-bahasa: nama, deskripsi, fasilitas, aturan
-  - Universal: **harga weekday, harga weekend**, kapasitas, jumlah unit, status aktif
+### Frontend — Admin (`/admin/penginapan/kelola`) ✅ (2026-08-02)
+- [x] Tabel + tombol tambah — sekarang fetch dari `GET /admin/room-types`, bukan mock `cmsRooms` lagi
+- [x] Form tambah/edit dengan **tab bahasa ID / EN** — 中文 tab **dihapus dari form ini** (bukan cuma disembunyikan): backend (`RoomTypeTranslationsDto`) memang cuma punya `id`/`en`, jadi tab 中文 di mockup lama cuma bakal jadi input yang datanya kebuang diam-diam kalau disimpan — dipotong daripada dibiarkan nipu
+  - Multi-bahasa: nama, **kategori** (dipindah dari "Universal" ke sini — di backend `category` itu teks per-bahasa di `RoomTypeTranslation`, bukan dropdown tetap 4 pilihan seperti mockup lama), tagline, deskripsi, info kasur, info kamar mandi, fasilitas (`FacilityListEditor` dipakai apa adanya, cuma dikonversi `{ID,EN}` ↔ `{id,en}` di lapisan API), aturan
+  - Universal: slug (cuma muncul & bisa diisi pas mode Tambah; pas Edit ditampilkan disabled — dikunci backend juga), harga weekday/weekend, kapasitas, jumlah unit, **3 tarif tambah orang** (dgn/tanpa ekstra bed + flat), status aktif
+  - **Field "Jam Check-in/Check-out" dihapus dari form** (ada di mockup lama) — bukan bagian `room_types` di skema final (§4.6/FASE4: itu setting GLOBAL, belum ada endpoint-nya sampai FASE 4 selesai), jadi jangan dibikin UI yang gak kesambung kemana-mana
   - Catatan: "Tab ID wajib. Jika EN kosong, tampil versi Indonesia."
-- [ ] Upload galeri (grid thumbnail + tandai cover)
+- [x] Upload galeri (grid thumbnail + tandai cover) — upload asli ke `POST /admin/room-types/:id/images` (multipart), cover badge, tombol ★ jadikan cover & × hapus per gambar. **Constraint yang diikuti dari backend:** upload perlu `roomTypeId` yang sudah ada → pas mode Tambah, galeri disembunyikan diganti pesan "simpan dulu"; begitu Simpan sukses, drawer **otomatis pindah ke mode Edit** buat ID yang baru dibuat, tanpa admin perlu tutup-buka lagi
+- 🐛 **Bug ketemu & dibenerin saat uji manual (browser sungguhan, bukan cuma baca kode):** upload gambar / ganti cover / hapus gambar cuma update state drawer lokal, gak nge-refresh tabel di baliknya — thumbnail di tabel utama keliatan basi (placeholder 🏕️ padahal gambar udah kesimpan di server) sampai halaman di-reload manual. Diperbaiki: ketiga handler (`handleUploadImage` kalau gambar pertama jadi cover, `handleSetCover`, `handleDeleteImage` kalau yang kehapus adalah cover) sekarang ikut manggil `refreshList()`.
+- Diverifikasi end-to-end di browser sungguhan (login → drawer → simpan → cek balik lewat API): list nampilin 6 unit asli, Edit prefill semua field (termasuk tab EN yang teksnya beda dari ID) sesuai data di database, PATCH nyimpen & persist, Create dgn slug+translations+facilities lengkap → sukses → slug otomatis terkunci, upload gambar asli → 201 tersimpan, hapus (modal konfirmasi `Modal` bukan `window.confirm` biar konsisten visual) → soft-delete, hilang dari tabel
 
-> CMS harus bisa dibangun & diuji dengan **data dummy** — nama/harga asli belum didapat.
+> CMS harus bisa dibangun & diuji dengan **data dummy** — nama/harga asli belum didapat. *(Update: data asli sudah ada sejak FASE 1 revisi, CMS langsung diuji pakai 6 unit real.)*
 
 ---
 
