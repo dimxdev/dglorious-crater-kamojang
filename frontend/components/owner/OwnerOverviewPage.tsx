@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { StatusBadge } from '@/components/admin/StatusBadge';
+import { StatusBadge } from '@/components/admin/penginapan/StatusBadge';
 import { cn } from '@/lib/cn';
 import { effectiveStatus, roomsSummary, statusLabelId } from '@/lib/data/admin';
 import {

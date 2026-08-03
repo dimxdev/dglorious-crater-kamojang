@@ -3,29 +3,85 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { BedDouble, Info, MessageCircle, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  fetchPublicRoomTypeBySlug,
+  resolveImageUrl,
+  type PublicRoomTypeDetail,
+} from '@/lib/api/roomTypes';
+import { ApiError } from '@/lib/api/client';
+import { fetchPublicSettings } from '@/lib/api/settings';
 import { getImage } from '@/lib/data/images';
-import { localizeRoom, type RoomSource } from '@/lib/data/rooms';
-import { getSettings } from '@/lib/data/settings';
 import { formatIDR } from '@/lib/format';
-import { getIcon } from '@/lib/icons';
+import { getIcon, type IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 // Fase 1: belum ada booking online, jadi CTA mengarah ke WhatsApp reservasi
-// (bukan form booking). Nomor diambil dari tabel `settings` (§8.3), sama
-// dengan yang dipakai FloatingWhatsApp.
+// (bukan form booking). Nomor & jam check-in/out diambil dari `GET /settings`
+// (§8.3 PROJECT.md) — bukan bagian dari room-types, itu config global.
 
-export function DetailPage({ room: source }: { room: RoomSource }) {
+export function DetailPage({ slug }: { slug: string }) {
   const { t, locale } = useTranslation();
-  const room = localizeRoom(source, locale);
-  const { waNumber } = getSettings(locale);
-  const cover = getImage(room.photo);
+  const [room, setRoom] = useState<PublicRoomTypeDetail | null>(null);
+  const [settings, setSettings] = useState<Record<string, string> | null>(null);
+  const [notFoundState, setNotFoundState] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRoom(null);
+    setNotFoundState(false);
+    setError(null);
+
+    Promise.all([fetchPublicRoomTypeBySlug(slug, locale), fetchPublicSettings()])
+      .then(([roomData, settingsData]) => {
+        setRoom(roomData);
+        setSettings(settingsData);
+      })
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 404) {
+          setNotFoundState(true);
+        } else {
+          setError(e instanceof Error ? e.message : t('common.loadError'));
+        }
+      });
+  }, [slug, locale, t]);
+
+  if (notFoundState) {
+    return (
+      <div className="container-page py-24 text-center">
+        <p className="text-muted-strong">{t('detail.notFound')}</p>
+        <Link href="/penginapan" className="text-accent mt-3 inline-block font-semibold">
+          {t('nav.lodging')}
+        </Link>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container-page py-24 text-center">
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (!room || !settings) {
+    return (
+      <div className="container-page py-24 text-center">
+        <p className="text-muted text-sm">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  const cover = room.images.find((i) => i.isCover) ?? room.images[0];
   // Dua tenda berbagi foto sampul sementara (belum ada foto asli per unit),
   // jadi thumbnail ambience dipinjam dari foto umum lokasi/atraksi — bukan
-  // dari tenda lain, supaya tidak terkesan menampilkan unit yang salah.
+  // dari tenda lain, supaya tidak terkesan menampilkan unit yang salah. Ini
+  // asset statis situs, bukan data tenda — gak ikut migrasi ke API.
   const ambience1 = getImage('attractionAirPanas');
   const ambience2 = getImage('locationValley');
 
-  const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(
+  const waHref = `https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(
     `Halo D'Glorious Crater, saya ingin tanya ketersediaan & booking untuk ${room.name}.`,
   )}`;
 
@@ -40,15 +96,20 @@ export function DetailPage({ room: source }: { room: RoomSource }) {
       {/* Gallery */}
       <div className="mt-4 grid h-110 grid-cols-1 gap-3.5 md:grid-cols-[2fr_1fr]">
         <div className="relative overflow-hidden rounded-xl">
-          <Image
-            src={cover.src}
-            alt={cover.alt}
-            fill
-            sizes="(min-width: 768px) 60vw, 100vw"
-            priority
-            className="object-cover"
-            style={{ objectPosition: cover.objectPosition }}
-          />
+          {cover ? (
+            <Image
+              src={resolveImageUrl(cover.url)}
+              alt={room.name}
+              fill
+              sizes="(min-width: 768px) 60vw, 100vw"
+              priority
+              className="object-cover"
+            />
+          ) : (
+            <div className="from-basalt-700 to-basalt-900 flex h-full w-full items-center justify-center bg-linear-to-br text-4xl">
+              🏕️
+            </div>
+          )}
         </div>
         <div className="hidden grid-rows-2 gap-3.5 md:grid">
           <div className="relative overflow-hidden rounded-xl">
@@ -85,11 +146,14 @@ export function DetailPage({ room: source }: { room: RoomSource }) {
           </h1>
           <div className="text-muted mt-2 text-[15px]">
             👥 {t('detail.capacity')}{' '}
-            {t('common.guestsCount', { count: room.capacity })} · {room.bedInfo}
+            {t('common.guestsCount', { count: room.capacity })}
+            {room.bedInfo ? ` · ${room.bedInfo}` : ''}
           </div>
-          <p className="text-muted-strong mt-6 text-base leading-8">
-            {room.description}
-          </p>
+          {room.description && (
+            <p className="text-muted-strong mt-6 text-base leading-8">
+              {room.description}
+            </p>
+          )}
 
           {/* Kapasitas & Extra Bed */}
           <h2 className="mt-9 font-serif text-2xl font-bold">
@@ -126,7 +190,7 @@ export function DetailPage({ room: source }: { room: RoomSource }) {
               <div className="text-muted-strong mb-2 text-sm font-medium">
                 {t('detail.extraGuestTitle')}
               </div>
-              {room.extraFlatPrice !== undefined ? (
+              {room.extraFlatPrice != null ? (
                 <div className="border-border flex items-center justify-between rounded-xl border border-dashed bg-[#faf8f4] px-4 py-3">
                   <span className="text-muted-strong text-sm">
                     {t('detail.extraFlatLabel')}
@@ -180,10 +244,12 @@ export function DetailPage({ room: source }: { room: RoomSource }) {
           <h2 className="mt-9 font-serif text-2xl font-bold">
             {t('detail.facilities')}
           </h2>
-          <div className="text-muted mt-1 text-[13px]">{room.bathroomInfo}</div>
+          {room.bathroomInfo && (
+            <div className="text-muted mt-1 text-[13px]">{room.bathroomInfo}</div>
+          )}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {room.facilities.map((f) => {
-              const Icon = getIcon(f.icon);
+              const Icon = getIcon(f.icon as IconName);
               return (
                 <div
                   key={f.label}
@@ -207,27 +273,29 @@ export function DetailPage({ room: source }: { room: RoomSource }) {
             </Link>
           </p>
 
-          {/* Jam */}
+          {/* Jam — global settings, bukan per-unit (§4.6 PROJECT.md) */}
           <div className="mt-9 flex flex-wrap gap-10">
             <div>
               <div className="text-muted text-xs">{t('detail.checkIn')}</div>
-              <div className="mt-0.5 font-semibold">{room.checkInTime}</div>
+              <div className="mt-0.5 font-semibold">{settings.check_in_time}</div>
             </div>
             <div>
               <div className="text-muted text-xs">{t('detail.checkOut')}</div>
-              <div className="mt-0.5 font-semibold">{room.checkOutTime}</div>
+              <div className="mt-0.5 font-semibold">{settings.check_out_time}</div>
             </div>
           </div>
 
-          {/* Aturan */}
-          <h2 className="mt-9 font-serif text-2xl font-bold">
-            {t('detail.rules')}
-          </h2>
-          <ul className="text-muted-strong mt-3.5 list-disc pl-5 text-[14.5px] leading-8">
-            {room.rules.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
+          {/* Aturan — satu paragraf (RoomTypeTranslation.rules cuma satu string, bukan array) */}
+          {room.rules && (
+            <>
+              <h2 className="mt-9 font-serif text-2xl font-bold">
+                {t('detail.rules')}
+              </h2>
+              <p className="text-muted-strong mt-3.5 text-[14.5px] leading-8">
+                {room.rules}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Kartu harga + kontak WhatsApp */}

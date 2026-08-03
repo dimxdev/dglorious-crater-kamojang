@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { WalkinBookingPage } from '@/components/admin/WalkinBookingPage';
+import { WalkinBookingPage } from '@/components/admin/penginapan/WalkinBookingPage';
 
 export const metadata: Metadata = { title: 'Tamu Langsung' };
 

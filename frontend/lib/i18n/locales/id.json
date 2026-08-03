@@ -3,6 +3,7 @@
     "brand": "D'Glorious Crater Kamojang",
     "brandShort": "D'Glorious Crater",
     "loading": "Memuat...",
+    "loadError": "Gagal memuat data. Coba lagi.",
     "comingSoon": "Segera Hadir",
     "waHelp": "Butuh bantuan? Chat kami",
     "perNight": "/malam",
@@ -81,6 +82,7 @@
     "viewDetail": "Lihat Detail"
   },
   "detail": {
+    "notFound": "Tenda/villa yang kamu cari tidak ditemukan.",
     "capacity": "Kapasitas",
     "hotBath": "Kamar mandi air panas alami",
     "capacityTitle": "Kapasitas & Extra Bed",

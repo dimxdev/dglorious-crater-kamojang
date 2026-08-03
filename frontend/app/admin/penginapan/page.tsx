@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { OverviewPage } from '@/components/admin/OverviewPage';
+import { OverviewPage } from '@/components/admin/penginapan/OverviewPage';
 
 export const metadata: Metadata = { title: 'Ringkasan Penginapan' };
 

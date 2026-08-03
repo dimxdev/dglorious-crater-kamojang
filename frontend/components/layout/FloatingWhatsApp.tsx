@@ -1,15 +1,25 @@
 'use client';
 
 import { MessageCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { fetchPublicSettings } from '@/lib/api/settings';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
-import { getSettings } from '@/lib/data/settings';
 
 // Fase 1 pakai link wa.me manual (WhatsApp API otomatis = fase lanjutan).
-// Nomor WA diambil dari tabel `settings` (§8.3) lewat /admin/settings, bukan hardcode.
+// Nomor WA diambil dari tabel `settings` (§8.3) lewat GET /settings, bukan hardcode.
 
 export function FloatingWhatsApp() {
-  const { t, locale } = useTranslation();
-  const { waNumber } = getSettings(locale);
+  const { t } = useTranslation();
+  const [waNumber, setWaNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPublicSettings()
+      .then((settings) => setWaNumber(settings.whatsapp_number))
+      .catch(() => setWaNumber(null));
+  }, []);
+
+  if (!waNumber) return null;
+
   const href = `https://wa.me/${waNumber}?text=${encodeURIComponent(
     "Halo D'Glorious Crater, saya ingin bertanya tentang penginapan.",
   )}`;

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { KelolaPage } from '@/components/admin/KelolaPage';
+import { KelolaPage } from '@/components/admin/penginapan/KelolaPage';
 
 export const metadata: Metadata = { title: 'Kelola Penginapan' };
 

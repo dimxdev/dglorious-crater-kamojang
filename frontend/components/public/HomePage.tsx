@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { createElement } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
+import { fetchPublicRoomTypes, type PublicRoomTypeSummary } from '@/lib/api/roomTypes';
 import { getFeaturedAttractions, getInfoPraktis } from '@/lib/data/content';
 import { getImage } from '@/lib/data/images';
-import { localizeRooms } from '@/lib/data/rooms';
 import { getIcon, type IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useReveal } from '@/lib/useReveal';
@@ -17,7 +17,13 @@ export function HomePage() {
 
   const attractions = getFeaturedAttractions(locale);
   const infoPraktis = getInfoPraktis(locale);
-  const rooms = localizeRooms(locale);
+
+  const [rooms, setRooms] = useState<PublicRoomTypeSummary[]>([]);
+  useEffect(() => {
+    fetchPublicRoomTypes(locale)
+      .then(setRooms)
+      .catch(() => setRooms([]));
+  }, [locale]);
 
   // Daya tarik pertama (kawah) jadi kartu besar — dia memang daya tarik utama
   // sekaligus asal nama tempatnya, jadi bobot visualnya punya alasan.

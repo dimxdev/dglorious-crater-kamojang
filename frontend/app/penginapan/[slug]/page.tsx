@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { DetailPage } from '@/components/public/DetailPage';
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { getRoomSource, roomSources } from '@/lib/data/rooms';
+import { fetchPublicRoomTypeBySlug } from '@/lib/api/roomTypes';
 
-export function generateStaticParams() {
-  return roomSources.map((r) => ({ slug: r.slug }));
-}
+// Katalog sekarang dinamis dari API (FASE 6), gak bisa dienumerasi saat build
+// lagi seperti mock — jadi `generateStaticParams` sengaja dihapus, halaman
+// ini render on-demand per slug.
 
 export async function generateMetadata({
   params,
@@ -14,10 +13,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const room = getRoomSource(slug);
-  // Judul tab pakai nama Indonesia (metadata dirender di server, sebelum locale
-  // klien diketahui); konten halaman menyesuaikan bahasa di klien.
-  return { title: room?.name.id ?? 'Penginapan' };
+  // Judul tab selalu versi ID (metadata dirender di server, sebelum locale
+  // klien diketahui) — konten halaman menyesuaikan bahasa di klien.
+  try {
+    const room = await fetchPublicRoomTypeBySlug(slug, 'id');
+    return { title: room.name };
+  } catch {
+    return { title: 'Penginapan' };
+  }
 }
 
 export default async function RoomDetail({
@@ -26,12 +29,10 @@ export default async function RoomDetail({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const room = getRoomSource(slug);
-  if (!room) notFound();
 
   return (
     <PublicLayout>
-      <DetailPage room={room} />
+      <DetailPage slug={slug} />
     </PublicLayout>
   );
 }

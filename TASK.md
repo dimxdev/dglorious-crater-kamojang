@@ -161,15 +161,25 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ---
 
-## FASE 6 — Company Profile / Katalog Publik
+## FASE 6 — Company Profile / Katalog Publik ✅ (2026-08-02)
 
-- [ ] `/` (homepage) — sambungkan ke data tenda dari API
-- [ ] `/tentang`
-- [ ] `/penginapan` (katalog/brosur) — label **"Tenda"/"Villa"**
-- [ ] `/penginapan/[slug]` (detail): galeri, kapasitas, fasilitas, aturan, **harga weekday/weekend**, jam check-in/out (dari settings)
-- [ ] **CTA "Hubungi Reservasi via WhatsApp"** (link `wa.me` dari settings + pesan template) — **bukan** booking online
-- [ ] `/syarat-ketentuan` — tampilkan 12 poin S&K dari settings
-- [ ] Pastikan **tidak ada** form checkout / cek-booking / login tamu di sisi publik
+> **Temuan awal (audit sebelum eksekusi):** beberapa item di sini ternyata butuh modul Settings backend yang belum ada sama sekali (FASE 4 ditunda). Solusinya: bangun versi **minimal read-only publik** (`GET /settings`, `backend/src/settings/` — lintas-unit-bisnis, sejajar `auth/`) sekarang, BUKAN full FASE 4 (form admin CRUD `/admin/settings` tetap ditunda). Detail keputusan & audit lengkap ada di riwayat percakapan sesi ini (Plan Mode, 2026-08-02).
+
+- [x] `/` (homepage) — sambungkan ke data tenda dari API (`GET /room-types`), ganti `localizeRooms(locale)` mock jadi `useEffect` + `fetchPublicRoomTypes(locale)`
+- [x] `/tentang` — **sengaja TIDAK disentuh**: audit konfirmasi `AboutPage.tsx`/`lib/data/content.ts` 100% self-contained (atraksi, tiket masuk, parkir, fasilitas — konten informasi statis, gak dimodelkan di Prisma sama sekali), gak ada yang bisa/perlu disambungkan ke backend saat ini
+- [x] `/penginapan` (katalog/brosur) — label **"Tenda"/"Villa"** sudah lewat `category` per-bahasa dari API, bukan dropdown tetap
+- [x] `/penginapan/[slug]` (detail): galeri (upload asli dari CMS FASE 5), kapasitas, fasilitas, aturan (**direvisi**: satu paragraf, bukan list — `RoomTypeTranslation.rules` di skema memang cuma satu string, bukan array), **harga weekday/weekend**, jam check-in/out (dari `GET /settings`, bukan per-room lagi — sesuai skema, checkIn/Out memang bukan bagian `room_types`)
+  - `generateStaticParams` **dihapus** dari `app/penginapan/[slug]/page.tsx` — katalog sekarang dinamis dari API, gak bisa dienumerasi saat build lagi; halaman jadi render-on-demand (`ƒ Dynamic` bukan `● SSG` di output build)
+  - Halaman detail sekarang fetch client-side per `[slug, locale]` (bukan lagi data dari server component) — 404 slug ditangani inline (state "tidak ditemukan" + link balik), bukan `notFound()` Next (itu API server-only)
+- [x] **CTA "Hubungi Reservasi via WhatsApp"** (link `wa.me` dari settings + pesan template) — nomor WA sekarang dari `GET /settings` (`whatsapp_number`), bukan mock. Template pesan yang sudah ada sebelumnya (generik di `FloatingWhatsApp`, per-unit di `DetailPage`) tidak berubah
+- [x] `/syarat-ketentuan` — tampilkan 12 poin S&K dari settings. **Temuan:** `Setting.value` cuma satu string per key (bukan per-bahasa), sedangkan teks S&K butuh ID+EN → disimpan sebagai **2 key terpisah** `terms_conditions_id`/`terms_conditions_en` (pragmatis untuk key-value flat, beda kasus dari `room_type_translations` yang memang tabel relasional). 🐛 **Bug data ketemu sekalian:** seeder lama punya draft S&K generik yang **kontradiktif** ("tidak ada sistem DP" — padahal model bisnis fase 1 pakai DP 50%) — diganti dengan 12 poin resmi klien yang sudah lebih dulu ada di `frontend/lib/data/settings.ts` (dikonfirmasi 2026-07-26), bukan menerjemahkan draft lama
+- [x] Pastikan **tidak ada** form checkout / cek-booking / login tamu di sisi publik — diverifikasi lewat grep, sudah bersih sejak dihapus 2026-07-26
+- **Keputusan UX (dikonfirmasi user):** ganti bahasa ID/EN di halaman yang datanya dari API sekarang **refetch ke backend** (bukan instan seperti mock yang nyimpan 2 bahasa sekaligus) — cuma bagian konten tenda & S&K yang kena, navbar/footer/label UI tetap instan (dari dictionary `id.json`/`en.json` lokal, gak berubah)
+- `next.config.ts` — ditambah `images.remotePatterns` (localhost:3001/uploads + picsum.photos) — wajib, tanpa ini `next/image` error total begitu ada `src` ke host eksternal
+- `RoomCard.tsx` — diadaptasi terima `coverImageUrl: string | null` langsung (bukan `HomeImageKey` + `getImage()` lookup), fallback `ImagePlaceholder`
+- `lib/data/settings.ts` (mock) — **dihapus** setelah dikonfirmasi zero-import (3 pemakainya sudah pindah ke API)
+- `lib/data/rooms.ts` — **sengaja TIDAK dihapus**, masih dipakai 3 komponen admin booking form (`WalkinBookingPage`, `BookingWhatsappPage`, `BookingsPage`) buat dropdown pilih tenda — itu scope FASE 7 yang belum dikerjakan
+- Diverifikasi end-to-end di browser sungguhan: home/katalog/detail render data asli + gambar (lewat `remotePatterns`), ganti bahasa ID↔EN memicu refetch & konten berubah (termasuk S&K), slug tidak ada → state "tidak ditemukan" tanpa crash, CTA WhatsApp pakai nomor asli
 
 ---
 

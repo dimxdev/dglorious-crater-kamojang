@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  images: {
+    remotePatterns: [
+      // Room gallery uploads served by the NestJS backend (FASE 5).
+      { protocol: 'http', hostname: 'localhost', port: '3001', pathname: '/uploads/**' },
+      // Seed data still uses placeholder photos until real unit photos arrive (§11 PROJECT.md).
+      { protocol: 'https', hostname: 'picsum.photos' },
+    ],
+  },
 };
 
 export default nextConfig;

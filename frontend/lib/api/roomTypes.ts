@@ -1,3 +1,4 @@
+import type { Locale } from '@/lib/i18n/config';
 import { apiFetch } from './client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -136,4 +137,51 @@ export function deleteRoomImage(token: string, imageId: number) {
 /** Prefix a backend-relative image URL (e.g. `/uploads/...`) with the API origin. */
 export function resolveImageUrl(url: string): string {
   return url.startsWith('http') ? url : `${API_URL}${url}`;
+}
+
+// ── Public: katalog (§8 PROJECT.md — no auth, guests never log in) ──
+// Backend already picks the language server-side (fallback ID if EN empty),
+// so switching locale means refetching — see FASE 6 plan for the tradeoff.
+
+export type PublicFacility = { icon: string; label: string };
+
+export type PublicRoomTypeSummary = {
+  slug: string;
+  name: string;
+  category: string;
+  tagline: string | null;
+  priceWeekday: number;
+  priceWeekend: number;
+  capacity: number;
+  coverImageUrl: string | null;
+  facilities: PublicFacility[];
+};
+export type PublicRoomImage = { url: string; isCover: boolean };
+
+export type PublicRoomTypeDetail = {
+  slug: string;
+  name: string;
+  category: string;
+  tagline: string | null;
+  description: string | null;
+  bedInfo: string | null;
+  bathroomInfo: string | null;
+  rules: string | null;
+  priceWeekday: number;
+  priceWeekend: number;
+  capacity: number;
+  totalUnits: number;
+  extraBedPrice: number | null;
+  extraNoBedPrice: number | null;
+  extraFlatPrice: number | null;
+  facilities: PublicFacility[];
+  images: PublicRoomImage[];
+};
+
+export function fetchPublicRoomTypes(locale: Locale) {
+  return apiFetch<PublicRoomTypeSummary[]>(`/room-types?lang=${locale.toUpperCase()}`);
+}
+
+export function fetchPublicRoomTypeBySlug(slug: string, locale: Locale) {
+  return apiFetch<PublicRoomTypeDetail>(`/room-types/${slug}?lang=${locale.toUpperCase()}`);
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BookingsPage } from '@/components/admin/BookingsPage';
+import { BookingsPage } from '@/components/admin/penginapan/BookingsPage';
 
 export const metadata: Metadata = { title: 'Data Booking' };
 

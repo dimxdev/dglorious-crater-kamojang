@@ -1,14 +1,14 @@
 import { Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui';
-import { getImage } from '@/lib/data/images';
-import type { RoomType } from '@/lib/data/rooms';
+import { Button, ImagePlaceholder } from '@/components/ui';
+import type { PublicRoomTypeSummary } from '@/lib/api/roomTypes';
+import { resolveImageUrl } from '@/lib/api/roomTypes';
 import { formatIDR } from '@/lib/format';
-import { getIcon } from '@/lib/icons';
+import { getIcon, type IconName } from '@/lib/icons';
 
 type RoomCardProps = {
-  room: RoomType;
+  room: PublicRoomTypeSummary;
   /** 'home' = badge kapasitas + "mulai dari"; 'listing' = badge Tersedia + tag fasilitas */
   variant?: 'home' | 'listing';
   t: (key: string, params?: Record<string, string | number>) => string;
@@ -16,19 +16,21 @@ type RoomCardProps = {
 
 export function RoomCard({ room, variant = 'home', t }: RoomCardProps) {
   const capLabel = t('common.guestsCount', { count: room.capacity });
-  const photo = getImage(room.photo);
 
   return (
     <div className="group border-border overflow-hidden rounded-[22px] border bg-white shadow-[0_14px_34px_-26px_rgba(23,20,15,0.45)] transition-shadow duration-500 hover:shadow-[0_22px_44px_-26px_rgba(23,20,15,0.5)]">
       <div className="relative h-56 overflow-hidden">
-        <Image
-          src={photo.src}
-          alt={photo.alt}
-          fill
-          sizes="(min-width: 1024px) 380px, (min-width: 768px) 50vw, 100vw"
-          className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
-          style={{ objectPosition: photo.objectPosition }}
-        />
+        {room.coverImageUrl ? (
+          <Image
+            src={resolveImageUrl(room.coverImageUrl)}
+            alt={room.name}
+            fill
+            sizes="(min-width: 1024px) 380px, (min-width: 768px) 50vw, 100vw"
+            className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+          />
+        ) : (
+          <ImagePlaceholder icon="🏕️" className="absolute inset-0" />
+        )}
         {variant === 'home' ? (
           <span className="text-basalt-800 absolute top-3.5 left-3.5 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold">
             <Users size={13} strokeWidth={1.5} aria-hidden />
@@ -57,7 +59,7 @@ export function RoomCard({ room, variant = 'home', t }: RoomCardProps) {
         {variant === 'listing' && (
           <div className="mt-3.5 flex flex-wrap gap-1.5">
             {room.facilities.slice(0, 3).map((f) => {
-              const Icon = getIcon(f.icon);
+              const Icon = getIcon(f.icon as IconName);
               return (
                 <span
                   key={f.label}

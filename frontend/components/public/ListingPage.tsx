@@ -1,12 +1,20 @@
 'use client';
 
-import { localizeRooms } from '@/lib/data/rooms';
+import { useEffect, useState } from 'react';
+import { fetchPublicRoomTypes, type PublicRoomTypeSummary } from '@/lib/api/roomTypes';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { RoomCard } from './RoomCard';
 
 export function ListingPage() {
   const { t, locale } = useTranslation();
-  const rooms = localizeRooms(locale);
+  const [rooms, setRooms] = useState<PublicRoomTypeSummary[] | null>(null);
+
+  useEffect(() => {
+    setRooms(null);
+    fetchPublicRoomTypes(locale)
+      .then(setRooms)
+      .catch(() => setRooms([]));
+  }, [locale]);
 
   return (
     <div className="container-page pt-14 pb-24">
@@ -16,11 +24,15 @@ export function ListingPage() {
       </h1>
 
       {/* Room grid */}
-      <div className="mt-9 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {rooms.map((room) => (
-          <RoomCard key={room.slug} room={room} variant="listing" t={t} />
-        ))}
-      </div>
+      {rooms === null ? (
+        <p className="text-muted mt-9 text-sm">{t('common.loading')}</p>
+      ) : (
+        <div className="mt-9 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {rooms.map((room) => (
+            <RoomCard key={room.slug} room={room} variant="listing" t={t} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
