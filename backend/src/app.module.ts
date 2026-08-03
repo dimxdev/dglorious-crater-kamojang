@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RoomTypesModule } from './penginapan/room-types/room-types.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { RoomTypesModule } from './penginapan/room-types/room-types.module';
     PrismaModule,
     AuthModule,
     RoomTypesModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -408,6 +408,9 @@ export class RoomTypesService {
       priceWeekend: Number(rt.priceWeekend),
       capacity: rt.capacity,
       coverImageUrl: cover?.imageUrl ?? null,
+      // Already fetched as part of the row — free to include, no extra query.
+      // Catalog cards show a few facility chips (RoomCard.tsx, listing variant).
+      facilities: this.pickFacilities(rt.facilities, lang),
     };
   }
 

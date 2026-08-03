@@ -48,28 +48,54 @@ const ROLES: {
 // Konfigurasi global (§8.3 PROJECT.md) — JANGAN hardcode di kode,
 // admin bisa ubah lewat /admin/settings nanti.
 // ─────────────────────────────────────────────────────────────
+// 12 poin S&K RESMI dari klien (form reservasi WhatsApp D'Glorious Crater
+// Kamojang, dikonfirmasi 2026-07-26) — sama persis dengan yang sudah dipakai
+// `frontend/lib/data/settings.ts`. Menggantikan draft generik lama yang malah
+// kontradiktif ("tidak ada sistem DP") dengan model bisnis fase 1 yang
+// sebenarnya (DP 50%, lihat PROJECT.md §6.1).
+//
+// `Setting.value` cuma satu string per key (bukan per-bahasa) — jadi teks
+// bilingual disimpan sebagai 2 KEY TERPISAH (`_id`/`_en`), bukan 1 kolom
+// tambahan di skema. Pragmatis: `settings` itu key-value flat, beda kasus
+// dari `room_type_translations` yang memang tabel relasional (aturan
+// "jangan name_id/name_en" di §9 PROJECT.md soal itu, bukan soal ini).
+const TERMS_ID = [
+  '1. Melakukan pembayaran Down Payment 50% paling lambat 1x24 jam setelah dealing.',
+  '2. Lebih dari 1x24 jam, booking akan rilis otomatis oleh sistem ke tamu lain.',
+  '3. FOTO bukti transfer silahkan dikirim ke nomor WhatsApp ini.',
+  '4. Hanya melakukan pembayaran ke rekening yang diberikan oleh staff Reservasi.',
+  '5. Apabila melakukan pembatalan setelah pembayaran, maka pembayaran akan hangus (tidak ada refund).',
+  '6. Konfirmasi reschedule dapat dilakukan paling lambat 7 hari sebelum tanggal check-in semula.',
+  '7. Jumlah orang lebih dari kapasitas tenda/room harus dengan tambahan ekstra bed atau charge person. Disarankan untuk ganti tipe tenda yang lebih besar atau menambah tenda.',
+  '8. Anak umur 6 tahun keatas dihitung sama dengan 1 orang dewasa. Dan anak umur dibawah 5 tahun belum terhitung dewasa.',
+  '9. Tidak diperkenankan membawa hewan peliharaan selama menginap.',
+  '10. Mohon sertakan foto KTP orang bersangkutan yang melakukan reservasi.',
+  '11. Waktu check-in jam 14.00 dan check-out jam 12.00. Tidak bisa melakukan early check-in dan late check-out karena ada tamu sebelum dan sesudahnya.',
+  '12. Pembayaran via transfer ke Rekening BSI 7262292465 a/n KOPERASI ALAM LESTARI.',
+].join('\n');
+
+const TERMS_EN = [
+  '1. Pay a 50% down payment no later than 1x24 hours after the deal is agreed.',
+  '2. After 1x24 hours, the booking is automatically released by the system to other guests.',
+  '3. Please send a photo of the transfer receipt to this WhatsApp number.',
+  '4. Only make payment to the account provided by the Reservation staff.',
+  '5. If you cancel after payment, the payment is forfeited (no refund).',
+  '6. Reschedule confirmation must be done no later than 7 days before the original check-in date.',
+  '7. Guests exceeding tent/room capacity require an extra bed or extra-person charge. We recommend switching to a larger tent type or adding another tent.',
+  '8. Children aged 6 and above are counted as 1 adult. Children under 5 are not counted as an adult.',
+  '9. Pets are not allowed during the stay.',
+  '10. Please include a photo of the ID card (KTP) of the person making the reservation.',
+  '11. Check-in time is 14:00 and check-out is 12:00. Early check-in and late check-out are not possible due to other guests before and after.',
+  '12. Payment via transfer to BSI Account 7262292465 a/n KOPERASI ALAM LESTARI.',
+].join('\n');
+
 const SETTINGS: { key: string; value: string }[] = [
   { key: 'check_in_time', value: '14:00' },
   { key: 'check_out_time', value: '12:00' },
   { key: 'whatsapp_number', value: '6282112345678' },
   { key: 'bank_account', value: 'BSI 7262292465 a/n KOPERASI ALAM LESTARI' },
-  {
-    key: 'terms_conditions',
-    value: [
-      '1. Booking dianggap sah setelah pembayaran lunas diterima.',
-      '2. Check-in pukul 14.00 WIB, check-out pukul 12.00 WIB.',
-      '3. Pembayaran dilakukan penuh (lunas) di muka, tidak ada sistem DP.',
-      '4. Kode booking wajib ditunjukkan saat check-in.',
-      '5. Pembatalan booking tidak dapat dikembalikan (no refund).',
-      '6. Kerusakan fasilitas menjadi tanggung jawab tamu.',
-      '7. Kapasitas tenda/villa wajib dipatuhi sesuai jumlah tamu efektif.',
-      '8. Kelebihan tamu dari kapasitas dikenakan extra bed / charge person / ganti tipe unit yang lebih besar.',
-      '9. Dilarang membawa hewan peliharaan tanpa izin.',
-      '10. Dilarang merokok di dalam unit.',
-      '11. Jam tenang mulai pukul 22.00 WIB.',
-      '12. Reschedule tanggal paling lambat H-7 sebelum check-in.',
-    ].join('\n'),
-  },
+  { key: 'terms_conditions_id', value: TERMS_ID },
+  { key: 'terms_conditions_en', value: TERMS_EN },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -380,6 +406,9 @@ async function seedSettings() {
       create: { key: s.key, value: s.value },
     });
   }
+  // Old single-language key, replaced by terms_conditions_id/_en above —
+  // remove it so a re-seed (not a full reset) doesn't leave stale data.
+  await prisma.setting.deleteMany({ where: { key: 'terms_conditions' } });
   console.log(`✔ Seeded ${SETTINGS.length} settings`);
 }
 
