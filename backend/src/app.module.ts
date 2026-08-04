@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { BookingsModule } from './penginapan/bookings/bookings.module';
 import { RoomTypesModule } from './penginapan/room-types/room-types.module';
 import { SettingsModule } from './settings/settings.module';
 
@@ -15,6 +16,7 @@ import { SettingsModule } from './settings/settings.module';
     AuthModule,
     RoomTypesModule,
     SettingsModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

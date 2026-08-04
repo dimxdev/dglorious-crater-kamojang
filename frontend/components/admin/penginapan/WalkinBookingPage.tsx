@@ -1,13 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button, Input, Select } from '@/components/ui';
-import { RoomGroupEditor, type RoomGroup } from './RoomGroupEditor';
+import { ApiError } from '@/lib/api/client';
+import { createBooking, type CreateBookingItemInput, type PaymentMethodInput } from '@/lib/api/bookings';
+import { fetchAdminRoomTypes } from '@/lib/api/roomTypes';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { localizeRooms } from '@/lib/data/rooms';
 import { formatIDR } from '@/lib/format';
 import { calcGroupsTotal, calcNightsBreakdown } from '@/lib/pricing';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { RoomGroupEditor, type RoomGroup } from './RoomGroupEditor';
+
+const INITIAL_GROUP: RoomGroup = {
+  slug: '',
+  adults: 2,
+  children: 0,
+  extraBedQty: 0,
+  extraBedType: 'with',
+};
+
+const PAY_METHOD_MAP: Record<string, PaymentMethodInput> = {
+  cash: 'CASH',
+  qris: 'QRIS',
+  transfer: 'BANK_TRANSFER',
+};
 
 // Beda dari Booking WhatsApp: tamu sudah ada di lokasi saat dicatat, jadi
 // tidak ada jeda menunggu kedatangan — booking langsung CONFIRMED +
@@ -15,15 +33,37 @@ import { useTranslation } from '@/lib/i18n/I18nProvider';
 // karena dibayar di tempat (bukan DP seperti alur WhatsApp).
 export function WalkinBookingPage() {
   const { t, locale } = useTranslation();
+  const { token } = useAuth();
   const rooms = localizeRooms(locale);
   const today = new Date().toISOString().slice(0, 10);
 
   const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([
-    { slug: rooms[0]?.slug ?? '', adults: 2, children: 0, extraBedQty: 0, extraBedType: 'with' },
+    { ...INITIAL_GROUP, slug: rooms[0]?.slug ?? '' },
   ]);
   const [checkIn, setCheckIn] = useState(today);
   const [checkOut, setCheckOut] = useState('2026-07-20');
   const [manualAmount, setManualAmount] = useState<number | null>(null);
+
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [notes, setNotes] = useState('');
+  const [payMethod, setPayMethod] = useState('cash');
+
+  const [roomTypeIdBySlug, setRoomTypeIdBySlug] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savedCode, setSavedCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchAdminRoomTypes(token)
+      .then((list) => {
+        setRoomTypeIdBySlug(Object.fromEntries(list.map((r) => [r.slug, r.id])));
+      })
+      .catch(() => {
+        // Diam-diam gagal — error baru muncul kalau admin coba Simpan.
+      });
+  }, [token]);
 
   const payOptions = [
     { value: 'cash', label: t('admin.payCash') },
@@ -35,6 +75,53 @@ export function WalkinBookingPage() {
   const total = manualAmount ?? autoTotal;
   const { weekdayNights, weekendNights } = calcNightsBreakdown(checkIn, checkOut);
 
+  async function handleSave() {
+    setError(null);
+    setSavedCode(null);
+
+    if (!name.trim() || !phone.trim() || roomGroups.length === 0) {
+      setError(t('admin.bookingIncomplete'));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const items: CreateBookingItemInput[] = roomGroups.map((g) => ({
+        roomTypeId: roomTypeIdBySlug[g.slug],
+        adults: g.adults,
+        children: g.children,
+        extraBedQty: g.extraBedQty,
+        extraBedType:
+          g.extraBedQty > 0 ? (g.extraBedType === 'with' ? 'WITH_BED' : 'WITHOUT_BED') : undefined,
+      }));
+
+      const created = await createBooking(token!, {
+        guestName: name.trim(),
+        guestPhone: phone.trim(),
+        checkIn,
+        checkOut,
+        bookingChannel: 'WALK_IN',
+        payMethod: PAY_METHOD_MAP[payMethod],
+        notes: notes.trim() || undefined,
+        isPriceOverride: manualAmount !== null,
+        manualTotal: manualAmount ?? undefined,
+        items,
+      });
+
+      setSavedCode(created.bookingCode);
+      setName('');
+      setPhone('');
+      setNotes('');
+      setPayMethod('cash');
+      setManualAmount(null);
+      setRoomGroups([{ ...INITIAL_GROUP, slug: rooms[0]?.slug ?? '' }]);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('admin.saveError'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <DashboardLayout title={t('dashboard.walkin')}>
       <div className="border-border max-w-205 rounded-2xl border bg-white p-7">
@@ -42,8 +129,20 @@ export function WalkinBookingPage() {
         <div className="text-muted mt-1 text-[13px]">{t('admin.walkinSubtitle')}</div>
 
         <div className="mt-5.5 grid gap-4.5 sm:grid-cols-2">
-          <Input label={`${t('admin.guestName')} *`} name="name" placeholder="Nama lengkap" />
-          <Input label={t('admin.guestPhone')} name="phone" placeholder="08xx" />
+          <Input
+            label={`${t('admin.guestName')} *`}
+            name="name"
+            placeholder="Nama lengkap"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Input
+            label={t('admin.guestPhone')}
+            name="phone"
+            placeholder="08xx"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
           <Input
             label={t('admin.tCheckIn')}
             type="date"
@@ -89,9 +188,21 @@ export function WalkinBookingPage() {
 
         <div className="mt-4.5 grid gap-4.5 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <Input label={t('admin.notes')} name="notes" placeholder={t('admin.notesPlaceholder')} />
+            <Input
+              label={t('admin.notes')}
+              name="notes"
+              placeholder={t('admin.notesPlaceholder')}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
-          <Select label={t('admin.payMethod')} name="payMethod" options={payOptions} />
+          <Select
+            label={t('admin.payMethod')}
+            name="payMethod"
+            value={payMethod}
+            onChange={(e) => setPayMethod(e.target.value)}
+            options={payOptions}
+          />
         </div>
 
         <div className="mt-4.5 flex items-center justify-between rounded-[10px] bg-[#E4F1E7] px-3.5 py-3">
@@ -129,9 +240,18 @@ export function WalkinBookingPage() {
           ✓ {t('admin.walkinCheckinNote')}
         </div>
 
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {savedCode && (
+          <p className="mt-4 text-sm font-semibold text-[#2f6b41]">
+            {t('admin.bookingSaved', { code: savedCode })}
+          </p>
+        )}
+
         <div className="mt-6 flex gap-3">
-          <Button className="rounded-xl">{t('admin.saveCheckin')}</Button>
-          <Button variant="outline" className="rounded-xl">
+          <Button className="rounded-xl" onClick={handleSave} disabled={saving}>
+            {saving ? t('admin.saving') : t('admin.saveCheckin')}
+          </Button>
+          <Button variant="outline" className="rounded-xl" disabled={saving}>
             {t('admin.cancel')}
           </Button>
         </div>

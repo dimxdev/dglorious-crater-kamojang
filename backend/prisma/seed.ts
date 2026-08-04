@@ -500,14 +500,9 @@ async function seedSampleBookings(createdById: number) {
         bookingCode: waCode,
         guestName: 'Budi Santoso',
         guestPhone: '081234567890',
-        adults: 3,
-        children: 1,
         createdAt: new Date('2026-07-24'), // dicatat 8 hari sebelum check-in
         checkIn: new Date('2026-08-01'),
         checkOut: new Date('2026-08-03'),
-        extraBedQty,
-        extraBedType: ExtraBedType.WITH_BED,
-        extraBedPrice,
         priceSnapshot: waTotal,
         isPriceOverride: false,
         status: BookingStatus.DP,
@@ -515,10 +510,27 @@ async function seedSampleBookings(createdById: number) {
         bookingSource: BookingSource.MANUAL,
         notes: 'Contoh booking dummy — multi-tenda + extra bed, masih DP.',
         createdById,
+        // Dewasa/anak/extra-bed per tenda (§8.2) — Eagle Hill dapat extra
+        // bed (2 dewasa + 1 tambahan), Royal Kahuripan pasangan + 1 anak.
         items: {
           create: [
-            { roomTypeId: eagleHill.id, qty: 1, subtotalSnapshot: eagleSubtotal },
-            { roomTypeId: royal.id, qty: 1, subtotalSnapshot: royalSubtotal },
+            {
+              roomTypeId: eagleHill.id,
+              qty: 1,
+              subtotalSnapshot: eagleSubtotal,
+              adults: 2,
+              children: 0,
+              extraBedQty,
+              extraBedType: ExtraBedType.WITH_BED,
+              extraBedPrice,
+            },
+            {
+              roomTypeId: royal.id,
+              qty: 1,
+              subtotalSnapshot: royalSubtotal,
+              adults: 1,
+              children: 1,
+            },
           ],
         },
       },
@@ -535,13 +547,9 @@ async function seedSampleBookings(createdById: number) {
         bookingCode: walkinCode,
         guestName: 'Citra Lestari',
         guestPhone: '082177881122',
-        adults: 4,
-        children: 0,
         createdAt: checkInDate, // walk-in: dicatat persis saat tamu datang
         checkIn: checkInDate,
         checkOut: new Date('2026-07-27'),
-        extraBedQty: 0,
-        extraBedPrice: 0,
         priceSnapshot: walkinSubtotal,
         status: BookingStatus.CHECKED_IN,
         bookingChannel: BookingChannel.WALK_IN,
@@ -550,7 +558,11 @@ async function seedSampleBookings(createdById: number) {
         createdById,
         lunasAt: checkInDate,
         checkedInAt: checkInDate,
-        items: { create: [{ roomTypeId: jamuju.id, qty: 1, subtotalSnapshot: walkinSubtotal }] },
+        items: {
+          create: [
+            { roomTypeId: jamuju.id, qty: 1, subtotalSnapshot: walkinSubtotal, adults: 4, children: 0 },
+          ],
+        },
       },
     });
   }

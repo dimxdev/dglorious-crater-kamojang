@@ -285,17 +285,14 @@ model Booking {
   checkIn     DateTime @map("check_in") @db.Date
   checkOut    DateTime @map("check_out") @db.Date
 
-  adults      Int           @default(1) // §8.2 — dihitung sebagai orang efektif
-  children    Int           @default(0) @map("children") // §8.2 — anak ≥6 th = 1 dewasa, dihitung manual oleh admin
-  extraBedQty Int           @default(0) @map("extra_bed_qty")
-  /// Relevan hanya kalau `extraBedQty > 0` — nentuin tarif mana yang dipakai
-  /// (`RoomType.extraBedPrice` vs `extraNoBedPrice`).
-  extraBedType  ExtraBedType? @map("extra_bed_type")
-  extraBedPrice Decimal       @default(0) @map("extra_bed_price") @db.Decimal(12, 2) // tarif per orang, snapshot saat booking dibuat
+  // Dewasa/anak/extra-bed (§8.2) disimpan di `BookingItem`, BUKAN di sini —
+  // satu booking bisa mencakup beberapa tenda dengan komposisi tamu &
+  // extra bed yang beda-beda per tenda (keputusan 2026-08-02, sejalan
+  // dengan `RoomGroupEditor.tsx` di frontend: "satu baris grup = satu unit
+  // fisik" dengan dewasa/anak/extra-bed sendiri-sendiri).
 
   priceSnapshot   Decimal @map("price_snapshot") @db.Decimal(12, 2) // §4.5 total dibekukan (Σ item + extra bed)
   isPriceOverride Boolean @default(false) @map("is_price_override") // admin override manual (nego)
-  ktpPhotoUrl     String? @map("ktp_photo_url") // opsional, belum wajib fase 1 (cuma jalur WhatsApp)
 
   status         BookingStatus  @default(DP)
   /// WHATSAPP vs WALK_IN — dipakai filter/badge/laporan. Lihat enum BookingChannel.
@@ -336,6 +333,15 @@ model BookingItem {
   roomUnitId       Int?    @map("room_unit_id") // unit spesifik, di-assign saat konfirmasi/check-in
   qty              Int     @default(1)
   subtotalSnapshot Decimal @map("subtotal_snapshot") @db.Decimal(12, 2) // tarif weekday/weekend × malam × qty, dibekukan
+
+  // §8.2 — per tenda, bukan per booking (lihat catatan di model Booking).
+  adults      Int @default(1)
+  children    Int @default(0)
+  extraBedQty Int @default(0) @map("extra_bed_qty")
+  /// Relevan hanya kalau `extraBedQty > 0` — nentuin tarif mana yang dipakai
+  /// (`RoomType.extraBedPrice` vs `extraNoBedPrice`).
+  extraBedType  ExtraBedType? @map("extra_bed_type")
+  extraBedPrice Decimal       @default(0) @map("extra_bed_price") @db.Decimal(12, 2) // tarif per orang, snapshot saat booking dibuat
 
   booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   roomType RoomType  @relation(fields: [roomTypeId], references: [id])

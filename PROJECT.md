@@ -113,7 +113,7 @@ Tamu menghubungi admin via WhatsApp (dari CTA di katalog publik)
      (lewat 1×24 jam tanpa DP = booking rilis otomatis ke tamu lain — ini terjadi
      di WHATSAPP/kepala admin, BUKAN di sistem; sistem belum tahu apa-apa di fase ini)
   → admin buka menu "Booking WhatsApp", input booking yang SUDAH FIX
-     (data tamu, tanggal, satu/lebih tenda, dewasa/anak, extra bed, foto KTP opsional, catatan)
+     (data tamu, tanggal, satu/lebih tenda, dewasa/anak, extra bed, catatan)
   → sistem cek ketersediaan (fungsi reusable) + auto-hitung total
      (tarif weekday/weekend per tenda × malam + extra bed); admin boleh OVERRIDE manual
   → booking tersimpan berstatus DP (DP sudah masuk, ini prasyarat sebelum dicatat)
@@ -214,10 +214,11 @@ Field sama untuk kedua menu (mengikuti form reservasi WhatsApp resmi klien), bed
 - **Jumlah Anak-anak** — angka
 - **Extra bed** — jumlah + tarif (ikut ke total)
 - **Note / Request** — opsional
-- **Foto KTP** — upload **OPSIONAL** (kolom `ktp_photo_url` nullable; belum wajib di fase 1)
 - **Status saat disimpan** — `DP` atau `LUNAS` (Booking WhatsApp, admin pilih sesuai kondisi saat itu) *(status gabungan, lihat §6.2 — bukan lagi field `payment_status` terpisah)*
 - **Harga total** — auto-hitung (tarif tenda sesuai tanggal × malam + extra bed) dengan **opsi override manual** (nego)
 - Otomatis: `created_by = admin`, `booking_source = MANUAL`
+
+> **Update 2026-08-04:** field **Foto KTP** (upload opsional, kolom `ktp_photo_url`) **dihapus total** — bukan cuma dari form, kolomnya juga dihapus dari skema (`Booking`) lewat migrasi FASE 7. Keputusan: admin sudah menerima foto KTP secara manual lewat chat WhatsApp saat nego (S&K poin 10 tetap berlaku, prosesnya di luar sistem), jadi tidak perlu disimpan lagi di sistem — mengurangi kerumitan form tanpa mengorbankan kebutuhan bisnis.
 
 **Beda default antar menu (§6.2):**
 - **Booking WhatsApp** — status default `DP` (DP sudah masuk, itu prasyarat sebelum dicatat), lanjut ke `LUNAS` → `CHECKED_IN` lewat menu Data Booking saat tamu tiba.
@@ -265,8 +266,8 @@ Menegakkan S&K poin 7 & 8:
 - **`room_type_translations`** — id, room_type_id, language_code, name, description, facilities_text, rules
 - **`room_images`** — id, room_type_id, image_url, is_cover, sort_order
 - **`room_units`** — id, room_type_id, unit_code, status
-- **`bookings`** — id, booking_code (unik, acak), guest_name, guest_phone, guest_email (nullable), check_in, check_out, **`adults`**, **`children`**, **`extra_bed_qty`** (default 0), **`extra_bed_price`**, **`price_snapshot`** (total dibekukan — **WAJIB**), **`is_price_override`** (bool), **`ktp_photo_url`** (nullable), **`status`** (enum, **revisi 2026-07-26** — `DP`/`LUNAS`/`CHECKED_IN`/`HANGUS` disimpan; `COMPLETED`/`NO_SHOW` dihitung di API dari tanggal, **bukan kolom**; ganti field `payment_status` terpisah yang direncanakan sebelumnya, lihat §6.2), booking_source (**`MANUAL`** fase 1 / `ONLINE` fase berikutnya), notes (nullable), created_by, created_at, confirmed_at, checked_in_at, completed_at, cancelled_at, *(disiapkan fase berikutnya: expired_at, paid_at)*
-- **`booking_items`** — id, booking_id, room_type_id, room_unit_id (nullable), qty, subtotal_snapshot *(satu booking bisa mencakup beberapa tenda)*
+- **`bookings`** — id, booking_code (unik, acak), guest_name, guest_phone, guest_email (nullable), check_in, check_out, **`price_snapshot`** (total dibekukan — **WAJIB**), **`is_price_override`** (bool), **`status`** (enum — `DP`/`LUNAS`/`CHECKED_IN`/`HANGUS` disimpan; `COMPLETED`/`NO_SHOW` dihitung di API dari tanggal, **bukan kolom**, lihat §6.2), booking_source (**`MANUAL`** fase 1 / `ONLINE` fase berikutnya), booking_channel (`WHATSAPP`/`WALK_IN`), notes (nullable), created_by, created_at, lunas_at, checked_in_at, hangus_at, *(disiapkan fase berikutnya: expired_at)*
+- **`booking_items`** — id, booking_id, room_type_id, room_unit_id (nullable), qty, subtotal_snapshot, **`adults`**, **`children`**, **`extra_bed_qty`** (default 0), **`extra_bed_type`** (nullable), **`extra_bed_price`** *(satu booking bisa mencakup beberapa tenda — dewasa/anak/extra-bed disimpan PER TENDA di sini, bukan di `bookings`, karena tiap tenda dalam satu booking bisa beda komposisi tamu. Keputusan 2026-08-04, FASE 7 — sebelumnya field-field ini ada di level `bookings`.)* — `ktp_photo_url` **dihapus total** dari skema (2026-08-04, bukan lagi disimpan sistem, lihat §8.1)
 - **`payments`** — id, booking_id, method (cash/transfer/QRIS), amount, proof_url (nullable), status, paid_at, verified_by (nullable), *(disiapkan: midtrans_order_id nullable)*
 - **`tickets`** — id, booking_id, qr_url, pdf_url, issued_at *(struktur disiapkan; generate PDF/QR = fase berikutnya)*
 
@@ -289,7 +290,7 @@ Menegakkan S&K poin 7 & 8:
   - Sumber B (grafis "Operational Hour"): Weekday 07.00–22.00 WIB, **Weekend 24 Jam**, **Libur Nasional 24 Jam**.
   - **Keputusan interim yang dipakai di situs sekarang** (arahan user, belum final dari klien): Senin–Jumat 08.00–22.00 WIB, **Sabtu–Minggu 24 Jam** — kombinasi jam dari Sumber A + status 24-jam dari Sumber B. Cek `lib/data/content.ts` (`infoSources` → "Jam Buka").
 
-*(Sudah terjawab: **DP 50% maks 1×24 jam / pelunasan manual di luar sistem** (bukan lunas di muka — lihat poin form WA di atas); **jam check-in 14.00 & check-out 12.00**; **rekening BSI 7262292465 a/n KOPERASI ALAM LESTARI**; **foto KTP opsional**; **harga beda weekday/weekend**.)*
+*(Sudah terjawab: **DP 50% maks 1×24 jam / pelunasan manual di luar sistem** (bukan lunas di muka — lihat poin form WA di atas); **jam check-in 14.00 & check-out 12.00**; **rekening BSI 7262292465 a/n KOPERASI ALAM LESTARI**; **harga beda weekday/weekend**. Foto KTP sempat direncanakan opsional, tapi **dihapus total dari sistem 2026-08-04** — lihat §8.1.)*
 
 **Data tiket masuk & atraksi — SUDAH didapat** dari price list resmi (Koperasi Alam Lestari), diinput ke `lib/data/content.ts` (`getTicketPackages`, `getParkingFees`) dan ditampilkan di halaman Tentang (§"Harga Tiket Masuk" & "Tarif Parkir"):
 - Paket Basic (Diamond) Rp40.000/Rp25.000 (siang/malam) — asuransi, akses wisata, akses kolam berendam (Kawah Hujan).

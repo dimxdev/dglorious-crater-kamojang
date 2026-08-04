@@ -202,6 +202,8 @@
     "amountOverrideHint": "Auto-calculated from rate × nights + extra bed — can be edited manually if negotiated.",
     "saveConfirm": "Save & Confirm",
     "saveCheckin": "Save & Check In",
+    "bookingSaved": "Booking {code} saved successfully.",
+    "bookingIncomplete": "Fill in the guest name, phone, and at least one tent first.",
     "cancel": "Cancel",
     "activeCount": "{n} active lodging types",
     "addRoom": "+ Add Lodging",
