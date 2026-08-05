@@ -63,6 +63,20 @@ export class CreateBookingDto {
   @IsEnum(PaymentMethod)
   payMethod?: PaymentMethod;
 
+  /**
+   * Nominal DP yang sudah diterima admin (transfer ke rekening, di luar sistem)
+   * — wajib untuk WHATSAPP + status DP. S&K bilang DP 50%, tapi nego bisa beda,
+   * jadi diisi manual, bukan dihitung otomatis dari total. Dipakai bikin baris
+   * `Payment` pertama booking ini.
+   */
+  @ValidateIf(
+    (o: CreateBookingDto) =>
+      o.bookingChannel === BookingChannel.WHATSAPP && o.initialStatus === 'DP',
+  )
+  @IsNumber()
+  @Min(1)
+  paidAmount?: number;
+
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

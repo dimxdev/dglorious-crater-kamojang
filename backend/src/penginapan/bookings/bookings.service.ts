@@ -9,6 +9,7 @@ import {
   BookingChannel,
   BookingSource,
   BookingStatus,
+  PaymentMethod,
   PaymentStatus,
 } from '../../generated/prisma/enums';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -25,7 +26,7 @@ import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const bookingWithItems = {
-  include: { items: { include: { roomType: true } } },
+  include: { items: { include: { roomType: true } }, payments: true },
 } satisfies Prisma.BookingDefaultArgs;
 type BookingWithItems = Prisma.BookingGetPayload<typeof bookingWithItems>;
 
@@ -160,6 +161,10 @@ export class BookingsService {
     const bookingCode = await this.generateUniqueBookingCode();
 
     const booking = await this.prisma.$transaction(async (tx) => {
+      // Dibuat TANPA `...bookingWithItems` dulu — begitu di-spread di sini,
+      // `payments` bakal ke-fetch kosong (baris Payment-nya baru dibuat di
+      // bawah), jadi respons `paidTotal`-nya keliru. Query ulang lengkap di
+      // akhir transaksi setelah Payment ikut dibuat.
       const created = await tx.booking.create({
         data: {
           bookingCode,
@@ -180,12 +185,13 @@ export class BookingsService {
             : {}),
           items: { create: itemsData },
         },
-        ...bookingWithItems,
       });
 
-      // Walk-in dibayar penuh di tempat saat dicatat — pakai tabel `payments`
-      // yang sudah ada, bukan kolom baru (§8.1 keputusan FASE 7).
+      // Nominal yang beneran sudah masuk dicatat di `payments` — bukan cuma
+      // disimpan sebagai angka lepas, biar bisa diverifikasi/dijumlah kapan
+      // saja (§ "catat nominal DP via payments", ketemu FASE 8/9).
       if (dto.bookingChannel === BookingChannel.WALK_IN) {
+        // Walk-in dibayar penuh di tempat saat dicatat.
         await tx.payment.create({
           data: {
             bookingId: created.id,
@@ -196,9 +202,25 @@ export class BookingsService {
             verifiedById: createdById,
           },
         });
+      } else {
+        // WhatsApp: DP (nominal sesuai isian admin) atau langsung LUNAS
+        // (total penuh) — pembayaran selalu transfer ke rekening, sesuai S&K.
+        await tx.payment.create({
+          data: {
+            bookingId: created.id,
+            method: PaymentMethod.BANK_TRANSFER,
+            amount: status === BookingStatus.LUNAS ? total : dto.paidAmount!,
+            status: PaymentStatus.PAID,
+            paidAt: now,
+            verifiedById: createdById,
+          },
+        });
       }
 
-      return created;
+      return tx.booking.findUniqueOrThrow({
+        where: { id: created.id },
+        ...bookingWithItems,
+      });
     });
 
     return this.toAdminBooking(booking);
@@ -227,7 +249,11 @@ export class BookingsService {
 
   // ── Ubah status (§6.2, §8 FASE 8 — transisi gak boleh mundur/loncat) ──
 
-  async updateStatus(code: string, dto: UpdateBookingStatusDto) {
+  async updateStatus(
+    code: string,
+    dto: UpdateBookingStatusDto,
+    verifiedById: number,
+  ) {
     const booking = await this.prisma.booking.findUnique({
       where: { bookingCode: code },
     });
@@ -243,23 +269,49 @@ export class BookingsService {
     if (dto.status === 'CHECKED_IN') data.checkedInAt = now;
     if (dto.status === 'HANGUS') data.hangusAt = now;
 
-    const updated = await this.prisma.booking.update({
-      where: { bookingCode: code },
-      data,
-      ...bookingWithItems,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Transisi ke LUNAS: catat pelunasan sisa ke `payments` (bukan cuma
+      // ubah status) — biar Σ payments selalu = priceSnapshot begitu LUNAS.
+      if (dto.status === 'LUNAS') {
+        const paidSoFar = await tx.payment.aggregate({
+          where: { bookingId: booking.id, status: PaymentStatus.PAID },
+          _sum: { amount: true },
+        });
+        const remaining =
+          Number(booking.priceSnapshot) - Number(paidSoFar._sum.amount ?? 0);
+        if (remaining > 0) {
+          await tx.payment.create({
+            data: {
+              bookingId: booking.id,
+              method: PaymentMethod.BANK_TRANSFER,
+              amount: remaining,
+              status: PaymentStatus.PAID,
+              paidAt: now,
+              verifiedById,
+            },
+          });
+        }
+      }
+
+      return tx.booking.update({
+        where: { bookingCode: code },
+        data,
+        ...bookingWithItems,
+      });
     });
+
     return this.toAdminBooking(updated);
   }
 
   private assertValidTransition(
     current: BookingStatus,
-    next: 'LUNAS' | 'CHECKED_IN' | 'HANGUS',
+    next: 'LUNAS' | 'CHECKED_IN' | 'HANGUS' | 'COMPLETED' | 'NO_SHOW',
   ): void {
     if (next === 'HANGUS') {
       // HANGUS boleh dari DP/LUNAS kapan saja sebelum check-in (§6.2).
       if (
-        current === BookingStatus.CHECKED_IN ||
-        current === BookingStatus.HANGUS
+        current !== BookingStatus.DP &&
+        current !== BookingStatus.LUNAS
       ) {
         throw new ConflictException(
           `Booking berstatus ${current} tidak bisa dibatalkan (HANGUS)`,
@@ -267,9 +319,25 @@ export class BookingsService {
       }
       return;
     }
+    if (next === 'COMPLETED') {
+      if (current !== BookingStatus.CHECKED_IN) {
+        throw new ConflictException(
+          `Hanya booking CHECKED_IN yang bisa ditandai Selesai`,
+        );
+      }
+      return;
+    }
+    if (next === 'NO_SHOW') {
+      if (current !== BookingStatus.LUNAS) {
+        throw new ConflictException(
+          `Hanya booking LUNAS yang bisa ditandai Tidak Datang`,
+        );
+      }
+      return;
+    }
 
     const currentIdx = FORWARD_ORDER.indexOf(current);
-    const nextIdx = FORWARD_ORDER.indexOf(next);
+    const nextIdx = FORWARD_ORDER.indexOf(next as BookingStatus);
     if (currentIdx === -1 || nextIdx !== currentIdx + 1) {
       throw new ConflictException(
         `Transisi status ${current} → ${next} tidak valid`,
@@ -284,9 +352,12 @@ export class BookingsService {
     checkOut: Date,
     today: Date = new Date(),
   ): string {
+    // Status tersimpan manual menang atas komputasi otomatis.
+    if (status === BookingStatus.COMPLETED) return 'COMPLETED';
+    if (status === BookingStatus.NO_SHOW) return 'NO_SHOW';
     const pastCheckout = today > checkOut;
     if (status === BookingStatus.CHECKED_IN)
-      return pastCheckout ? 'COMPLETED' : status;
+      return pastCheckout ? 'COMPLETED' : 'CHECKED_IN';
     if (status === BookingStatus.LUNAS && pastCheckout) return 'NO_SHOW';
     if (status === BookingStatus.DP && pastCheckout) return 'HANGUS';
     return status;
@@ -304,6 +375,17 @@ export class BookingsService {
       checkOut: booking.checkOut,
       createdAt: booking.createdAt,
       priceSnapshot: Number(booking.priceSnapshot),
+      // Σ payments yang PAID — nominal yang BENERAN sudah masuk, bukan
+      // asumsi (mis. "DP pasti 50%"). Lihat DetailModal "Sudah dibayar".
+      paidTotal: booking.payments
+        .filter((p) => p.status === PaymentStatus.PAID)
+        .reduce((sum, p) => sum + Number(p.amount), 0),
+      // Daftar transaksi mentah (bukan cuma agregat) — dipakai Ringkasan buat
+      // "Pendapatan Hari Ini" (dihitung dari tanggal transaksi TERCATAT,
+      // beda dari tanggal check-in booking-nya).
+      payments: booking.payments
+        .filter((p) => p.status === PaymentStatus.PAID)
+        .map((p) => ({ amount: Number(p.amount), paidAt: p.paidAt })),
       isPriceOverride: booking.isPriceOverride,
       status: booking.status,
       effectiveStatus: this.computeEffectiveStatus(

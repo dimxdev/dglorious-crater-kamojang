@@ -43,7 +43,8 @@ export class BookingsAdminController {
   updateStatus(
     @Param('code') code: string,
     @Body() dto: UpdateBookingStatusDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.bookingsService.updateStatus(code, dto);
+    return this.bookingsService.updateStatus(code, dto, user.id);
   }
 }

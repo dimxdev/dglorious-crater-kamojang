@@ -43,10 +43,9 @@ enum RoleName {
 /// keputusan di frontend `lib/data/admin.ts` + PROJECT.md §6.2):
 ///   DP → LUNAS → CHECKED_IN, cabang HANGUS kapan saja sebelum check-in.
 ///
-/// CATATAN PENTING — 2 status turunan TIDAK ada di enum ini karena sengaja
-/// TIDAK disimpan, melainkan dihitung di endpoint GET dari tanggal checkout
-/// (lihat TASK.md FASE 8): `COMPLETED` (dari CHECKED_IN + checkout lewat) dan
-/// `NO_SHOW` (dari LUNAS + checkout lewat tanpa pernah check-in).
+/// COMPLETED & NO_SHOW bisa disimpan secara manual (admin tandai lebih awal)
+/// ATAU dihitung otomatis dari tanggal checkout di endpoint GET. Stored value
+/// menang atas komputasi otomatis — kalau sudah tersimpan, dikembalikan as-is.
 ///
 /// Nilai lama `CONFIRMED` dihapus — digantikan pemisahan DP/LUNAS. Nilai lama
 /// `CANCELLED` juga dihapus — dari sisi bisnis batal-manual & uang hangus itu
@@ -59,6 +58,8 @@ enum BookingStatus {
   LUNAS
   CHECKED_IN
   HANGUS
+  COMPLETED // checkout lebih awal (manual) atau otomatis saat checkOut lewat
+  NO_SHOW   // lunas tapi tidak datang (manual) atau otomatis saat checkOut lewat
   PENDING // fase berikutnya
   WAITING_PAYMENT // fase berikutnya
   PAID // fase berikutnya
@@ -304,8 +305,8 @@ model Booking {
   createdById Int?    @map("created_by") // admin yang input
 
   // Timestamp tiap transisi status yang DISIMPAN (analytics-ready).
-  // `COMPLETED` & `NO_SHOW` sengaja tidak punya kolom — statusnya turunan,
-  // dihitung dari `checkOut` vs hari ini (lihat catatan di enum BookingStatus).
+  // `COMPLETED` & `NO_SHOW` bisa tersimpan (manual) atau dihitung otomatis
+  // dari `checkOut` vs hari ini — lihat catatan di enum BookingStatus.
   lunasAt     DateTime? @map("lunas_at")
   checkedInAt DateTime? @map("checked_in_at")
   hangusAt    DateTime? @map("hangus_at")
