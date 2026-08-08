@@ -11,12 +11,20 @@ import { cn } from '@/lib/cn';
  * kejadian). Kalau butuh sticky header, itu cuma bisa didapat dengan
  * mengorbankan scroll horizontal yang kekontain (lihat BookingsPage.tsx).
  */
+/**
+ * `bare`: pas Table dipakai di dalam `Card` (sudah punya border+rounded+bg
+ * sendiri), bungkus rounded+border+bg bawaan di sini jadi frame kedua yang
+ * nempel pas di dalam frame Card — dobel border & sudut rounded ketemu
+ * sudut rounded, keliatan aneh/berlebihan. `bare` matiin frame internal ini,
+ * sisain cuma `overflow-x-auto`-nya, biar Card yang jadi satu-satunya frame.
+ */
 export function Table({
   className,
+  bare,
   ...props
-}: React.TableHTMLAttributes<HTMLTableElement>) {
+}: React.TableHTMLAttributes<HTMLTableElement> & { bare?: boolean }) {
   return (
-    <div className="border-border w-full overflow-x-auto rounded-xl border bg-white">
+    <div className={cn('w-full overflow-x-auto', !bare && 'border-border rounded-xl border bg-white')}>
       <table className={cn('w-full text-left text-sm', className)} {...props} />
     </div>
   );

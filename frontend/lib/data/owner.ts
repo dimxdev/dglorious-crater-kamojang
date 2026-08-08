@@ -76,14 +76,19 @@ export function periodRangeLabel(range: DateRange, ref: PeriodRef = DEFAULT_REF)
   return first === last ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
 }
 
-/** Booking yang tanggal check-in-nya masuk dalam rentang. */
-export function bookingsInRange(
+/**
+ * Booking yang tanggal check-in-nya masuk dalam rentang. Generik atas `T`
+ * (cuma butuh `checkIn`, format `YYYY-MM-DD`) — dipakai Owner dashboard (mock
+ * `AdminBooking`, default) maupun `BookingsPage.tsx` (data API asli, FASE 8/9).
+ */
+export function bookingsInRange<T extends { checkIn: string } = AdminBooking>(
   range: DateRange,
   ref: PeriodRef = DEFAULT_REF,
-  bookings: AdminBooking[] = adminBookings,
-): AdminBooking[] {
+  bookings?: T[],
+): T[] {
+  const list = bookings ?? (adminBookings as unknown as T[]);
   const dates = new Set(datesInRange(range, ref));
-  return bookings.filter((b) => dates.has(b.checkIn));
+  return list.filter((b) => dates.has(b.checkIn));
 }
 
 /** Geser acuan periode ke periode sebelumnya, durasi sama (buat bandingkan delta %). */

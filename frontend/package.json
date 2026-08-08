@@ -10,6 +10,7 @@
     "format": "prettier --write \"app/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.3.7",
     "clsx": "^2.1.1",
     "exceljs": "^4.4.0",
     "jspdf": "^4.2.1",

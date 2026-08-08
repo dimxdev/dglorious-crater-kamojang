@@ -292,8 +292,13 @@ model Booking {
   // dengan `RoomGroupEditor.tsx` di frontend: "satu baris grup = satu unit
   // fisik" dengan dewasa/anak/extra-bed sendiri-sendiri).
 
-  priceSnapshot   Decimal @map("price_snapshot") @db.Decimal(12, 2) // §4.5 total dibekukan (Σ item + extra bed)
+  priceSnapshot   Decimal @map("price_snapshot") @db.Decimal(12, 2) // §4.5 total dibekukan (SUDAH dikurangi discount)
   isPriceOverride Boolean @default(false) @map("is_price_override") // admin override manual (nego)
+  /// Potongan nominal opsional (bukan persen) — dicatat terpisah dari
+  /// `priceSnapshot` biar keliatan di detail booking, walau `priceSnapshot`
+  /// sendiri sudah net (harga jual - discount). Berlaku baik untuk total
+  /// otomatis maupun `isPriceOverride` (keduanya dikurangi discount yang sama).
+  discount Decimal @default(0) @map("discount") @db.Decimal(12, 2)
 
   status         BookingStatus  @default(DP)
   /// WHATSAPP vs WALK_IN — dipakai filter/badge/laporan. Lihat enum BookingChannel.

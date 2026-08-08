@@ -11,21 +11,13 @@ const adminTone: Record<BookingStatus, React.ComponentProps<typeof Badge>['tone'
   NO_SHOW: 'terracotta',
 };
 
-// Lebar tetap supaya kolom status rapi & sejajar, apapun panjang labelnya.
 export function StatusBadge({ status }: { status: BookingStatus }) {
-  return (
-    <Badge tone={adminTone[status]} className="w-21 justify-center">
-      {statusLabelId[status]}
-    </Badge>
-  );
+  return <Badge tone={adminTone[status]}>{statusLabelId[status]}</Badge>;
 }
 
 export function SourceBadge({ source }: { source: BookingChannel }) {
   return (
-    <Badge
-      tone={source === 'WHATSAPP' ? 'info' : 'terracotta'}
-      className="w-21 justify-center"
-    >
+    <Badge tone={source === 'WHATSAPP' ? 'info' : 'terracotta'}>
       {source === 'WHATSAPP' ? 'WhatsApp' : 'Walk-in'}
     </Badge>
   );

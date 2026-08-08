@@ -18,7 +18,7 @@ export type BookingChannel = 'WHATSAPP' | 'WALK_IN';
  * konsep. Walk-in mulai langsung dari CHECKED_IN (skip DP/LUNAS — sudah
  * bayar penuh & sudah di lokasi saat dicatat).
  */
-export type BookingStoredStatus = 'DP' | 'LUNAS' | 'CHECKED_IN' | 'HANGUS';
+export type BookingStoredStatus = 'DP' | 'LUNAS' | 'CHECKED_IN' | 'HANGUS' | 'COMPLETED' | 'NO_SHOW';
 
 /**
  * Status yang TAMPIL ke admin — termasuk 2 status turunan yang dihitung
@@ -96,6 +96,9 @@ export function roomsSummaryShort(items: BookingRoomItem[]): string {
  * tamu masih datang di hari mana pun sebelum checkout.
  */
 export function effectiveStatus(b: AdminBooking, today: Date = new Date()): BookingStatus {
+  // Status tersimpan manual menang atas komputasi otomatis.
+  if (b.status === 'COMPLETED') return 'COMPLETED';
+  if (b.status === 'NO_SHOW') return 'NO_SHOW';
   const checkOut = new Date(b.checkOut);
   const pastCheckout = today > checkOut;
   if (b.status === 'CHECKED_IN') return pastCheckout ? 'COMPLETED' : 'CHECKED_IN';
@@ -164,7 +167,7 @@ export function occupiedQtyOnDate(bookings: AdminBooking[], dateISO: string, roo
   const date = new Date(dateISO);
   return bookings.reduce((sum, b) => {
     const status = effectiveStatus(b);
-    if (status === 'HANGUS' || status === 'NO_SHOW') return sum;
+    if (status === 'HANGUS' || status === 'NO_SHOW' || status === 'COMPLETED') return sum;
     const checkIn = new Date(b.checkIn);
     const checkOut = new Date(b.checkOut);
     if (date >= checkIn && date < checkOut) {
@@ -180,7 +183,7 @@ export function bookingsOnDate(bookings: AdminBooking[], dateISO: string): Admin
   const date = new Date(dateISO);
   return bookings.filter((b) => {
     const status = effectiveStatus(b);
-    if (status === 'HANGUS' || status === 'NO_SHOW') return false;
+    if (status === 'HANGUS' || status === 'NO_SHOW' || status === 'COMPLETED') return false;
     const checkIn = new Date(b.checkIn);
     const checkOut = new Date(b.checkOut);
     return date >= checkIn && date < checkOut;

@@ -145,10 +145,15 @@ export class BookingsService {
     });
 
     const autoTotal = itemsData.reduce((sum, i) => sum + i.subtotalSnapshot, 0);
-    const total =
+    const grossTotal =
       dto.isPriceOverride && dto.manualTotal != null
         ? dto.manualTotal
         : autoTotal;
+    // Discount berlaku di atas total manapun yang menang (otomatis atau
+    // override manual) — bukan cuma otomatis. `priceSnapshot` yang dibekukan
+    // di bawah SUDAH net (setelah dikurangi discount).
+    const discount = dto.discount ?? 0;
+    const total = Math.max(0, grossTotal - discount);
 
     // Status awal sesuai channel (§6.1) — Walk-in selalu CHECKED_IN, DTO sudah
     // memvalidasi `initialStatus` wajib DP/LUNAS untuk WhatsApp.
@@ -174,6 +179,7 @@ export class BookingsService {
           checkOut,
           priceSnapshot: total,
           isPriceOverride: dto.isPriceOverride ?? false,
+          discount,
           status,
           bookingChannel: dto.bookingChannel,
           bookingSource: BookingSource.MANUAL,
@@ -375,6 +381,7 @@ export class BookingsService {
       checkOut: booking.checkOut,
       createdAt: booking.createdAt,
       priceSnapshot: Number(booking.priceSnapshot),
+      discount: Number(booking.discount),
       // Σ payments yang PAID — nominal yang BENERAN sudah masuk, bukan
       // asumsi (mis. "DP pasti 50%"). Lihat DetailModal "Sudah dibayar".
       paidTotal: booking.payments

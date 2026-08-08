@@ -1,5 +1,6 @@
 'use client';
 
+import { Globe } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { locales, localeNames, localeShort } from '@/lib/i18n/config';
@@ -38,7 +39,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span aria-hidden>🌐</span>
+        <Globe size={16} strokeWidth={1.75} aria-hidden />
         {localeShort[locale]}
       </button>
 

@@ -28,8 +28,12 @@ export type CreateBookingInput = {
   notes?: string;
   isPriceOverride?: boolean;
   manualTotal?: number;
+  /** Potongan nominal opsional — dikurangi dari total (otomatis atau manual) sebelum dibekukan jadi `priceSnapshot`. */
+  discount?: number;
   /** Wajib untuk WALK_IN — dipakai backend bikin baris Payment. */
   payMethod?: PaymentMethodInput;
+  /** Wajib untuk WHATSAPP + status DP — nominal yang sudah masuk (bukan diasumsikan 50%). */
+  paidAmount?: number;
   items: CreateBookingItemInput[];
 };
 
@@ -53,6 +57,12 @@ export type AdminBookingDetail = {
   checkOut: string;
   createdAt: string;
   priceSnapshot: number;
+  /** Potongan nominal yang dipakai saat booking dibuat (0 kalau tidak ada diskon). */
+  discount: number;
+  /** Σ payments yang PAID — nominal yang beneran sudah masuk (bukan asumsi). */
+  paidTotal: number;
+  /** Transaksi mentah (status PAID saja) — dipakai hitung pendapatan per tanggal transaksi, bukan cuma agregat. */
+  payments: { amount: number; paidAt: string | null }[];
   isPriceOverride: boolean;
   status: string;
   effectiveStatus: string;
@@ -61,10 +71,24 @@ export type AdminBookingDetail = {
   items: AdminBookingItem[];
 };
 
+export type BookingStatusUpdate = 'LUNAS' | 'CHECKED_IN' | 'HANGUS' | 'COMPLETED' | 'NO_SHOW';
+
 export function createBooking(token: string, dto: CreateBookingInput) {
   return apiFetch<AdminBookingDetail>('/admin/bookings', {
     method: 'POST',
     token,
     body: dto,
+  });
+}
+
+export function fetchAdminBookings(token: string) {
+  return apiFetch<AdminBookingDetail[]>('/admin/bookings', { token });
+}
+
+export function updateBookingStatus(token: string, code: string, status: BookingStatusUpdate) {
+  return apiFetch<AdminBookingDetail>(`/admin/bookings/${code}/status`, {
+    method: 'PATCH',
+    token,
+    body: { status },
   });
 }

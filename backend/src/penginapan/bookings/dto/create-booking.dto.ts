@@ -56,6 +56,13 @@ export class CreateBookingDto {
   @Min(0)
   manualTotal?: number;
 
+  /** Potongan nominal opsional (bukan persen) — dikurangi dari total (otomatis
+   *  ATAU `manualTotal` kalau `isPriceOverride`) sebelum dibekukan jadi `priceSnapshot`. */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discount?: number;
+
   /** Wajib untuk WALK_IN — dipakai bikin baris `Payment` (§ "gunakan tabel yang sudah ada"). */
   @ValidateIf(
     (o: CreateBookingDto) => o.bookingChannel === BookingChannel.WALK_IN,
