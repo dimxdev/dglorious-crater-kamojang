@@ -4,6 +4,8 @@ import {
   BedDouble,
   CalendarCheck,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   DoorOpen,
   LogIn,
   Receipt,
@@ -34,7 +36,12 @@ import {
 } from '@/lib/data/admin';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
-import { BookingDetailModal, displayStatus, toDisplay } from './BookingDetailModal';
+import {
+  BookingDetailModal,
+  displayStatus,
+  toDisplay,
+  type DisplayBooking,
+} from './BookingDetailModal';
 import { SourceBadge, StatusBadge } from './StatusBadge';
 
 const WEEK = ['S', 'S', 'R', 'K', 'J', 'S', 'M'];
@@ -44,13 +51,15 @@ const WEEK = ['S', 'S', 'R', 'K', 'J', 'S', 'M'];
 // jadi tiap tabel dibatasi, sisanya diarahkan lewat link "Lihat semua".
 const OVERVIEW_LIST_LIMIT = 10;
 
+type OpsTab = 'arrivals' | 'inhouse' | 'departures';
+
 function ViewAllLink({ show }: { show: boolean }) {
   const { t } = useTranslation();
   if (!show) return null;
   return (
     <Link
       href="/admin/penginapan/booking"
-      className="text-green-700 shrink-0 text-xs font-semibold whitespace-nowrap hover:underline"
+      className="shrink-0 text-xs font-semibold whitespace-nowrap text-green-700 hover:underline"
     >
       {t('admin.viewAllInBookings')} →
     </Link>
@@ -96,11 +105,8 @@ function toOverviewBooking(b: AdminBookingDetail): AdminBooking {
 export function OverviewPage() {
   const { t, locale } = useTranslation();
   const { token } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<string | null>(() => {
-    const now = new Date();
-    return toISO(now.getFullYear(), now.getMonth(), now.getDate());
-  });
   const [selectedKode, setSelectedKode] = useState<string | null>(null);
+  const [opsTab, setOpsTab] = useState<OpsTab>('arrivals');
 
   const [bookings, setBookings] = useState<AdminBooking[] | null>(null);
   const [rawBookings, setRawBookings] = useState<AdminBookingDetail[] | null>(null);
@@ -108,6 +114,11 @@ export function OverviewPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
   const [calendarMonthIndex, setCalendarMonthIndex] = useState(() => new Date().getMonth());
+  // Satu-satunya sumber kebenaran tanggal. Dulu ada dua state terpisah
+  // (`activeDate` dari input tanggal + `selectedDate` dari klik kalender):
+  // klik tanggal di kalender cuma mengubah kotak ketersediaan, sementara
+  // statistik & tabel tetap di tanggal lama — kelihatan seperti kalendernya
+  // tidak berfungsi. Sekarang keduanya menggerakkan halaman yang sama.
   const [activeDate, setActiveDate] = useState<string>(() => {
     const now = new Date();
     return toISO(now.getFullYear(), now.getMonth(), now.getDate());
@@ -135,14 +146,16 @@ export function OverviewPage() {
 
   const today = new Date();
   const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate());
-  const todayMonth = todayISO.slice(0, 7);
 
   if (loadError) {
     return (
       <DashboardLayout title={t('dashboard.overview')}>
         <div className="border-border rounded-2xl border bg-white px-4 py-8 text-center">
           <p className="text-sm text-red-600">{loadError}</p>
-          <button onClick={() => void refresh()} className="text-green-700 mt-2 text-sm font-semibold underline">
+          <button
+            onClick={() => void refresh()}
+            className="mt-2 text-sm font-semibold text-green-700 underline"
+          >
             {t('admin.retry')}
           </button>
         </div>
@@ -162,7 +175,7 @@ export function OverviewPage() {
 
   const totalCapacity = activeRoomTypes.reduce((sum, r) => sum + r.totalUnits, 0);
 
-  function handleDateChange(iso: string) {
+  function selectDate(iso: string) {
     if (!iso) return;
     setActiveDate(iso);
     const [y, m] = iso.split('-').map(Number);
@@ -170,16 +183,16 @@ export function OverviewPage() {
     setCalendarMonthIndex(m - 1);
   }
 
-  const activeDateParsed = new Date(activeDate + 'T00:00:00');
-  const activeDateShort = new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  }).format(activeDateParsed);
-  const activeDateLong = new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  }).format(activeDateParsed);
-  const activeMonthLabel = new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
-    month: 'long', year: 'numeric',
-  }).format(activeDateParsed);
+  const fmt = (opts: Intl.DateTimeFormatOptions, iso: string) =>
+    new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', opts).format(
+      new Date(iso + 'T00:00:00'),
+    );
+
+  const activeDateShort = fmt({ day: 'numeric', month: 'long', year: 'numeric' }, activeDate);
+  const activeDateLong = fmt(
+    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+    activeDate,
+  );
 
   const bookingsToday = bookings.filter((b) => b.checkIn === activeDate).length;
   const paidTransactions = rawBookings
@@ -197,7 +210,14 @@ export function OverviewPage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map(toDisplay);
 
-  const stats: { label: string; value: string; sub: string; icon: LucideIcon; tint: string; iconColor: string }[] = [
+  const stats: {
+    label: string;
+    value: string;
+    sub: string;
+    icon: LucideIcon;
+    tint: string;
+    iconColor: string;
+  }[] = [
     {
       label: t('admin.overviewStatToday'),
       value: String(bookingsToday),
@@ -243,19 +263,8 @@ export function OverviewPage() {
   const checkInToday = rawBookings
     .filter((b) => b.checkIn.slice(0, 10) === activeDate)
     .sort((a, b) => {
-      const orderDiff = (CHECK_IN_TODAY_ORDER[a.status] ?? 99) - (CHECK_IN_TODAY_ORDER[b.status] ?? 99);
-      return orderDiff !== 0 ? orderDiff : a.guestName.localeCompare(b.guestName);
-    })
-    .map(toDisplay);
-
-  // CHECKED_IN duluan — tamunya masih di dalam dan kamarnya perlu disiapkan
-  // ulang setelah checkout. LUNAS/DP di bawah (edge case: booking yang
-  // check-in & checkout sama hari ini tanpa sempat di-update statusnya).
-  const CHECK_OUT_ORDER: Record<string, number> = { CHECKED_IN: 0, LUNAS: 1, DP: 2 };
-  const checkOutToday = rawBookings
-    .filter((b) => b.checkOut.slice(0, 10) === activeDate && b.status !== 'HANGUS')
-    .sort((a, b) => {
-      const orderDiff = (CHECK_OUT_ORDER[a.status] ?? 99) - (CHECK_OUT_ORDER[b.status] ?? 99);
+      const orderDiff =
+        (CHECK_IN_TODAY_ORDER[a.status] ?? 99) - (CHECK_IN_TODAY_ORDER[b.status] ?? 99);
       return orderDiff !== 0 ? orderDiff : a.guestName.localeCompare(b.guestName);
     })
     .map(toDisplay);
@@ -277,9 +286,56 @@ export function OverviewPage() {
     .sort((a, b) => a.checkOut.localeCompare(b.checkOut))
     .map(toDisplay);
 
+  // CHECKED_IN duluan — tamunya masih di dalam dan kamarnya perlu disiapkan
+  // ulang setelah checkout. LUNAS/DP di bawah (edge case: booking yang
+  // check-in & checkout sama hari ini tanpa sempat di-update statusnya).
+  const CHECK_OUT_ORDER: Record<string, number> = { CHECKED_IN: 0, LUNAS: 1, DP: 2 };
+  const checkOutToday = rawBookings
+    .filter((b) => b.checkOut.slice(0, 10) === activeDate && b.status !== 'HANGUS')
+    .sort((a, b) => {
+      const orderDiff = (CHECK_OUT_ORDER[a.status] ?? 99) - (CHECK_OUT_ORDER[b.status] ?? 99);
+      return orderDiff !== 0 ? orderDiff : a.guestName.localeCompare(b.guestName);
+    })
+    .map(toDisplay);
+
+  // Tiga daftar operasional ini dulu jadi tiga kartu tabel terpisah yang
+  // ditumpuk ke bawah — kolomnya nyaris sama persis, jadi halamannya panjang
+  // & ketiganya kelihatan seragam. Digabung ke satu kartu bertab: jumlahnya
+  // langsung kebaca di tab, dan admin gak perlu scroll jauh.
+  const OPS_TABS: {
+    key: OpsTab;
+    label: string;
+    icon: LucideIcon;
+    rows: DisplayBooking[];
+    empty: string;
+  }[] = [
+    {
+      key: 'arrivals',
+      label: t('admin.opsTabArrivals'),
+      icon: LogIn,
+      rows: checkInToday,
+      empty: t('admin.noCheckInDate'),
+    },
+    {
+      key: 'inhouse',
+      label: t('admin.opsTabInHouse'),
+      icon: BedDouble,
+      rows: currentlyStaying,
+      empty: t('admin.noCurrentlyStaying'),
+    },
+    {
+      key: 'departures',
+      label: t('admin.opsTabDepartures'),
+      icon: DoorOpen,
+      rows: checkOutToday,
+      empty: t('admin.noCheckOutDate'),
+    },
+  ];
+  const activeOps = OPS_TABS.find((tab) => tab.key === opsTab) ?? OPS_TABS[0];
+
   // Dicari langsung dari `rawBookings` (bukan cuma salah satu list di atas)
-  // biar modal detail bisa dibuka dari tabel Transaksi Hari Ini MAUPUN
-  // Check-in Hari Ini tanpa peduli booking-nya ada di list yang mana.
+  // biar modal detail bisa dibuka dari tabel mana pun tanpa peduli booking-nya
+  // ada di list yang mana.
   const selectedBookingRaw = rawBookings.find((b) => b.bookingCode === selectedKode) ?? null;
   const selectedBooking = selectedBookingRaw ? toDisplay(selectedBookingRaw) : null;
 
@@ -317,30 +373,47 @@ export function OverviewPage() {
     }
   }
 
-  const selectedOccupied = selectedDate ? occupiedQtyOnDate(bookings, selectedDate) : 0;
+  const activeOccupied = occupiedQtyOnDate(bookings, activeDate);
+  const occupancyPct =
+    totalCapacity > 0 ? Math.round((activeOccupied / totalCapacity) * 100) : 0;
 
   return (
     <DashboardLayout title={t('dashboard.overview')}>
-      {/* Date filter */}
-      <div className="mb-4.5 flex items-center justify-between gap-3">
-        <p className="text-foreground font-serif text-sm font-semibold capitalize">{activeDateLong}</p>
-        <div className="relative">
-          <CalendarDays
-            size={16}
-            strokeWidth={1.75}
-            className="text-muted pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-            aria-hidden
-          />
-          <input
-            type="date"
-            value={activeDate}
-            onChange={(e) => handleDateChange(e.target.value)}
-            className="border-input focus:border-green-500 focus:ring-green-500/20 h-10 rounded-full border bg-white pr-3.5 pl-9.5 text-sm font-medium focus:ring-2 focus:outline-none"
-          />
+      {/* ── Tanggal aktif ─────────────────────────────────────────────── */}
+      <div className="mb-4.5 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-foreground font-serif text-base font-bold capitalize">
+          {activeDateLong}
+        </p>
+        <div className="flex items-center gap-2">
+          {/* Balik ke hari ini — dulu kalau admin sudah menjelajah ke tanggal
+              lain, satu-satunya cara balik adalah memilih tanggalnya manual. */}
+          {activeDate !== todayISO && (
+            <button
+              type="button"
+              onClick={() => selectDate(todayISO)}
+              className="border-input hover:bg-cream-100 h-10 rounded-lg border bg-white px-3 text-[13px] font-semibold transition-colors"
+            >
+              {t('admin.jumpToday')}
+            </button>
+          )}
+          <div className="relative">
+            <CalendarDays
+              size={16}
+              strokeWidth={1.75}
+              className="text-muted pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
+              aria-hidden
+            />
+            <input
+              type="date"
+              value={activeDate}
+              onChange={(e) => selectDate(e.target.value)}
+              className="border-input h-10 rounded-lg border bg-white pr-3.5 pl-9.5 text-sm font-medium focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Stat cards */}
+      {/* ── Statistik ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4.5 lg:grid-cols-4">
         {stats.map((s) => (
           <Card key={s.label}>
@@ -353,7 +426,12 @@ export function OverviewPage() {
                     s.tint,
                   )}
                 >
-                  <s.icon size={14} strokeWidth={1.75} className={cn('sm:hidden', s.iconColor)} aria-hidden />
+                  <s.icon
+                    size={14}
+                    strokeWidth={1.75}
+                    className={cn('sm:hidden', s.iconColor)}
+                    aria-hidden
+                  />
                   <s.icon
                     size={16}
                     strokeWidth={1.75}
@@ -362,7 +440,7 @@ export function OverviewPage() {
                   />
                 </span>
               </div>
-              <div className="text-green-800 mt-1.5 font-serif text-lg leading-tight font-extrabold whitespace-nowrap sm:text-2xl">
+              <div className="mt-1.5 font-serif text-lg leading-tight font-extrabold whitespace-nowrap text-green-800 sm:text-2xl">
                 {s.value}
               </div>
               <div className="text-muted mt-1 text-[10.5px] font-medium sm:text-xs">{s.sub}</div>
@@ -371,7 +449,123 @@ export function OverviewPage() {
         ))}
       </div>
 
-      {/* Recent + calendar */}
+      {/* ── Operasional harian (tab) ──────────────────────────────────── */}
+      <Card className="mt-5.5">
+        <CardContent>
+          <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+            <div className="font-serif text-base font-bold">{t('admin.opsTitle')}</div>
+            <ViewAllLink show={activeOps.rows.length > OVERVIEW_LIST_LIMIT} />
+          </div>
+
+          <div className="flex max-w-full gap-1.5 overflow-x-auto rounded-xl border border-[#e8e2d5] bg-white p-1.5">
+            {OPS_TABS.map((tab) => {
+              const active = tab.key === opsTab;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setOpsTab(tab.key)}
+                  aria-pressed={active}
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors',
+                    active ? 'bg-forest-700 text-white' : 'text-muted hover:bg-cream-100',
+                  )}
+                >
+                  <tab.icon size={14} strokeWidth={1.9} aria-hidden />
+                  {tab.label}
+                  <span
+                    className={cn(
+                      'rounded-md px-1.5 py-px text-[11px] font-bold tabular-nums',
+                      active ? 'bg-white/20 text-white' : 'bg-cream-100 text-muted',
+                    )}
+                  >
+                    {tab.rows.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3.5">
+            {activeOps.rows.length > 0 ? (
+              <Table bare>
+                <THead>
+                  <Tr>
+                    <Th>{t('admin.tCode')}</Th>
+                    <Th>{t('admin.tGuest')}</Th>
+                    <Th>{t('admin.tWa')}</Th>
+                    <Th>{t('admin.tType')}</Th>
+                    {opsTab === 'inhouse' ? (
+                      <>
+                        <Th>{t('admin.tCheckIn')}</Th>
+                        <Th>{t('admin.tCheckOut')}</Th>
+                      </>
+                    ) : (
+                      <>
+                        <Th>{t('admin.tSource')}</Th>
+                        <Th>{t('admin.tStatus')}</Th>
+                      </>
+                    )}
+                  </Tr>
+                </THead>
+                <TBody>
+                  {activeOps.rows.slice(0, OVERVIEW_LIST_LIMIT).map((b) => (
+                    <Tr
+                      key={b.kode}
+                      onClick={() => setSelectedKode(b.kode)}
+                      className="cursor-pointer"
+                    >
+                      <Td className="font-semibold whitespace-nowrap text-green-700">
+                        {b.kode}
+                      </Td>
+                      <Td className="whitespace-nowrap">{b.guest}</Td>
+                      <Td className="text-muted whitespace-nowrap">{b.wa}</Td>
+                      <Td className="text-muted whitespace-nowrap">{roomsSummary(b.rooms)}</Td>
+                      {opsTab === 'inhouse' ? (
+                        <>
+                          <Td className="text-muted whitespace-nowrap">
+                            {fmt(
+                              { day: 'numeric', month: 'short', year: 'numeric' },
+                              b.raw.checkIn.slice(0, 10),
+                            )}
+                          </Td>
+                          <Td className="text-muted whitespace-nowrap">
+                            {fmt(
+                              { day: 'numeric', month: 'short', year: 'numeric' },
+                              b.raw.checkOut.slice(0, 10),
+                            )}
+                          </Td>
+                        </>
+                      ) : (
+                        <>
+                          <Td className="whitespace-nowrap">
+                            <SourceBadge source={b.source} />
+                          </Td>
+                          <Td className="whitespace-nowrap">
+                            <StatusBadge status={displayStatus(b)} />
+                          </Td>
+                        </>
+                      )}
+                    </Tr>
+                  ))}
+                </TBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center gap-1.5 py-10 text-center">
+                <activeOps.icon
+                  size={26}
+                  strokeWidth={1.4}
+                  className="text-cream-400"
+                  aria-hidden
+                />
+                <p className="text-muted text-[13px]">{activeOps.empty}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Transaksi + kalender ──────────────────────────────────────── */}
       <div className="mt-5.5 grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
         <Card className="min-w-0">
           <CardContent>
@@ -396,14 +590,20 @@ export function OverviewPage() {
                 </THead>
                 <TBody>
                   {todayTransactions.slice(0, OVERVIEW_LIST_LIMIT).map((b) => (
-                    <Tr key={b.kode} onClick={() => setSelectedKode(b.kode)} className="cursor-pointer">
+                    <Tr
+                      key={b.kode}
+                      onClick={() => setSelectedKode(b.kode)}
+                      className="cursor-pointer"
+                    >
                       <Td className="text-muted whitespace-nowrap">
                         {new Date(b.raw.createdAt).toLocaleTimeString('id-ID', {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                       </Td>
-                      <Td className="text-green-700 font-semibold whitespace-nowrap">{b.kode}</Td>
+                      <Td className="font-semibold whitespace-nowrap text-green-700">
+                        {b.kode}
+                      </Td>
                       <Td className="whitespace-nowrap">{b.guest}</Td>
                       <Td className="text-muted whitespace-nowrap">{roomsSummary(b.rooms)}</Td>
                       <Td className="whitespace-nowrap">
@@ -417,7 +617,10 @@ export function OverviewPage() {
                 </TBody>
               </Table>
             ) : (
-              <p className="text-muted text-[13px]">{t('admin.noTransactionsDate')}</p>
+              <div className="flex flex-col items-center gap-1.5 py-10 text-center">
+                <Receipt size={26} strokeWidth={1.4} className="text-cream-400" aria-hidden />
+                <p className="text-muted text-[13px]">{t('admin.noTransactionsDate')}</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -428,19 +631,19 @@ export function OverviewPage() {
               <button
                 type="button"
                 onClick={prevMonth}
-                className="text-muted hover:text-foreground hover:bg-stone-100 flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+                className="text-muted hover:text-foreground flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-stone-100"
                 aria-label="Bulan sebelumnya"
               >
-                ‹
+                <ChevronLeft size={16} strokeWidth={2.2} aria-hidden />
               </button>
               <span className="font-serif text-sm font-bold capitalize">{monthLabel}</span>
               <button
                 type="button"
                 onClick={nextMonth}
-                className="text-muted hover:text-foreground hover:bg-stone-100 flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+                className="text-muted hover:text-foreground flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-stone-100"
                 aria-label="Bulan berikutnya"
               >
-                ›
+                <ChevronRight size={16} strokeWidth={2.2} aria-hidden />
               </button>
             </div>
             <div className="text-muted mt-4 grid grid-cols-7 gap-1.5 text-center text-[11px]">
@@ -457,18 +660,25 @@ export function OverviewPage() {
                 const occupied = occupiedQtyOnDate(bookings, dateISO);
                 const full = totalCapacity > 0 && occupied >= totalCapacity;
                 const empty = occupied === 0;
-                const isSelected = dateISO === selectedDate;
+                const isSelected = dateISO === activeDate;
                 const isToday = dateISO === todayISO;
                 return (
                   <button
                     key={day}
                     type="button"
-                    onClick={() => setSelectedDate(dateISO)}
+                    // Klik tanggal sekarang menggerakkan SELURUH halaman
+                    // (statistik, tab operasional, transaksi), bukan cuma
+                    // kotak ketersediaan di bawah kalender.
+                    onClick={() => selectDate(dateISO)}
                     className={cn(
                       'flex aspect-square items-center justify-center rounded-md text-[11px] font-medium transition-colors',
-                      full ? 'bg-stone-200 text-stone-400' : empty ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700',
-                      isToday && 'outline-orange-500 outline-2 -outline-offset-2',
-                      isSelected && 'ring-green-700 ring-2',
+                      full
+                        ? 'bg-stone-200 text-stone-400'
+                        : empty
+                          ? 'bg-green-50 text-green-700'
+                          : 'bg-orange-50 text-orange-700',
+                      isToday && 'outline-2 -outline-offset-2 outline-orange-500',
+                      isSelected && 'ring-2 ring-green-700',
                     )}
                   >
                     {day}
@@ -478,194 +688,77 @@ export function OverviewPage() {
             </div>
             <div className="text-muted mt-3.5 flex flex-wrap items-center gap-3.5 text-[11.5px]">
               <span className="flex items-center gap-1.5">
-                <span className="bg-green-500 h-2.5 w-2.5 rounded-[3px]" />
+                <span className="h-2.5 w-2.5 rounded-[3px] bg-green-500" />
                 {t('admin.available')}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="bg-orange-400 h-2.5 w-2.5 rounded-[3px]" />
+                <span className="h-2.5 w-2.5 rounded-[3px] bg-orange-400" />
                 {t('admin.partial')}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="bg-stone-400 h-2.5 w-2.5 rounded-[3px]" />
+                <span className="h-2.5 w-2.5 rounded-[3px] bg-stone-400" />
                 {t('admin.full')}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="outline-orange-500 h-2.5 w-2.5 rounded-[3px] outline-2 -outline-offset-2" />
+                <span className="h-2.5 w-2.5 rounded-[3px] outline-2 -outline-offset-2 outline-orange-500" />
                 {t('admin.today')}
               </span>
             </div>
 
-            {selectedDate && (
-              <div className="border-border mt-4 rounded-xl border p-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">
-                    {new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
-                      day: 'numeric',
-                      month: 'long',
-                    }).format(new Date(selectedDate))}
-                  </span>
-                  <span className="text-muted text-xs">
-                    {t('admin.unitsOccupied', { occupied: selectedOccupied, total: totalCapacity })}
-                  </span>
-                </div>
-
-                <div className="border-border mt-2.5 flex flex-col gap-1 border-t border-dashed pt-2.5">
-                  {activeRoomTypes.map((rt) => {
-                    const occupiedType = occupiedQtyOnDate(bookings, selectedDate, rt.slug);
-                    const available = Math.max(0, rt.totalUnits - occupiedType);
-                    const isFull = available === 0;
-                    return (
-                      <div key={rt.slug} className="flex items-center justify-between text-[12px]">
-                        <span className={isFull ? 'text-muted' : 'text-foreground'}>{rt.name}</span>
-                        <span className={isFull ? 'text-stone-400 font-medium' : 'text-green-700 font-semibold'}>
-                          {isFull
-                            ? t('admin.full')
-                            : t('admin.unitsAvailable', { available, total: rt.totalUnits })}
-                        </span>
-                      </div>
-                    );
+            <div className="border-border mt-4 rounded-xl border p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold capitalize">
+                  {fmt({ day: 'numeric', month: 'long' }, activeDate)}
+                </span>
+                <span className="text-muted text-xs">
+                  {t('admin.unitsOccupied', {
+                    occupied: activeOccupied,
+                    total: totalCapacity,
                   })}
-                </div>
+                </span>
               </div>
-            )}
+
+              {/* Bar keterisian — angka "2 dari 30" doang susah dirasain
+                  proporsinya sekilas. */}
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all',
+                    occupancyPct >= 100
+                      ? 'bg-stone-400'
+                      : occupancyPct > 0
+                        ? 'bg-orange-400'
+                        : 'bg-green-500',
+                  )}
+                  style={{ width: `${Math.min(100, Math.max(occupancyPct, activeOccupied > 0 ? 4 : 0))}%` }}
+                />
+              </div>
+
+              <div className="border-border mt-2.5 flex flex-col gap-1 border-t border-dashed pt-2.5">
+                {activeRoomTypes.map((rt) => {
+                  const occupiedType = occupiedQtyOnDate(bookings, activeDate, rt.slug);
+                  const available = Math.max(0, rt.totalUnits - occupiedType);
+                  const isFull = available === 0;
+                  return (
+                    <div key={rt.slug} className="flex items-center justify-between text-[12px]">
+                      <span className={isFull ? 'text-muted' : 'text-foreground'}>{rt.name}</span>
+                      <span
+                        className={
+                          isFull ? 'font-medium text-stone-400' : 'font-semibold text-green-700'
+                        }
+                      >
+                        {isFull
+                          ? t('admin.full')
+                          : t('admin.unitsAvailable', { available, total: rt.totalUnits })}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Check-in hari ini — buat admin reservasi nyiapin unit sebelum tamunya datang. */}
-      <Card className="mt-5.5">
-        <CardContent>
-          <div className="mb-3.5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 font-serif text-base font-bold">
-              <LogIn size={17} strokeWidth={1.75} className="text-green-700" aria-hidden />
-              {t('admin.checkInDate', { date: activeDateShort })}
-            </div>
-            <ViewAllLink show={checkInToday.length > OVERVIEW_LIST_LIMIT} />
-          </div>
-          {checkInToday.length > 0 ? (
-            <Table bare>
-              <THead>
-                <Tr>
-                  <Th>{t('admin.tCode')}</Th>
-                  <Th>{t('admin.tGuest')}</Th>
-                  <Th>{t('admin.tWa')}</Th>
-                  <Th>{t('admin.tType')}</Th>
-                  <Th>{t('admin.tSource')}</Th>
-                  <Th>{t('admin.tStatus')}</Th>
-                </Tr>
-              </THead>
-              <TBody>
-                {checkInToday.slice(0, OVERVIEW_LIST_LIMIT).map((b) => (
-                  <Tr key={b.kode} onClick={() => setSelectedKode(b.kode)} className="cursor-pointer">
-                    <Td className="text-green-700 font-semibold whitespace-nowrap">{b.kode}</Td>
-                    <Td className="whitespace-nowrap">{b.guest}</Td>
-                    <Td className="text-muted whitespace-nowrap">{b.wa}</Td>
-                    <Td className="text-muted whitespace-nowrap">{roomsSummary(b.rooms)}</Td>
-                    <Td className="whitespace-nowrap">
-                      <SourceBadge source={b.source} />
-                    </Td>
-                    <Td className="whitespace-nowrap">
-                      <StatusBadge status={displayStatus(b)} />
-                    </Td>
-                  </Tr>
-                ))}
-              </TBody>
-            </Table>
-          ) : (
-            <p className="text-muted text-[13px]">{t('admin.noCheckInDate')}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Tamu sedang menginap — CHECKED_IN yang rentang tanggalnya mencakup activeDate. */}
-      <Card className="mt-5.5">
-        <CardContent>
-          <div className="mb-3.5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 font-serif text-base font-bold">
-              <BedDouble size={17} strokeWidth={1.75} className="text-green-700" aria-hidden />
-              {t('admin.currentlyStaying')}
-            </div>
-            <ViewAllLink show={currentlyStaying.length > OVERVIEW_LIST_LIMIT} />
-          </div>
-          {currentlyStaying.length > 0 ? (
-            <Table bare>
-              <THead>
-                <Tr>
-                  <Th>{t('admin.tCode')}</Th>
-                  <Th>{t('admin.tGuest')}</Th>
-                  <Th>{t('admin.tWa')}</Th>
-                  <Th>{t('admin.tType')}</Th>
-                  <Th>{t('admin.tCheckIn')}</Th>
-                  <Th>{t('admin.tCheckOut')}</Th>
-                </Tr>
-              </THead>
-              <TBody>
-                {currentlyStaying.slice(0, OVERVIEW_LIST_LIMIT).map((b) => (
-                  <Tr key={b.kode} onClick={() => setSelectedKode(b.kode)} className="cursor-pointer">
-                    <Td className="text-green-700 font-semibold whitespace-nowrap">{b.kode}</Td>
-                    <Td className="whitespace-nowrap">{b.guest}</Td>
-                    <Td className="text-muted whitespace-nowrap">{b.wa}</Td>
-                    <Td className="text-muted whitespace-nowrap">{roomsSummary(b.rooms)}</Td>
-                    <Td className="text-muted whitespace-nowrap">
-                      {new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
-                        day: 'numeric', month: 'short', year: 'numeric',
-                      }).format(new Date(b.raw.checkIn.slice(0, 10) + 'T00:00:00'))}
-                    </Td>
-                    <Td className="text-muted whitespace-nowrap">
-                      {new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
-                        day: 'numeric', month: 'short', year: 'numeric',
-                      }).format(new Date(b.raw.checkOut.slice(0, 10) + 'T00:00:00'))}
-                    </Td>
-                  </Tr>
-                ))}
-              </TBody>
-            </Table>
-          ) : (
-            <p className="text-muted text-[13px]">{t('admin.noCurrentlyStaying')}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Check-out hari ini — kamar yang perlu disiapkan ulang setelah tamu pergi. */}
-      <Card className="mt-5.5">
-        <CardContent>
-          <div className="mb-3.5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 font-serif text-base font-bold">
-              <DoorOpen size={17} strokeWidth={1.75} className="text-green-700" aria-hidden />
-              {t('admin.checkOutDate', { date: activeDateShort })}
-            </div>
-            <ViewAllLink show={checkOutToday.length > OVERVIEW_LIST_LIMIT} />
-          </div>
-          {checkOutToday.length > 0 ? (
-            <Table bare>
-              <THead>
-                <Tr>
-                  <Th>{t('admin.tCode')}</Th>
-                  <Th>{t('admin.tGuest')}</Th>
-                  <Th>{t('admin.tWa')}</Th>
-                  <Th>{t('admin.tType')}</Th>
-                  <Th>{t('admin.tSource')}</Th>
-                  <Th>{t('admin.tStatus')}</Th>
-                </Tr>
-              </THead>
-              <TBody>
-                {checkOutToday.slice(0, OVERVIEW_LIST_LIMIT).map((b) => (
-                  <Tr key={b.kode} onClick={() => setSelectedKode(b.kode)} className="cursor-pointer">
-                    <Td className="text-green-700 font-semibold whitespace-nowrap">{b.kode}</Td>
-                    <Td className="whitespace-nowrap">{b.guest}</Td>
-                    <Td className="text-muted whitespace-nowrap">{b.wa}</Td>
-                    <Td className="text-muted whitespace-nowrap">{roomsSummary(b.rooms)}</Td>
-                    <Td className="whitespace-nowrap"><SourceBadge source={b.source} /></Td>
-                    <Td className="whitespace-nowrap"><StatusBadge status={displayStatus(b)} /></Td>
-                  </Tr>
-                ))}
-              </TBody>
-            </Table>
-          ) : (
-            <p className="text-muted text-[13px]">{t('admin.noCheckOutDate')}</p>
-          )}
-        </CardContent>
-      </Card>
 
       {selectedBooking && (
         <BookingDetailModal

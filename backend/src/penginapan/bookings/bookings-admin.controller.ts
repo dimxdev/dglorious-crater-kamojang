@@ -15,6 +15,7 @@ import type { AuthUser } from '../../auth/types/jwt-payload';
 import { RoleName } from '../../generated/prisma/enums';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { EditBookingDto } from './dto/edit-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 
 /** Pencatatan booking internal (§6.1 PROJECT.md) — admin hanya input booking yang sudah fix. */
@@ -46,5 +47,14 @@ export class BookingsAdminController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.bookingsService.updateStatus(code, dto, user.id);
+  }
+
+  @Patch(':code')
+  editBooking(
+    @Param('code') code: string,
+    @Body() dto: EditBookingDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.bookingsService.editBooking(code, dto, user.id);
   }
 }

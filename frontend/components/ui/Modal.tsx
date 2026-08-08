@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { cn } from '@/lib/cn';
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 
 type ModalProps = {
   open: boolean;
@@ -12,6 +13,8 @@ type ModalProps = {
 };
 
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
+  useBodyScrollLock(open);
+
   // Tutup dengan tombol Escape.
   useEffect(() => {
     if (!open) return;

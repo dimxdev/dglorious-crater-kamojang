@@ -75,7 +75,7 @@ export class RoomTypesAdminController {
   ) {
     const checkIn = new Date(query.checkIn);
     const checkOut = new Date(query.checkOut);
-    return this.roomTypesService.checkAvailability(id, checkIn, checkOut);
+    return this.roomTypesService.checkAvailability(id, checkIn, checkOut, query.excludeBookingId);
   }
 
   @Post(':id/units')

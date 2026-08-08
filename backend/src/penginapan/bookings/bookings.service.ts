@@ -20,13 +20,21 @@ import {
 } from '../room-types/pricing.util';
 import { RoomTypesService } from '../room-types/room-types.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { EditBookingDto } from './dto/edit-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 
 // Alfabet tanpa 0/O/1/I — hindari salah baca pas admin dikte kode via telepon/WA.
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const bookingWithItems = {
-  include: { items: { include: { roomType: true } }, payments: true },
+  include: {
+    items: { include: { roomType: true } },
+    payments: true,
+    editLogs: {
+      include: { editedBy: { select: { id: true, name: true } } },
+      orderBy: { editedAt: 'desc' as const },
+    },
+  },
 } satisfies Prisma.BookingDefaultArgs;
 type BookingWithItems = Prisma.BookingGetPayload<typeof bookingWithItems>;
 
@@ -179,6 +187,7 @@ export class BookingsService {
           checkOut,
           priceSnapshot: total,
           isPriceOverride: dto.isPriceOverride ?? false,
+          autoCalculatedTotal: autoTotal,
           discount,
           status,
           bookingChannel: dto.bookingChannel,
@@ -309,6 +318,213 @@ export class BookingsService {
     return this.toAdminBooking(updated);
   }
 
+  // ── Edit booking dengan audit trail (anti-korupsi — setiap perubahan tercatat) ──
+
+  async editBooking(code: string, dto: EditBookingDto, editorId: number) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { bookingCode: code },
+      ...bookingWithItems,
+    });
+    if (!booking) {
+      throw new NotFoundException(`Booking ${code} tidak ditemukan`);
+    }
+
+    const datesChanging = dto.checkIn !== undefined || dto.checkOut !== undefined;
+    const roomsChanging = dto.items !== undefined;
+    const structureChanging = datesChanging || roomsChanging;
+
+    const oldCheckInStr = booking.checkIn.toISOString().slice(0, 10);
+    const oldCheckOutStr = booking.checkOut.toISOString().slice(0, 10);
+
+    // Hitung ulang harga kalau tanggal/kamar berubah.
+    let newAutoTotal = Number(
+      booking.autoCalculatedTotal ?? booking.priceSnapshot,
+    ) + Number(booking.discount);
+    let newItemsData: {
+      roomTypeId: number;
+      adults: number;
+      children: number;
+      extraBedQty: number;
+      extraBedType: string | undefined;
+      extraBedPrice: number;
+      subtotalSnapshot: number;
+    }[] | null = null;
+    let resolvedRoomTypes: { id: number; slug: string }[] | null = null;
+
+    if (structureChanging) {
+      const newCheckIn = new Date(dto.checkIn ?? oldCheckInStr);
+      const newCheckOut = new Date(dto.checkOut ?? oldCheckOutStr);
+      const newItemDtos = dto.items ?? booking.items.map((i) => ({
+        roomTypeId: i.roomTypeId,
+        adults: i.adults,
+        children: i.children,
+        extraBedQty: i.extraBedQty,
+        extraBedType: i.extraBedType as 'WITH_BED' | 'WITHOUT_BED' | undefined,
+      }));
+
+      const roomTypes = await this.prisma.roomType.findMany({
+        where: { id: { in: newItemDtos.map((i) => i.roomTypeId) } },
+      });
+      resolvedRoomTypes = roomTypes.map((rt) => ({ id: rt.id, slug: rt.slug }));
+
+      for (const item of newItemDtos) {
+        const avail = await this.roomTypesService.checkAvailability(
+          item.roomTypeId,
+          newCheckIn,
+          newCheckOut,
+          booking.id,
+        );
+        if (!avail.isAvailable) {
+          const rt = roomTypes.find((r) => r.id === item.roomTypeId);
+          throw new ConflictException(
+            `${rt?.slug ?? item.roomTypeId} tidak tersedia untuk tanggal tersebut`,
+          );
+        }
+      }
+
+      const nights = calcNights(newCheckIn, newCheckOut);
+      newItemsData = newItemDtos.map((item) => {
+        const rt = roomTypes.find((r) => r.id === item.roomTypeId)!;
+        const stay = calcStayPrice(
+          {
+            priceWeekday: Number(rt.priceWeekday),
+            priceWeekend: Number(rt.priceWeekend),
+          },
+          newCheckIn,
+          newCheckOut,
+        );
+        const extraBedQty = item.extraBedQty ?? 0;
+        const rate =
+          extraBedQty > 0 && item.extraBedType
+            ? extraBedRate(
+                {
+                  extraBedPrice: rt.extraBedPrice ? Number(rt.extraBedPrice) : null,
+                  extraNoBedPrice: rt.extraNoBedPrice ? Number(rt.extraNoBedPrice) : null,
+                  extraFlatPrice: rt.extraFlatPrice ? Number(rt.extraFlatPrice) : null,
+                },
+                item.extraBedType,
+              )
+            : 0;
+        return {
+          roomTypeId: item.roomTypeId,
+          adults: item.adults,
+          children: item.children,
+          extraBedQty,
+          extraBedType: extraBedQty > 0 ? item.extraBedType : undefined,
+          extraBedPrice: rate,
+          subtotalSnapshot: stay + extraBedQty * rate * nights,
+        };
+      });
+      newAutoTotal = newItemsData.reduce((sum, i) => sum + i.subtotalSnapshot, 0);
+    }
+
+    // Ketika tanggal/kamar berubah: reset override ke auto kecuali admin set manual eksplisit.
+    const newIsPriceOverride = structureChanging
+      ? dto.priceOverride !== undefined
+      : dto.priceOverride !== undefined
+        ? true
+        : booking.isPriceOverride;
+
+    const currentGross = booking.isPriceOverride
+      ? Number(booking.priceSnapshot) + Number(booking.discount)
+      : Number(booking.autoCalculatedTotal ?? booking.priceSnapshot) + Number(booking.discount);
+    const newGross =
+      dto.priceOverride !== undefined
+        ? dto.priceOverride
+        : structureChanging
+          ? newAutoTotal
+          : currentGross;
+    const newDiscount = dto.discount !== undefined ? dto.discount : Number(booking.discount);
+    const newPriceSnapshot = Math.max(0, newGross - newDiscount);
+
+    // Diff — hanya field yang benar-benar berubah.
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+    if (dto.guestName !== undefined && dto.guestName !== booking.guestName) {
+      changes.guestName = { from: booking.guestName, to: dto.guestName };
+    }
+    if (dto.guestPhone !== undefined && dto.guestPhone !== booking.guestPhone) {
+      changes.guestPhone = { from: booking.guestPhone, to: dto.guestPhone };
+    }
+    if (dto.notes !== undefined && dto.notes !== (booking.notes ?? '')) {
+      changes.notes = { from: booking.notes, to: dto.notes || null };
+    }
+    if (dto.checkIn && dto.checkIn !== oldCheckInStr) {
+      changes.checkIn = { from: oldCheckInStr, to: dto.checkIn };
+    }
+    if (dto.checkOut && dto.checkOut !== oldCheckOutStr) {
+      changes.checkOut = { from: oldCheckOutStr, to: dto.checkOut };
+    }
+    if (dto.items && resolvedRoomTypes) {
+      const oldRooms = booking.items.map((i) => i.roomType.slug).join(', ');
+      const newRooms = (newItemsData ?? [])
+        .map((i) => resolvedRoomTypes!.find((rt) => rt.id === i.roomTypeId)?.slug ?? i.roomTypeId)
+        .join(', ');
+      if (oldRooms !== newRooms) {
+        changes.rooms = { from: oldRooms, to: newRooms };
+      }
+    }
+    if (newPriceSnapshot !== Number(booking.priceSnapshot)) {
+      changes.priceSnapshot = { from: Number(booking.priceSnapshot), to: newPriceSnapshot };
+    }
+    if (newDiscount !== Number(booking.discount)) {
+      changes.discount = { from: Number(booking.discount), to: newDiscount };
+    }
+    if (structureChanging && newAutoTotal !== Number(booking.autoCalculatedTotal ?? 0)) {
+      changes.autoCalculatedTotal = {
+        from: Number(booking.autoCalculatedTotal),
+        to: newAutoTotal,
+      };
+    }
+
+    if (Object.keys(changes).length === 0) {
+      return this.toAdminBooking(booking);
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (newItemsData) {
+        await tx.bookingItem.deleteMany({ where: { bookingId: booking.id } });
+        await tx.bookingItem.createMany({
+          data: newItemsData.map((i) => ({
+            ...i,
+            bookingId: booking.id,
+            extraBedType: i.extraBedType as import('../../generated/prisma/enums').ExtraBedType | undefined,
+          })),
+        });
+      }
+
+      await tx.booking.update({
+        where: { bookingCode: code },
+        data: {
+          ...(dto.guestName !== undefined && { guestName: dto.guestName }),
+          ...(dto.guestPhone !== undefined && { guestPhone: dto.guestPhone }),
+          ...(dto.notes !== undefined && { notes: dto.notes || null }),
+          ...(dto.checkIn !== undefined && { checkIn: new Date(dto.checkIn) }),
+          ...(dto.checkOut !== undefined && { checkOut: new Date(dto.checkOut) }),
+          priceSnapshot: newPriceSnapshot,
+          discount: newDiscount,
+          isPriceOverride: newIsPriceOverride,
+          ...(structureChanging && { autoCalculatedTotal: newAutoTotal }),
+        },
+      });
+
+      await tx.bookingEditLog.create({
+        data: {
+          bookingId: booking.id,
+          editedById: editorId,
+          note: dto.note,
+          changes: changes as Prisma.InputJsonValue,
+        },
+      });
+
+      return tx.booking.findUniqueOrThrow({
+        where: { bookingCode: code },
+        ...bookingWithItems,
+      });
+    });
+
+    return this.toAdminBooking(updated);
+  }
+
   private assertValidTransition(
     current: BookingStatus,
     next: 'LUNAS' | 'CHECKED_IN' | 'HANGUS' | 'COMPLETED' | 'NO_SHOW',
@@ -381,6 +597,7 @@ export class BookingsService {
       checkOut: booking.checkOut,
       createdAt: booking.createdAt,
       priceSnapshot: Number(booking.priceSnapshot),
+      autoCalculatedTotal: booking.autoCalculatedTotal !== null ? Number(booking.autoCalculatedTotal) : null,
       discount: Number(booking.discount),
       // Σ payments yang PAID — nominal yang BENERAN sudah masuk, bukan
       // asumsi (mis. "DP pasti 50%"). Lihat DetailModal "Sudah dibayar".
@@ -410,6 +627,13 @@ export class BookingsService {
         extraBedType: i.extraBedType,
         extraBedPrice: Number(i.extraBedPrice),
         subtotalSnapshot: Number(i.subtotalSnapshot),
+      })),
+      editLogs: booking.editLogs.map((log) => ({
+        id: log.id,
+        editedAt: log.editedAt,
+        editedByName: log.editedBy.name,
+        note: log.note,
+        changes: log.changes as Record<string, { from: unknown; to: unknown }>,
       })),
     };
   }

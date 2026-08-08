@@ -1,5 +1,15 @@
 'use client';
 
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  FileSpreadsheet,
+  FileText,
+  Search,
+  SearchX,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import {
@@ -60,7 +70,19 @@ const SOURCE_COLORS: Record<BookingChannel, string> = {
   WALK_IN: '#C1663F',
 };
 
+// Dot per status buat pill filter — dicocokin sama `dotTones` di Badge.tsx biar
+// warna yang sama dipakai di filter maupun di kolom Status tabel.
+const STATUS_DOTS: Record<BookingStatus, string> = {
+  DP: 'bg-orange-400',
+  LUNAS: 'bg-blue-500',
+  CHECKED_IN: 'bg-green-600',
+  COMPLETED: 'bg-green-800',
+  HANGUS: 'bg-red-500',
+  NO_SHOW: 'bg-orange-600',
+};
+
 const STATUSES = Object.keys(statusLabelId) as BookingStatus[];
+const SOURCES: BookingChannel[] = ['WHATSAPP', 'WALK_IN'];
 const PAGE_SIZE = 20;
 
 export function BookingsPage() {
@@ -109,24 +131,34 @@ export function BookingsPage() {
   const selected = all.find((b) => b.kode === selectedKode) ?? null;
 
   const searchActive = search.trim() !== '';
-  // Search sengaja dibikin gak kebatasin filter lain (periode/status/sumber) —
-  // begitu ngetik di search, cari di SEMUA booking, biar gampang nemuin
-  // booking tertentu walau lagi difilter periode/status/sumber yang beda.
-  const exportBookings = searchActive
-    ? all.filter((b) => {
-        const q = search.trim().toLowerCase();
-        return (
+  const q = search.trim().toLowerCase();
+  // Scope dasar: begitu ngetik di search, cari di SEMUA booking (abaikan
+  // periode) — biar gampang nemuin booking lama tanpa nebak-nebak periodenya.
+  // Status & sumber TETAP berlaku, jadi hasil pencarian masih bisa dipersempit.
+  const scoped = searchActive
+    ? all.filter(
+        (b) =>
           b.kode.toLowerCase().includes(q) ||
           b.guest.toLowerCase().includes(q) ||
-          b.wa.toLowerCase().includes(q)
-        );
-      })
-    : bookingsInRange(range, ref, all).filter((b) => {
-        const matchesStatus =
-          statusFilter === '' || displayStatus(b) === statusFilter;
-        const matchesSource = sourceFilter === '' || b.source === sourceFilter;
-        return matchesStatus && matchesSource;
-      });
+          b.wa.toLowerCase().includes(q),
+      )
+    : bookingsInRange(range, ref, all);
+
+  const matchesStatus = (b: DisplayBooking) =>
+    statusFilter === '' || displayStatus(b) === statusFilter;
+  const matchesSource = (b: DisplayBooking) =>
+    sourceFilter === '' || b.source === sourceFilter;
+
+  // Angka di pill = "berapa hasilnya kalau pill ini diklik", jadi masing-masing
+  // dihitung dengan mengabaikan filternya sendiri (status ngabaikan status, dst).
+  const scopedForStatus = scoped.filter(matchesSource);
+  const scopedForSource = scoped.filter(matchesStatus);
+  const statusCount = (s: BookingStatus) =>
+    scopedForStatus.filter((b) => displayStatus(b) === s).length;
+  const sourceCount = (src: BookingChannel) =>
+    scopedForSource.filter((b) => b.source === src).length;
+
+  const exportBookings = scoped.filter((b) => matchesStatus(b) && matchesSource(b));
   const filtered = exportBookings.filter(
     (b) => checkInDate === '' || b.checkIn === checkInDate,
   );
@@ -138,8 +170,23 @@ export function BookingsPage() {
     currentPage * PAGE_SIZE,
   );
 
-  // Angka ringkasan yang sama dipakai buat Export PDF maupun Export Excel,
-  // biar dua-duanya selalu konsisten (gak ada logic ganda yang bisa ketinggalan sinkron).
+  const anyFilterActive =
+    searchActive ||
+    statusFilter !== '' ||
+    sourceFilter !== '' ||
+    checkInDate !== '';
+
+  function resetFilters() {
+    setSearch('');
+    setStatusFilter('');
+    setSourceFilter('');
+    setCheckInDate('');
+    setPage(1);
+  }
+
+  // Angka ringkasan yang sama dipakai buat strip statistik di layar, Export PDF,
+  // maupun Export Excel — biar semuanya konsisten (gak ada logic ganda yang
+  // bisa ketinggalan sinkron).
   function buildExportSummary() {
     const totalRevenue = exportBookings.reduce((sum, b) => sum + b.total, 0);
     const belumLunas = exportBookings.filter(
@@ -175,17 +222,15 @@ export function BookingsPage() {
     exportBookings.forEach((b) => {
       sourceCounts[b.source] += 1;
     });
-    const sourceBreakdown = (['WHATSAPP', 'WALK_IN'] as BookingChannel[]).map(
-      (src) => ({
-        label: src === 'WHATSAPP' ? t('admin.whatsapp') : t('admin.walkin'),
-        count: sourceCounts[src],
-        pct:
-          exportBookings.length > 0
-            ? Math.round((sourceCounts[src] / exportBookings.length) * 100)
-            : 0,
-        colorHex: SOURCE_COLORS[src],
-      }),
-    );
+    const sourceBreakdown = SOURCES.map((src) => ({
+      label: src === 'WHATSAPP' ? t('admin.whatsapp') : t('admin.walkin'),
+      count: sourceCounts[src],
+      pct:
+        exportBookings.length > 0
+          ? Math.round((sourceCounts[src] / exportBookings.length) * 100)
+          : 0,
+      colorHex: SOURCE_COLORS[src],
+    }));
 
     return {
       totalRevenue,
@@ -196,6 +241,8 @@ export function BookingsPage() {
       periodLabel: periodRangeLabel(range, ref),
     };
   }
+
+  const summary = buildExportSummary();
 
   function handleExport() {
     const {
@@ -395,125 +442,250 @@ export function BookingsPage() {
 
   return (
     <DashboardLayout title={t('dashboard.bookings')}>
-      {/* Filter bar */}
-      <div className="border-border flex flex-col gap-3 rounded-2xl border bg-white p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* `w-full` di mobile: search ambil satu baris penuh, biar 2 dropdown
-              di bawahnya turun & kebagian lebar yang cukup buat kebaca. */}
-          <div className="w-full sm:min-w-50 sm:flex-1">
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              placeholder={t('admin.searchPlaceholder')}
-              className="border-input focus:border-forest-500 w-full rounded-[10px] border px-3.5 py-2.5 text-[13.5px] outline-none"
-            />
-            {searchActive && (
-              <p className="text-muted mt-1 text-[11.5px]">
-                {t('admin.searchOverridesNote')}
-              </p>
-            )}
-          </div>
-          <select
-            value={statusFilter}
-            disabled={searchActive}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as BookingStatus | '');
-              setPage(1);
-            }}
-            className="border-input min-w-36 flex-1 rounded-[10px] border bg-white px-3 py-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 sm:flex-none"
-          >
-            <option value="">{t('admin.allStatus')}</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {statusLabelId[s]}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sourceFilter}
-            disabled={searchActive}
-            onChange={(e) => {
-              setSourceFilter(e.target.value as BookingChannel | '');
-              setPage(1);
-            }}
-            className="border-input min-w-36 flex-1 rounded-[10px] border bg-white px-3 py-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 sm:flex-none"
-          >
-            <option value="">{t('admin.allSource')}</option>
-            <option value="WHATSAPP">{t('admin.whatsapp')}</option>
-            <option value="WALK_IN">{t('admin.walkin')}</option>
-          </select>
-        </div>
-
-        <div
-          className={cn(
-            'flex flex-wrap items-end gap-3 border-t border-dashed border-[#e2dccb] pt-3',
-            searchActive && 'pointer-events-none opacity-40',
-          )}
-        >
-          <FilterField
-            label={t('admin.filterPeriod')}
-            className="w-full sm:w-auto"
-          >
-            <RangeFilter
-              range={range}
-              onRangeChange={(r) => {
-                setRange(r);
-                setPage(1);
-              }}
-              customRange={customRange}
-              onCustomRangeChange={(c) => {
-                setCustomRange(c);
-                setPage(1);
-              }}
-            />
-          </FilterField>
-          <FilterField label={t('admin.filterCheckInDate')}>
-            <input
-              type="date"
-              value={checkInDate}
-              onChange={(e) => {
-                setCheckInDate(e.target.value);
-                setPage(1);
-              }}
-              className="border-input rounded-[10px] border bg-white px-3 py-2 text-[13px]"
-            />
-          </FilterField>
-          {checkInDate !== '' && (
-            <button
-              onClick={() => {
-                setCheckInDate('');
-                setPage(1);
-              }}
-              className="text-accent text-[12.5px] font-semibold"
-            >
-              {t('admin.clearDateFilter')}
-            </button>
-          )}
-        </div>
-
-        {/* Di mobile dua tombol dibagi rata biar gak numpuk mepet kanan. */}
-        <div className="flex gap-2.5 border-t border-dashed border-[#e2dccb] pt-3 sm:justify-end">
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            className="flex-1 rounded-lg bg-[#1B4332] px-4 py-2 text-[13px] font-semibold whitespace-nowrap text-white hover:bg-[#153728] sm:flex-none"
-          >
-            {t('admin.exportExcel')}
-          </button>
-          <button
-            type="button"
-            onClick={handleExport}
-            className="bg-terracotta-500 hover:bg-terracotta-600 flex-1 rounded-lg px-4 py-2 text-[13px] font-semibold whitespace-nowrap text-white sm:flex-none"
-          >
-            {t('admin.export')}
-          </button>
-        </div>
+      {/* ── Strip ringkasan — ikut filter yang lagi aktif ───────────────── */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label={t('admin.reportStatTotalBooking')}
+          value={String(exportBookings.length)}
+          hint={searchActive ? t('admin.filterAll') : periodRangeLabel(range, ref)}
+        />
+        <StatTile
+          label={t('admin.reportStatTotalRevenue')}
+          value={formatIDR(summary.totalRevenue)}
+          valueClass="text-forest-700"
+        />
+        <StatTile
+          label={t('admin.reportStatBelumLunas')}
+          value={String(summary.belumLunas)}
+          valueClass={summary.belumLunas > 0 ? 'text-[#c8952e]' : undefined}
+        />
+        <StatTile
+          label={t('admin.reportStatMenginap')}
+          value={String(summary.menginap)}
+          valueClass={summary.menginap > 0 ? 'text-[#2f6b41]' : undefined}
+        />
       </div>
 
-      {/* Table */}
+      {/* ── Panel filter ────────────────────────────────────────────────── */}
+      <Card className="mt-4">
+        <CardContent className="flex flex-col gap-4 p-4 sm:p-5">
+          {/* Baris 1: pencarian + tombol export */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative w-full min-w-0 sm:flex-1">
+              <Search
+                size={16}
+                strokeWidth={2}
+                aria-hidden
+                className="text-muted pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
+              />
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder={t('admin.searchPlaceholder')}
+                className="border-input focus:border-forest-500 w-full rounded-[10px] border py-2.5 pr-9 pl-10 text-[13.5px] outline-none"
+              />
+              {searchActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setPage(1);
+                  }}
+                  aria-label={t('admin.clearSearch')}
+                  className="text-muted hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                >
+                  <X size={15} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+            <div className="flex w-full gap-2 sm:w-auto">
+              <ExportButton
+                onClick={handleExportExcel}
+                icon={<FileSpreadsheet size={15} strokeWidth={1.9} aria-hidden />}
+                className="bg-[#1B4332] hover:bg-[#153728]"
+              >
+                {t('admin.exportExcel')}
+              </ExportButton>
+              <ExportButton
+                onClick={handleExport}
+                icon={<FileText size={15} strokeWidth={1.9} aria-hidden />}
+                className="bg-terracotta-500 hover:bg-terracotta-600"
+              >
+                {t('admin.export')}
+              </ExportButton>
+            </div>
+          </div>
+
+          {searchActive && (
+            <p className="text-muted -mt-1 flex items-center gap-1.5 text-[11.5px]">
+              <Search size={12} strokeWidth={2} aria-hidden />
+              {t('admin.searchOverridesNote')}
+            </p>
+          )}
+
+          {/* Baris 2: status — pill + jumlah, jauh lebih cepat discan daripada dropdown */}
+          <FilterRow label={t('admin.filterStatus')}>
+            <SegGroup>
+              <SegButton
+                active={statusFilter === ''}
+                onClick={() => {
+                  setStatusFilter('');
+                  setPage(1);
+                }}
+                count={scopedForStatus.length}
+              >
+                {t('admin.filterAll')}
+              </SegButton>
+              {STATUSES.map((s) => (
+                <SegButton
+                  key={s}
+                  active={statusFilter === s}
+                  onClick={() => {
+                    setStatusFilter(statusFilter === s ? '' : s);
+                    setPage(1);
+                  }}
+                  dot={STATUS_DOTS[s]}
+                  count={statusCount(s)}
+                >
+                  {statusLabelId[s]}
+                </SegButton>
+              ))}
+            </SegGroup>
+          </FilterRow>
+
+          {/* Baris 3: sumber + periode + tanggal check-in */}
+          <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+            <FilterRow label={t('admin.filterSource')}>
+              <SegGroup>
+                <SegButton
+                  active={sourceFilter === ''}
+                  onClick={() => {
+                    setSourceFilter('');
+                    setPage(1);
+                  }}
+                >
+                  {t('admin.filterAll')}
+                </SegButton>
+                {SOURCES.map((src) => (
+                  <SegButton
+                    key={src}
+                    active={sourceFilter === src}
+                    onClick={() => {
+                      setSourceFilter(sourceFilter === src ? '' : src);
+                      setPage(1);
+                    }}
+                    dot={src === 'WHATSAPP' ? 'bg-blue-500' : 'bg-orange-600'}
+                    count={sourceCount(src)}
+                  >
+                    {src === 'WHATSAPP' ? t('admin.whatsapp') : t('admin.walkin')}
+                  </SegButton>
+                ))}
+              </SegGroup>
+            </FilterRow>
+
+            <FilterRow
+              label={t('admin.filterPeriod')}
+              className={cn(searchActive && 'pointer-events-none opacity-40')}
+            >
+              <RangeFilter
+                range={range}
+                onRangeChange={(r) => {
+                  setRange(r);
+                  setPage(1);
+                }}
+                customRange={customRange}
+                onCustomRangeChange={(c) => {
+                  setCustomRange(c);
+                  setPage(1);
+                }}
+              />
+            </FilterRow>
+
+            <FilterRow label={t('admin.filterCheckInDate')}>
+              <div className="relative">
+                <CalendarDays
+                  size={15}
+                  strokeWidth={1.9}
+                  aria-hidden
+                  className="text-muted pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+                />
+                <input
+                  type="date"
+                  value={checkInDate}
+                  onChange={(e) => {
+                    setCheckInDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="border-input focus:border-forest-500 rounded-xl border bg-white py-2.5 pr-3 pl-9 text-[13px] outline-none"
+                />
+              </div>
+            </FilterRow>
+          </div>
+
+          {/* Baris 4: rangkuman filter aktif — sekali lihat tahu apa yang lagi nyaring */}
+          {anyFilterActive && (
+            <div className="border-border flex flex-wrap items-center gap-2 border-t border-dashed pt-3.5">
+              <span className="text-muted text-[11px] font-semibold tracking-[0.05em] uppercase">
+                {t('admin.activeFilters')}
+              </span>
+              {searchActive && (
+                <Chip
+                  label={t('admin.chipSearch', { q: search.trim() })}
+                  onRemove={() => {
+                    setSearch('');
+                    setPage(1);
+                  }}
+                />
+              )}
+              {statusFilter !== '' && (
+                <Chip
+                  label={statusLabelId[statusFilter]}
+                  dot={STATUS_DOTS[statusFilter]}
+                  onRemove={() => {
+                    setStatusFilter('');
+                    setPage(1);
+                  }}
+                />
+              )}
+              {sourceFilter !== '' && (
+                <Chip
+                  label={
+                    sourceFilter === 'WHATSAPP'
+                      ? t('admin.whatsapp')
+                      : t('admin.walkin')
+                  }
+                  dot={sourceFilter === 'WHATSAPP' ? 'bg-blue-500' : 'bg-orange-600'}
+                  onRemove={() => {
+                    setSourceFilter('');
+                    setPage(1);
+                  }}
+                />
+              )}
+              {checkInDate !== '' && (
+                <Chip
+                  label={t('admin.chipCheckIn', { date: formatDate(checkInDate) })}
+                  onRemove={() => {
+                    setCheckInDate('');
+                    setPage(1);
+                  }}
+                />
+              )}
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-accent ml-auto text-[12.5px] font-semibold"
+              >
+                {t('admin.resetFilters')}
+              </button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Tabel ───────────────────────────────────────────────────────── */}
       <div className="mt-4">
         {listError && (
           <div className="border-border rounded-2xl border bg-white px-4 py-8 text-center">
@@ -534,75 +706,123 @@ export function BookingsPage() {
         {!listError && bookings !== null && (
           <Card>
             <CardContent>
-              <Table bare>
-                <THead>
-                  <Tr>
-                    <Th className="whitespace-nowrap">{t('admin.tCode')}</Th>
-                    <Th className="whitespace-nowrap">{t('admin.tGuest')}</Th>
-                    <Th className="whitespace-nowrap">{t('admin.tWa')}</Th>
-                    <Th className="whitespace-nowrap">{t('admin.tType')}</Th>
-                    <Th className="whitespace-nowrap">
-                      {t('admin.tBookingDate')}
-                    </Th>
-                    <Th className="whitespace-nowrap">{t('admin.tCheckIn')}</Th>
-                    <Th className="whitespace-nowrap">
-                      {t('admin.tCheckOut')}
-                    </Th>
-                    <Th className="whitespace-nowrap">{t('admin.tSource')}</Th>
-                    <Th className="whitespace-nowrap">{t('admin.tTotal')}</Th>
-                    <Th className="whitespace-nowrap">{t('admin.tStatus')}</Th>
-                    <Th></Th>
-                  </Tr>
-                </THead>
-                <TBody>
-                  {paged.map((b) => (
-                    <Tr
-                      key={b.kode}
-                      onClick={() => setSelectedKode(b.kode)}
-                      className="cursor-pointer"
-                    >
-                      <Td className="text-forest-700 font-semibold whitespace-nowrap">
-                        {b.kode}
-                      </Td>
-                      <Td className="whitespace-nowrap">{b.guest}</Td>
-                      <Td className="text-muted whitespace-nowrap">{b.wa}</Td>
-                      <Td className="text-muted whitespace-nowrap">
-                        {roomsSummary(b.rooms)}
-                      </Td>
-                      <Td className="text-muted whitespace-nowrap">
-                        {formatDate(b.createdAt)}
-                      </Td>
-                      <Td className="whitespace-nowrap">
-                        {formatDate(b.checkIn)}
-                      </Td>
-                      <Td className="whitespace-nowrap">
-                        {formatDate(b.checkOut)}
-                      </Td>
-                      <Td className="whitespace-nowrap">
-                        <SourceBadge source={b.source} />
-                      </Td>
-                      <Td className="font-semibold whitespace-nowrap">
-                        {formatIDR(b.total)}
-                      </Td>
-                      <Td className="whitespace-nowrap">
-                        <StatusBadge status={displayStatus(b)} />
-                      </Td>
-                      <Td className="text-accent font-semibold whitespace-nowrap">
-                        {t('admin.detail')} ›
-                      </Td>
+              {filtered.length > 0 ? (
+                <Table bare>
+                  <THead>
+                    <Tr>
+                      <Th className="whitespace-nowrap">{t('admin.tCode')}</Th>
+                      <Th className="whitespace-nowrap">{t('admin.tGuest')}</Th>
+                      <Th className="whitespace-nowrap">{t('admin.tWa')}</Th>
+                      <Th className="whitespace-nowrap">{t('admin.tType')}</Th>
+                      <Th className="whitespace-nowrap">
+                        {t('admin.tBookingDate')}
+                      </Th>
+                      <Th className="whitespace-nowrap">{t('admin.tCheckIn')}</Th>
+                      <Th className="whitespace-nowrap">
+                        {t('admin.tCheckOut')}
+                      </Th>
+                      <Th className="whitespace-nowrap">{t('admin.tSource')}</Th>
+                      <Th className="whitespace-nowrap">{t('admin.tTotal')}</Th>
+                      <Th className="whitespace-nowrap">{t('admin.tStatus')}</Th>
+                      <Th></Th>
                     </Tr>
-                  ))}
-                </TBody>
-              </Table>
-              {filtered.length === 0 && (
-                <p className="text-muted border-border mt-3 border-t pt-4 text-center text-sm">
-                  {t('admin.noResults')}
-                </p>
+                  </THead>
+                  <TBody>
+                    {paged.map((b) => (
+                      <Tr
+                        key={b.kode}
+                        onClick={() => setSelectedKode(b.kode)}
+                        className="group cursor-pointer"
+                      >
+                        <Td className="text-forest-700 font-semibold whitespace-nowrap">
+                          {b.kode}
+                        </Td>
+                        <Td className="whitespace-nowrap">{b.guest}</Td>
+                        <Td className="text-muted whitespace-nowrap">{b.wa}</Td>
+                        <Td className="text-muted whitespace-nowrap">
+                          {roomsSummary(b.rooms)}
+                        </Td>
+                        <Td className="text-muted whitespace-nowrap">
+                          {formatDate(b.createdAt)}
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          {formatDate(b.checkIn)}
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          {formatDate(b.checkOut)}
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          <SourceBadge source={b.source} />
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold">
+                              {formatIDR(b.total)}
+                            </span>
+                            {b.raw.isPriceOverride && (
+                              <RowTag className="bg-amber-50 text-amber-700">
+                                Manual
+                              </RowTag>
+                            )}
+                            {b.raw.discount > 0 && (
+                              <RowTag className="bg-green-50 text-green-700">
+                                Diskon
+                              </RowTag>
+                            )}
+                            {b.raw.editLogs.length > 0 && (
+                              <RowTag className="bg-stone-100 text-stone-500">
+                                ✏ Diedit
+                              </RowTag>
+                            )}
+                          </div>
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          <StatusBadge status={displayStatus(b)} />
+                        </Td>
+                        <Td className="text-accent font-semibold whitespace-nowrap">
+                          <span className="inline-flex items-center gap-0.5">
+                            {t('admin.detail')}
+                            <ChevronRight
+                              size={14}
+                              strokeWidth={2.5}
+                              aria-hidden
+                              className="transition-transform group-hover:translate-x-0.5"
+                            />
+                          </span>
+                        </Td>
+                      </Tr>
+                    ))}
+                  </TBody>
+                </Table>
+              ) : (
+                <div className="flex flex-col items-center gap-1.5 px-4 py-14 text-center">
+                  <SearchX
+                    size={30}
+                    strokeWidth={1.4}
+                    aria-hidden
+                    className="text-cream-400"
+                  />
+                  <p className="text-[13.5px] font-semibold">
+                    {t('admin.noResults')}
+                  </p>
+                  <p className="text-muted text-[12.5px]">
+                    {t('admin.noResultsHint')}
+                  </p>
+                  {anyFilterActive && (
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="text-accent mt-1.5 text-[13px] font-semibold"
+                    >
+                      {t('admin.resetFilters')}
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* Pagination */}
               {filtered.length > 0 && (
-                <div className="text-muted mt-3 flex flex-wrap items-center justify-between gap-3 text-[13px]">
+                <div className="text-muted border-border mt-3 flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-[13px]">
                   <span>
                     {t('admin.showingRange', {
                       from: (currentPage - 1) * PAGE_SIZE + 1,
@@ -611,26 +831,26 @@ export function BookingsPage() {
                     })}
                   </span>
                   <div className="flex items-center gap-2">
-                    <button
+                    <PageButton
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="border-input rounded-[8px] border bg-white px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={t('admin.prevPage')}
                     >
-                      {t('admin.prevPage')}
-                    </button>
-                    <span>
+                      <ChevronLeft size={16} strokeWidth={2.2} aria-hidden />
+                    </PageButton>
+                    <span className="tabular-nums">
                       {t('admin.pageOf', {
                         page: currentPage,
                         total: pageCount,
                       })}
                     </span>
-                    <button
+                    <PageButton
                       onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                       disabled={currentPage === pageCount}
-                      className="border-input rounded-[8px] border bg-white px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={t('admin.nextPage')}
                     >
-                      {t('admin.nextPage')}
-                    </button>
+                      <ChevronRight size={16} strokeWidth={2.2} aria-hidden />
+                    </PageButton>
                   </div>
                 </div>
               )}
@@ -654,10 +874,43 @@ export function BookingsPage() {
   );
 }
 
+function StatTile({
+  label,
+  value,
+  hint,
+  valueClass,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="border-border rounded-xl border bg-white px-4 py-3.5 shadow-[0_12px_30px_-22px_rgba(20,53,42,0.4)]">
+      <div className="text-muted text-[10.5px] font-semibold tracking-[0.06em] uppercase">
+        {label}
+      </div>
+      {/* Ukuran naik di layar lebar; `break-words` jaga-jaga kalau nominalnya
+          sampai miliaran biar membungkus, bukan kepotong di tepi kartu. */}
+      <div
+        className={cn(
+          'mt-1 font-serif text-[16px] leading-tight font-extrabold break-words sm:text-[19px]',
+          valueClass,
+        )}
+      >
+        {value}
+      </div>
+      {hint && (
+        <div className="text-muted mt-0.5 truncate text-[11.5px]">{hint}</div>
+      )}
+    </div>
+  );
+}
+
 // `min-w-0` penting: default flex item itu `min-width:auto`, jadi kolom filter
-// gak mau menyusut di bawah lebar isinya — bikin RangeFilter jebol keluar kartu
-// di layar sempit & `overflow-x-auto`-nya gak pernah kepakai.
-function FilterField({
+// gak mau menyusut di bawah lebar isinya — bikin SegGroup/RangeFilter jebol
+// keluar kartu di layar sempit & `overflow-x-auto`-nya gak pernah kepakai.
+function FilterRow({
   label,
   className,
   children,
@@ -667,11 +920,157 @@ function FilterField({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('flex min-w-0 flex-col gap-1', className)}>
-      <span className="text-muted text-[11px] font-medium tracking-[0.03em] uppercase">
+    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+      <span className="text-muted text-[10.5px] font-semibold tracking-[0.06em] uppercase">
         {label}
       </span>
       {children}
     </div>
+  );
+}
+
+/** Wadah pill — pola visualnya sengaja disamain sama `RangeFilter`. */
+function SegGroup({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex max-w-full gap-1.5 overflow-x-auto rounded-xl border border-[#e8e2d5] bg-white p-1.5">
+      {children}
+    </div>
+  );
+}
+
+function SegButton({
+  active,
+  onClick,
+  dot,
+  count,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  dot?: string;
+  count?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors',
+        active ? 'bg-forest-700 text-white' : 'text-muted hover:bg-cream-100',
+      )}
+    >
+      {dot && (
+        <span
+          aria-hidden
+          className={cn(
+            'h-1.5 w-1.5 shrink-0 rounded-full',
+            active ? 'bg-white/75' : dot,
+          )}
+        />
+      )}
+      {children}
+      {count !== undefined && (
+        <span
+          className={cn(
+            'rounded-md px-1.5 py-px text-[11px] font-bold tabular-nums',
+            active ? 'bg-white/20 text-white' : 'bg-cream-100 text-muted',
+          )}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function Chip({
+  label,
+  dot,
+  onRemove,
+}: {
+  label: string;
+  dot?: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex max-w-60 items-center gap-1.5 rounded-lg border border-[#e8e2d5] bg-white py-1 pr-1.5 pl-2.5 text-[12px] font-medium">
+      {dot && (
+        <span
+          aria-hidden
+          className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dot)}
+        />
+      )}
+      <span className="truncate">{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Hapus filter ${label}`}
+        className="text-muted hover:text-foreground hover:bg-cream-100 shrink-0 rounded p-0.5"
+      >
+        <X size={12} strokeWidth={2.6} aria-hidden />
+      </button>
+    </span>
+  );
+}
+
+function ExportButton({
+  onClick,
+  icon,
+  className,
+  children,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3.5 py-2.5 text-[13px] font-semibold whitespace-nowrap text-white transition-colors sm:flex-none',
+        className,
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function PageButton({
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className="border-input hover:bg-cream-100 rounded-[8px] border bg-white p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white"
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function RowTag({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        'rounded-[5px] px-1.5 py-0.5 text-[10px] font-semibold',
+        className,
+      )}
+    >
+      {children}
+    </span>
   );
 }

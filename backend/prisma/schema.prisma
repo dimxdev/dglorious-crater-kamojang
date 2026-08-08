@@ -151,7 +151,8 @@ model User {
   createdRoomTypes RoomType[] @relation("RoomTypeCreatedBy")
   createdBookings  Booking[]  @relation("BookingCreatedBy")
   verifiedPayments Payment[]  @relation("PaymentVerifiedBy")
-  updatedSettings  Setting[]  @relation("SettingUpdatedBy")
+  updatedSettings  Setting[]         @relation("SettingUpdatedBy")
+  editedBookings   BookingEditLog[]  @relation("BookingEditedBy")
 
   @@map("users")
 }
@@ -292,13 +293,17 @@ model Booking {
   // dengan `RoomGroupEditor.tsx` di frontend: "satu baris grup = satu unit
   // fisik" dengan dewasa/anak/extra-bed sendiri-sendiri).
 
-  priceSnapshot   Decimal @map("price_snapshot") @db.Decimal(12, 2) // §4.5 total dibekukan (SUDAH dikurangi discount)
-  isPriceOverride Boolean @default(false) @map("is_price_override") // admin override manual (nego)
+  priceSnapshot        Decimal  @map("price_snapshot") @db.Decimal(12, 2)         // §4.5 total dibekukan (SUDAH dikurangi discount)
+  isPriceOverride      Boolean  @default(false) @map("is_price_override")           // admin override manual (nego)
+  /// Harga yang dihitung OTOMATIS oleh sistem (Σ subtotal item, sebelum discount).
+  /// Disimpan terlepas dari isPriceOverride — kalau override, tetap dicatat harga sistem-nya
+  /// biar Owner bisa melihat selisih (audit anti-korupsi). Nullable untuk baris lama sebelum migrasi ini.
+  autoCalculatedTotal  Decimal? @map("auto_calculated_total") @db.Decimal(12, 2)
   /// Potongan nominal opsional (bukan persen) — dicatat terpisah dari
   /// `priceSnapshot` biar keliatan di detail booking, walau `priceSnapshot`
   /// sendiri sudah net (harga jual - discount). Berlaku baik untuk total
   /// otomatis maupun `isPriceOverride` (keduanya dikurangi discount yang sama).
-  discount Decimal @default(0) @map("discount") @db.Decimal(12, 2)
+  discount             Decimal  @default(0) @map("discount") @db.Decimal(12, 2)
 
   status         BookingStatus  @default(DP)
   /// WHATSAPP vs WALK_IN — dipakai filter/badge/laporan. Lihat enum BookingChannel.
@@ -322,12 +327,31 @@ model Booking {
   items     BookingItem[]
   payments  Payment[]
   ticket    Ticket?
+  editLogs  BookingEditLog[]
 
   @@index([status])
   @@index([checkIn, checkOut])
   @@index([createdAt])
   @@index([bookingChannel])
   @@map("bookings")
+}
+
+/// Audit trail setiap perubahan field booking oleh admin (anti-korupsi: owner
+/// bisa melihat siapa mengubah apa, kapan, dan alasannya).
+model BookingEditLog {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int      @map("booking_id")
+  editedById Int      @map("edited_by_id")
+  editedAt   DateTime @default(now()) @map("edited_at")
+  note       String
+  /// { "fieldName": { "from": <lama>, "to": <baru> }, ... }
+  changes    Json
+
+  booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  editedBy User    @relation("BookingEditedBy", fields: [editedById], references: [id])
+
+  @@index([bookingId])
+  @@map("booking_edit_logs")
 }
 
 /// Satu booking bisa mencakup lebih dari satu tenda/villa (§8.1 PROJECT.md:

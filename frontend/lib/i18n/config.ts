@@ -6,6 +6,10 @@ export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = 'id';
 
+/** Label di daftar switcher. Ditulis dalam bahasanya masing-masing supaya
+ *  orang yang belum paham bahasa aktif tetap bisa mengenali pilihannya —
+ *  sengaja dijaga sependek mungkin, karena bendera di sampingnya sudah
+ *  membawa identitas visualnya. */
 export const localeNames: Record<Locale, string> = {
   id: 'Indonesia',
   en: 'English',

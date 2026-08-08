@@ -48,6 +48,14 @@ export type AdminBookingItem = {
   subtotalSnapshot: number;
 };
 
+export type BookingEditLog = {
+  id: number;
+  editedAt: string;
+  editedByName: string;
+  note: string;
+  changes: Record<string, { from: unknown; to: unknown }>;
+};
+
 export type AdminBookingDetail = {
   id: number;
   bookingCode: string;
@@ -57,6 +65,8 @@ export type AdminBookingDetail = {
   checkOut: string;
   createdAt: string;
   priceSnapshot: number;
+  /** Harga otomatis sistem (Σ subtotal item, sebelum discount & override). Null untuk data lama sebelum migrasi ini. */
+  autoCalculatedTotal: number | null;
   /** Potongan nominal yang dipakai saat booking dibuat (0 kalau tidak ada diskon). */
   discount: number;
   /** Σ payments yang PAID — nominal yang beneran sudah masuk (bukan asumsi). */
@@ -69,6 +79,7 @@ export type AdminBookingDetail = {
   bookingChannel: string;
   notes: string | null;
   items: AdminBookingItem[];
+  editLogs: BookingEditLog[];
 };
 
 export type BookingStatusUpdate = 'LUNAS' | 'CHECKED_IN' | 'HANGUS' | 'COMPLETED' | 'NO_SHOW';
@@ -90,5 +101,37 @@ export function updateBookingStatus(token: string, code: string, status: Booking
     method: 'PATCH',
     token,
     body: { status },
+  });
+}
+
+export type EditBookingItemInput = {
+  roomTypeId: number;
+  adults: number;
+  children: number;
+  extraBedQty?: number;
+  extraBedType?: 'WITH_BED' | 'WITHOUT_BED';
+};
+
+export type EditBookingInput = {
+  guestName?: string;
+  guestPhone?: string;
+  checkIn?: string;
+  checkOut?: string;
+  notes?: string;
+  items?: EditBookingItemInput[];
+  priceOverride?: number;
+  discount?: number;
+  note: string;
+};
+
+export function fetchAdminBookingByCode(token: string, code: string) {
+  return apiFetch<AdminBookingDetail>(`/admin/bookings/${code}`, { token });
+}
+
+export function editBooking(token: string, code: string, dto: EditBookingInput) {
+  return apiFetch<AdminBookingDetail>(`/admin/bookings/${code}`, {
+    method: 'PATCH',
+    token,
+    body: dto,
   });
 }

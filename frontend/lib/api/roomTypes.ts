@@ -178,6 +178,29 @@ export type PublicRoomTypeDetail = {
   images: PublicRoomImage[];
 };
 
+// ── Admin: availability check ────────────────────────────────
+
+export type AvailabilityResult = {
+  roomTypeId: number;
+  totalUnits: number;
+  bookedQty: number;
+  availableUnits: number;
+  isAvailable: boolean;
+};
+
+export function checkRoomTypeAvailability(
+  token: string,
+  id: number,
+  checkIn: string,
+  checkOut: string,
+  excludeBookingId?: number,
+) {
+  let url = `/admin/room-types/${id}/availability?checkIn=${checkIn}&checkOut=${checkOut}`;
+  if (excludeBookingId) url += `&excludeBookingId=${excludeBookingId}`;
+  return apiFetch<AvailabilityResult>(url, { token });
+}
+
+// ── Public: katalog (§8 PROJECT.md — no auth, guests never log in) ──
 export function fetchPublicRoomTypes(locale: Locale) {
   return apiFetch<PublicRoomTypeSummary[]>(`/room-types?lang=${locale.toUpperCase()}`);
 }

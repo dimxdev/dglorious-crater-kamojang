@@ -76,7 +76,12 @@ export function Select({
           <SelectPrimitive.Content
             position="popper"
             sideOffset={6}
-            className="border-border z-50 w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[10px] border bg-white shadow-lg"
+            // Popup di-portal ke <body>, jadi z-index-nya diadu langsung sama
+            // semua lapisan overlay lain — bukan sama elemen di sekitarnya.
+            // Harus di atas lapisan tertinggi (drawer/modal `z-[120]`), kalau
+            // tidak dropdown yang dibuka DI DALAM drawer kebuka di belakang
+            // panelnya: kelihatannya seperti tombolnya tidak bisa diklik.
+            className="border-border z-[200] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[10px] border bg-white shadow-lg"
           >
             <SelectPrimitive.Viewport className="max-h-72 p-1">
               {options.map((opt) => (
