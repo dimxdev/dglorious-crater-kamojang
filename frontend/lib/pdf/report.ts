@@ -209,6 +209,11 @@ export function exportReportPdf(input: {
   });
 
   // ---- Tabel detail (generik: booking, performa per tipe tenda, dst) ----
+  // Selalu mulai di halaman baru — halaman 1 murni ringkasan/breakdown,
+  // halaman 2 dst. tabel detail, biar gak numpuk/kepotong di tengah halaman 1.
+  doc.addPage();
+  y = margin + 20;
+
   doc.setTextColor(...TEXT_DARK);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);

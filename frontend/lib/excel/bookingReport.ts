@@ -320,7 +320,9 @@ export async function exportBookingExcel(input: {
     { state: 'frozen', ySplit: headerRow, topLeftCell: `A${headerRow + 1}`, showGridLines: false },
   ];
 
-  [13, 22, 16, 26, 13, 13, 13, 12, 15, 14].forEach((w, i) => {
+  // Kolom "Tgl. Booking" (index 4) dilebarin — sekarang isinya tanggal+jam
+  // ("8 Agu 2026, 19.21"), lebih panjang dari cuma tanggal.
+  [13, 22, 16, 26, 20, 13, 13, 12, 15, 14].forEach((w, i) => {
     detail.getColumn(i + 1).width = w;
   });
 

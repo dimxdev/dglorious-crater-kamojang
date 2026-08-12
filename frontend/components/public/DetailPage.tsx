@@ -74,10 +74,10 @@ export function DetailPage({ slug }: { slug: string }) {
   }
 
   const cover = room.images.find((i) => i.isCover) ?? room.images[0];
-  // Dua tenda berbagi foto sampul sementara (belum ada foto asli per unit),
-  // jadi thumbnail ambience dipinjam dari foto umum lokasi/atraksi — bukan
-  // dari tenda lain, supaya tidak terkesan menampilkan unit yang salah. Ini
-  // asset statis situs, bukan data tenda — gak ikut migrasi ke API.
+  const otherImages = room.images.filter((i) => i !== cover);
+  // Kalau foto tenda belum lengkap (< 3), sisa slot thumbnail dipinjam dari
+  // foto umum lokasi/atraksi — bukan dari tenda lain, supaya tidak terkesan
+  // menampilkan unit yang salah. Ini asset statis situs, bukan data tenda.
   const ambience1 = getImage('attractionAirPanas');
   const ambience2 = getImage('locationValley');
 
@@ -113,24 +113,44 @@ export function DetailPage({ slug }: { slug: string }) {
         </div>
         <div className="hidden grid-rows-2 gap-3.5 md:grid">
           <div className="relative overflow-hidden rounded-xl">
-            <Image
-              src={ambience1.src}
-              alt={ambience1.alt}
-              fill
-              sizes="30vw"
-              className="object-cover"
-              style={{ objectPosition: ambience1.objectPosition }}
-            />
+            {otherImages[0] ? (
+              <Image
+                src={resolveImageUrl(otherImages[0].url)}
+                alt={room.name}
+                fill
+                sizes="30vw"
+                className="object-cover"
+              />
+            ) : (
+              <Image
+                src={ambience1.src}
+                alt={ambience1.alt}
+                fill
+                sizes="30vw"
+                className="object-cover"
+                style={{ objectPosition: ambience1.objectPosition }}
+              />
+            )}
           </div>
           <div className="relative overflow-hidden rounded-xl">
-            <Image
-              src={ambience2.src}
-              alt={ambience2.alt}
-              fill
-              sizes="30vw"
-              className="object-cover"
-              style={{ objectPosition: ambience2.objectPosition }}
-            />
+            {otherImages[1] ? (
+              <Image
+                src={resolveImageUrl(otherImages[1].url)}
+                alt={room.name}
+                fill
+                sizes="30vw"
+                className="object-cover"
+              />
+            ) : (
+              <Image
+                src={ambience2.src}
+                alt={ambience2.alt}
+                fill
+                sizes="30vw"
+                className="object-cover"
+                style={{ objectPosition: ambience2.objectPosition }}
+              />
+            )}
           </div>
         </div>
       </div>

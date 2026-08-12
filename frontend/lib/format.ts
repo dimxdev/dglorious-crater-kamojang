@@ -17,6 +17,22 @@ export function formatDate(date: string | Date) {
   }).format(new Date(date));
 }
 
+/** Format datetime ISO → "20 Jul 2026, 10:30". */
+export function formatDateTime(date: string | Date) {
+  const d = new Date(date);
+  const datePart = new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(d);
+  const timePart = new Intl.DateTimeFormat('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(d);
+  return `${datePart}, ${timePart}`;
+}
+
 /** Ambil inisial (maks 2 huruf) dari nama lengkap, mis. "Admin Penginapan" → "AP". */
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/);

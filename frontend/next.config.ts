@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       // Seed data still uses placeholder photos until real unit photos arrive (§11 PROJECT.md).
       { protocol: 'https', hostname: 'picsum.photos' },
     ],
+    // Backend jalan di localhost secara lokal — Next.js 16 default-nya nolak
+    // fetch image optimizer ke IP privat (proteksi SSRF). Aman diaktifkan di
+    // sini karena remotePatterns di atas sudah membatasi hostname+path-nya.
+    dangerouslyAllowLocalIP: true,
   },
 };
 

@@ -66,6 +66,11 @@ function datesInRange(range: DateRange, ref: PeriodRef): string[] {
   return Array.from({ length: daysInMonth }, (_, i) => toISO(new Date(year, month, i + 1)));
 }
 
+/** Set tanggal (YYYY-MM-DD) yang masuk dalam rentang — untuk filter paidAt per transaksi. */
+export function dateSetForRange(range: DateRange, ref: PeriodRef = DEFAULT_REF): Set<string> {
+  return new Set(datesInRange(range, ref));
+}
+
 /** Label rentang tanggal yang lagi difilter, buat header laporan export (mis. "1 Jul 2026 – 26 Jul 2026"). */
 export function periodRangeLabel(range: DateRange, ref: PeriodRef = DEFAULT_REF): string {
   const dates = datesInRange(range, ref);
@@ -89,6 +94,21 @@ export function bookingsInRange<T extends { checkIn: string } = AdminBooking>(
   const list = bookings ?? (adminBookings as unknown as T[]);
   const dates = new Set(datesInRange(range, ref));
   return list.filter((b) => dates.has(b.checkIn));
+}
+
+/**
+ * Booking yang tanggal DIBUAT-nya masuk dalam rentang — untuk stat tiles
+ * pendapatan/jumlah booking. Berbeda dari `bookingsInRange` yang by check-in:
+ * booking Juli yang check-in Agustus tercatat sebagai pendapatan Juli,
+ * bukan Agustus.
+ */
+export function bookingsCreatedInRange<T extends { createdAt: string }>(
+  range: DateRange,
+  ref: PeriodRef = DEFAULT_REF,
+  bookings: T[] = [],
+): T[] {
+  const dates = new Set(datesInRange(range, ref));
+  return bookings.filter((b) => dates.has(b.createdAt.slice(0, 10)));
 }
 
 /** Geser acuan periode ke periode sebelumnya, durasi sama (buat bandingkan delta %). */

@@ -126,7 +126,7 @@
     "collapseSidebar": "Ciutkan Menu",
     "expandSidebar": "Perluas Menu",
     "role": "Admin Penginapan",
-    "overviewStatToday": "Booking Hari Ini",
+    "overviewStatToday": "Check-in Hari Ini",
     "overviewStatRevenue": "Pendapatan Bulan Ini",
     "overviewStatRevenueToday": "Pendapatan Hari Ini",
     "recordedToday": "Booking dicatat",
@@ -363,7 +363,7 @@
     "reportSheetDetail": "Detail Booking",
     "reportGrandTotal": "TOTAL",
     "reportNoBookings": "Tidak ada booking yang cocok dengan filter ini.",
-    "reportFooterNote": "Dibuat otomatis oleh sistem D'Glorious Crater — bukan dokumen resmi bertanda tangan.",
+    "reportFooterNote": "Dibuat otomatis oleh sistem D'Glorious Crater.",
     "reportPage": "Halaman {page} dari {total}"
   },
   "owner": {

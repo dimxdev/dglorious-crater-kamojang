@@ -34,6 +34,7 @@ import {
   type BookingChannel,
   type BookingStoredStatus,
 } from '@/lib/data/admin';
+import { periodRangeLabel } from '@/lib/data/owner';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import {
@@ -245,7 +246,7 @@ export function OverviewPage() {
     {
       label: t('admin.overviewStatRevenue'),
       value: formatIDR(revenueThisMonth),
-      sub: t('admin.thisMonth'),
+      sub: periodRangeLabel('rangeMonth', { today: new Date(activeDate + 'T00:00:00') }),
       icon: TrendingUp,
       tint: 'bg-orange-50',
       iconColor: 'text-orange-600',

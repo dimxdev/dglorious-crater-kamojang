@@ -89,6 +89,12 @@ export function roomsSummaryShort(items: BookingRoomItem[]): string {
   return items.map(roomItemShortLabel).join(', ');
 }
 
+/** Versi terpotong untuk kolom tabel — tampilkan tipe pertama, sisanya "+N lainnya". */
+export function roomsSummaryTruncated(items: BookingRoomItem[]): string {
+  if (items.length <= 1) return roomsSummary(items);
+  return `${roomItemLabel(items[0])}, +${items.length - 1} lainnya`;
+}
+
 /**
  * Status turunan berbasis tanggal — lihat catatan di `BookingStatus`.
  * Satu tenggat yang sama untuk DP maupun LUNAS: tanggal **checkout**, bukan

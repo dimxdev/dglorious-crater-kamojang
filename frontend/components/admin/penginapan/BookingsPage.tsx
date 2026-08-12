@@ -34,18 +34,21 @@ import { cn } from '@/lib/cn';
 import {
   roomsSummary,
   roomsSummaryShort,
+  roomsSummaryTruncated,
   statusLabelId,
   type BookingChannel,
   type BookingStatus,
 } from '@/lib/data/admin';
 import {
+  bookingsCreatedInRange,
   bookingsInRange,
+  dateSetForRange,
   periodRangeLabel,
   type CustomRange,
   type DateRange,
 } from '@/lib/data/owner';
 import { exportBookingExcel } from '@/lib/excel/bookingReport';
-import { formatDate, formatIDR } from '@/lib/format';
+import { formatDate, formatDateTime, formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { ADMIN_REPORT_THEME, exportReportPdf } from '@/lib/pdf/report';
 import {
@@ -132,7 +135,7 @@ export function BookingsPage() {
 
   const searchActive = search.trim() !== '';
   const q = search.trim().toLowerCase();
-  // Scope dasar: begitu ngetik di search, cari di SEMUA booking (abaikan
+  // Scope dasar tabel: begitu ngetik di search, cari di SEMUA booking (abaikan
   // periode) — biar gampang nemuin booking lama tanpa nebak-nebak periodenya.
   // Status & sumber TETAP berlaku, jadi hasil pencarian masih bisa dipersempit.
   const scoped = searchActive
@@ -143,6 +146,7 @@ export function BookingsPage() {
           b.wa.toLowerCase().includes(q),
       )
     : bookingsInRange(range, ref, all);
+
 
   const matchesStatus = (b: DisplayBooking) =>
     statusFilter === '' || displayStatus(b) === statusFilter;
@@ -159,6 +163,12 @@ export function BookingsPage() {
     scopedForSource.filter((b) => b.source === src).length;
 
   const exportBookings = scoped.filter((b) => matchesStatus(b) && matchesSource(b));
+  // Stat tiles = subset tabel: booking yang check-in di periode ini SEKALIGUS
+  // dibuat di periode yang sama. Booking Juli yang check-in Agustus muncul di
+  // tabel (operasional) tapi tidak dihitung di stats Agustus.
+  const statsBookings = searchActive
+    ? exportBookings
+    : bookingsCreatedInRange(range, ref, exportBookings);
   const filtered = exportBookings.filter(
     (b) => checkInDate === '' || b.checkIn === checkInDate,
   );
@@ -184,20 +194,27 @@ export function BookingsPage() {
     setPage(1);
   }
 
-  // Angka ringkasan yang sama dipakai buat strip statistik di layar, Export PDF,
-  // maupun Export Excel — biar semuanya konsisten (gak ada logic ganda yang
-  // bisa ketinggalan sinkron).
+  // Angka ringkasan — revenue dihitung cash basis by paidAt (sama kayak Overview),
+  // dari semua booking yang lolos filter status/sumber, tanpa batasan periode booking.
   function buildExportSummary() {
-    const totalRevenue = exportBookings.reduce((sum, b) => sum + b.total, 0);
-    const belumLunas = exportBookings.filter(
+    const periodDates = searchActive ? null : dateSetForRange(range, ref);
+    const revenueBase = searchActive
+      ? exportBookings
+      : all.filter((b) => matchesStatus(b) && matchesSource(b));
+    const totalRevenue = revenueBase
+      .flatMap((b) => b.raw.payments)
+      .filter((p): p is { amount: number; paidAt: string } => p.paidAt !== null)
+      .filter((p) => !periodDates || periodDates.has(p.paidAt.slice(0, 10)))
+      .reduce((sum, p) => sum + p.amount, 0);
+    const belumLunas = statsBookings.filter(
       (b) => displayStatus(b) === 'DP',
     ).length;
-    const menginap = exportBookings.filter(
+    const menginap = statsBookings.filter(
       (b) => displayStatus(b) === 'CHECKED_IN',
     ).length;
 
     const statusCounts = new Map<BookingStatus, number>();
-    exportBookings.forEach((b) => {
+    statsBookings.forEach((b) => {
       const s = displayStatus(b);
       statusCounts.set(s, (statusCounts.get(s) ?? 0) + 1);
     });
@@ -207,9 +224,9 @@ export function BookingsPage() {
       label: statusLabelId[s],
       count: statusCounts.get(s) ?? 0,
       pct:
-        exportBookings.length > 0
+        statsBookings.length > 0
           ? Math.round(
-              ((statusCounts.get(s) ?? 0) / exportBookings.length) * 100,
+              ((statusCounts.get(s) ?? 0) / statsBookings.length) * 100,
             )
           : 0,
       colorHex: STATUS_COLORS[s],
@@ -219,15 +236,15 @@ export function BookingsPage() {
       WHATSAPP: 0,
       WALK_IN: 0,
     };
-    exportBookings.forEach((b) => {
+    statsBookings.forEach((b) => {
       sourceCounts[b.source] += 1;
     });
     const sourceBreakdown = SOURCES.map((src) => ({
       label: src === 'WHATSAPP' ? t('admin.whatsapp') : t('admin.walkin'),
       count: sourceCounts[src],
       pct:
-        exportBookings.length > 0
-          ? Math.round((sourceCounts[src] / exportBookings.length) * 100)
+        statsBookings.length > 0
+          ? Math.round((sourceCounts[src] / statsBookings.length) * 100)
           : 0,
       colorHex: SOURCE_COLORS[src],
     }));
@@ -244,11 +261,18 @@ export function BookingsPage() {
 
   const summary = buildExportSummary();
 
+  // Tabel export dibaca dari atas ke bawah kayak laporan (kronologis) — beda
+  // dari tabel di layar yang sengaja newest-first buat browsing operasional.
+  function sortedForExport() {
+    return [...exportBookings].sort((a, b) =>
+      a.raw.createdAt.localeCompare(b.raw.createdAt),
+    );
+  }
+
   function handleExport() {
     const {
       totalRevenue,
       belumLunas,
-      menginap,
       statusBreakdown,
       sourceBreakdown,
       periodLabel,
@@ -271,7 +295,7 @@ export function BookingsPage() {
       stats: [
         {
           label: t('admin.reportStatTotalBooking'),
-          value: String(exportBookings.length),
+          value: String(statsBookings.length),
           deltaText: '',
           deltaTone: 'neutral',
         },
@@ -284,12 +308,6 @@ export function BookingsPage() {
         {
           label: t('admin.reportStatBelumLunas'),
           value: String(belumLunas),
-          deltaText: '',
-          deltaTone: 'neutral',
-        },
-        {
-          label: t('admin.reportStatMenginap'),
-          value: String(menginap),
           deltaText: '',
           deltaTone: 'neutral',
         },
@@ -312,12 +330,12 @@ export function BookingsPage() {
           t('admin.tTotal'),
           t('admin.tStatus'),
         ],
-        rows: exportBookings.map((b) => [
+        rows: sortedForExport().map((b) => [
           b.kode,
           b.guest,
           b.wa,
           roomsSummaryShort(b.rooms),
-          formatDate(b.createdAt),
+          formatDateTime(b.raw.createdAt),
           formatDate(b.checkIn),
           formatDate(b.checkOut),
           b.source === 'WHATSAPP' ? t('admin.whatsapp') : t('admin.walkin'),
@@ -356,7 +374,6 @@ export function BookingsPage() {
     const {
       totalRevenue,
       belumLunas,
-      menginap,
       statusBreakdown,
       sourceBreakdown,
       periodLabel,
@@ -381,7 +398,7 @@ export function BookingsPage() {
       stats: [
         {
           label: t('admin.reportStatTotalBooking'),
-          value: exportBookings.length,
+          value: statsBookings.length,
         },
         {
           label: t('admin.reportStatTotalRevenue'),
@@ -389,7 +406,6 @@ export function BookingsPage() {
           numFmt: '"Rp"#,##0',
         },
         { label: t('admin.reportStatBelumLunas'), value: belumLunas },
-        { label: t('admin.reportStatMenginap'), value: menginap },
       ],
       breakdowns: [
         { title: t('admin.reportStatusBreakdown'), rows: statusBreakdown },
@@ -410,14 +426,14 @@ export function BookingsPage() {
         t('admin.tTotal'),
         t('admin.tStatus'),
       ],
-      rows: exportBookings.map((b) => {
+      rows: sortedForExport().map((b) => {
         const s = displayStatus(b);
         return {
           kode: b.kode,
           guest: b.guest,
           wa: b.wa,
           unit: roomsSummaryShort(b.rooms),
-          bookingDate: formatDate(b.createdAt),
+          bookingDate: formatDateTime(b.raw.createdAt),
           checkIn: formatDate(b.checkIn),
           checkOut: formatDate(b.checkOut),
           source:
@@ -446,7 +462,7 @@ export function BookingsPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
           label={t('admin.reportStatTotalBooking')}
-          value={String(exportBookings.length)}
+          value={String(statsBookings.length)}
           hint={searchActive ? t('admin.filterAll') : periodRangeLabel(range, ref)}
         />
         <StatTile
@@ -740,10 +756,10 @@ export function BookingsPage() {
                         <Td className="whitespace-nowrap">{b.guest}</Td>
                         <Td className="text-muted whitespace-nowrap">{b.wa}</Td>
                         <Td className="text-muted whitespace-nowrap">
-                          {roomsSummary(b.rooms)}
+                          {roomsSummaryTruncated(b.rooms)}
                         </Td>
                         <Td className="text-muted whitespace-nowrap">
-                          {formatDate(b.createdAt)}
+                          {formatDateTime(b.raw.createdAt)}
                         </Td>
                         <Td className="whitespace-nowrap">
                           {formatDate(b.checkIn)}
