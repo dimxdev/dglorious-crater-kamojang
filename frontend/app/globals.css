@@ -158,6 +158,22 @@ h3,
   padding-inline: 1.75rem; /* 28px */
 }
 
+/*
+  Scroll horizontal tanpa batang scrollbar-nya. Dipakai baris filter periode
+  di dashboard: di layar sempit barisnya memang bisa digeser, tapi batang
+  scrollbar-nya makan tempat dan bikin kartu di bawahnya kelihatan "kotor".
+  Kontennya tetap bisa di-scroll (jari/trackpad/keyboard), cuma indikatornya
+  yang disembunyikan.
+*/
+@utility no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Edge lawas */
+
+  &::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+}
+
 /* Eyebrow/label seksi (uppercase kecil, aksen biru) */
 @utility eyebrow {
   font-size: 0.78rem;
@@ -223,5 +239,65 @@ h3,
   [data-reveal='shown'] {
     opacity: 1;
     transform: none;
+  }
+}
+
+/*
+  Animasi masuk grafik dashboard Owner. Sama polanya dengan reveal di atas:
+  semuanya dikurung di `no-preference`, jadi kalau pengguna minta
+  reduced-motion grafiknya langsung tampil utuh — tanpa cabang JSX, tanpa
+  risiko SSR/klien beda. Semua pakai `transform` (bukan width/height) supaya
+  animasinya jalan di compositor, tidak memicu layout ulang tiap frame.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  /* Garis tren + area-nya "disapu" dari kiri ke kanan lewat clip-path. */
+  [data-chart-wipe] {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: owner-chart-wipe 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes owner-chart-wipe {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Batang naik dari dasar; tiap batang dikasih delay via --bar-delay. */
+  [data-chart-bar] {
+    transform-origin: bottom;
+    animation: owner-chart-bar 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--bar-delay, 0ms);
+  }
+
+  @keyframes owner-chart-bar {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  /* Denyut halus di titik periode terbaru — penanda "ini yang sekarang". */
+  [data-chart-pulse] {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: owner-chart-pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes owner-chart-pulse {
+    0%,
+    100% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0;
+      transform: scale(2.2);
+    }
   }
 }

@@ -7,6 +7,7 @@ import {
   occupiedQtyOnDate,
   type AdminBooking,
 } from './admin';
+import { formatIDR } from '../format';
 import { roomSources } from './rooms';
 
 export type DateRange = 'rangeToday' | 'rangeWeek' | 'rangeMonth' | 'rangeCustom';
@@ -144,7 +145,8 @@ function deltaPct(current: number, previous: number): { delta: string; up: boole
   return { delta: `${Math.abs(pct).toFixed(1)}%`, up: pct >= 0 };
 }
 
-function totalCapacity(): number {
+/** Total unit yang bisa dijual (semua tipe tenda/villa digabung). */
+export function totalCapacity(): number {
   return cmsRooms.reduce((sum, r) => sum + r.units, 0);
 }
 
@@ -156,9 +158,16 @@ function averageOccupancyPct(range: DateRange, ref: PeriodRef): number {
   return Math.round((pct / dates.length) * 100);
 }
 
-function formatRupiahShort(value: number): string {
-  return `Rp${(value / 1_000_000).toFixed(1)} jt`;
-}
+/**
+ * Satuan nilai stat — dipakai kartu Ringkasan buat animasi hitung-naik & format.
+ * `idr` = rupiah penuh ("Rp 12.998.000"). Angka stat sengaja TIDAK dipendekkan
+ * jadi "Rp13,0 jt": pembulatannya menyembunyikan ratusan ribu, padahal justru
+ * nominal pasti yang dicari Owner. Bentuk pendek cuma dipakai di dalam grafik
+ * (label sumbu/batang) yang ruangnya memang sempit.
+ */
+export type StatUnit = 'idr' | 'int' | 'pct';
+
+export type OwnerStatKey = 'statRevenue' | 'statBooking' | 'statVisitors' | 'statOccupancy';
 
 /** 4 stat card Ringkasan Owner, dengan delta % vs periode sebelumnya. */
 export function calcOwnerStats(range: DateRange, ref: PeriodRef = DEFAULT_REF) {
@@ -172,15 +181,80 @@ export function calcOwnerStats(range: DateRange, ref: PeriodRef = DEFAULT_REF) {
   const currentOccupancy = averageOccupancyPct(range, ref);
   const previousOccupancy = averageOccupancyPct(range, previousPeriod(range, ref));
 
+  // `raw` + `unit` dipakai kartu di layar buat animasi hitung-naik (angka mentah
+  // yang diformat ulang tiap frame); `value` yang sudah jadi string tetap ada
+  // karena export PDF butuh teks final, bukan angka.
   return [
-    { key: 'statRevenue', value: formatRupiahShort(currentRevenue), ...deltaPct(currentRevenue, previousRevenue) },
-    { key: 'statBooking', value: String(current.length), ...deltaPct(current.length, previous.length) },
-    { key: 'statVisitors', value: String(currentVisitors), ...deltaPct(currentVisitors, previousVisitors) },
-    { key: 'statOccupancy', value: `${currentOccupancy}%`, ...deltaPct(currentOccupancy, previousOccupancy) },
+    {
+      key: 'statRevenue' as const,
+      value: formatIDR(currentRevenue),
+      raw: currentRevenue,
+      unit: 'idr' as StatUnit,
+      ...deltaPct(currentRevenue, previousRevenue),
+    },
+    {
+      key: 'statBooking' as const,
+      value: String(current.length),
+      raw: current.length,
+      unit: 'int' as StatUnit,
+      ...deltaPct(current.length, previous.length),
+    },
+    {
+      key: 'statVisitors' as const,
+      value: String(currentVisitors),
+      raw: currentVisitors,
+      unit: 'int' as StatUnit,
+      ...deltaPct(currentVisitors, previousVisitors),
+    },
+    {
+      key: 'statOccupancy' as const,
+      value: `${currentOccupancy}%`,
+      raw: currentOccupancy,
+      unit: 'pct' as StatUnit,
+      ...deltaPct(currentOccupancy, previousOccupancy),
+    },
   ];
 }
 
-/** Tren pendapatan (juta rupiah) 6 bulan terakhir, dari bulan berjalan mundur. */
+/**
+ * Seri nilai tiap metrik untuk beberapa periode ke belakang (urut lama → baru),
+ * dipakai sparkline mini di kartu Ringkasan. Periodenya ngikut filter aktif:
+ * kalau filter "Bulan Ini", satu titik = satu bulan; kalau "Hari Ini", satu
+ * titik = satu hari — jadi sparkline selalu sebanding dengan angka besarnya.
+ */
+export function calcStatSparklines(
+  range: DateRange,
+  ref: PeriodRef = DEFAULT_REF,
+  points = 7,
+): Record<OwnerStatKey, number[]> {
+  const refs: PeriodRef[] = [ref];
+  for (let i = 1; i < points; i++) refs.unshift(previousPeriod(range, refs[0]));
+
+  const series = refs.map((r) => {
+    const list = bookingsInRange(range, r);
+    return {
+      statRevenue: list.reduce((s, b) => s + b.total, 0),
+      statBooking: list.length,
+      statVisitors: list.reduce((s, b) => s + b.adults + b.children, 0),
+      statOccupancy: averageOccupancyPct(range, r),
+    };
+  });
+
+  return {
+    statRevenue: series.map((s) => s.statRevenue),
+    statBooking: series.map((s) => s.statBooking),
+    statVisitors: series.map((s) => s.statVisitors),
+    statOccupancy: series.map((s) => s.statOccupancy),
+  };
+}
+
+/**
+ * Tren pendapatan 6 bulan terakhir, dari bulan berjalan mundur.
+ *
+ * Nilainya RUPIAH penuh, bukan "juta" yang dibulatkan seperti versi lama:
+ * pembulatan itu bikin bulan bernominal kecil (mis. Rp850 rb) rata jadi 0 atau
+ * 1 di grafik. Pemendekan label ("Rp13,0 jt") sekarang urusan komponen grafik.
+ */
 export function calcRevenueTrend(today: Date = new Date()): { m: string; v: number }[] {
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(today.getFullYear(), today.getMonth() - (5 - i), 1);
@@ -188,15 +262,18 @@ export function calcRevenueTrend(today: Date = new Date()): { m: string; v: numb
   });
   return months.map(({ key, label }) => ({
     m: label,
-    v: Math.round(
-      adminBookings.filter((b) => b.checkIn.slice(0, 7) === key).reduce((s, b) => s + b.total, 0) / 1_000_000,
-    ),
+    v: adminBookings
+      .filter((b) => b.checkIn.slice(0, 7) === key)
+      .reduce((s, b) => s + b.total, 0),
   }));
 }
 
-/** Pendapatan per unit bisnis — Tiket Masuk & Cafe belum aktif (fase berikutnya, lihat PROJECT.md §1). */
+/**
+ * Pendapatan per unit bisnis (rupiah penuh) — Tiket Masuk & Cafe belum aktif
+ * (fase berikutnya, lihat PROJECT.md §1).
+ */
 export function calcUnitRevenue(range: DateRange, ref: PeriodRef = DEFAULT_REF) {
-  const revenue = Math.round(bookingsInRange(range, ref).reduce((s, b) => s + b.total, 0) / 1_000_000);
+  const revenue = bookingsInRange(range, ref).reduce((s, b) => s + b.total, 0);
   return [
     { label: 'Penginapan', value: revenue, active: true },
     { label: 'Tiket Masuk', value: 0, active: false },
@@ -322,4 +399,46 @@ export function calcRoomTypePerformance(range: DateRange, ref: PeriodRef = DEFAU
       revenue: Math.round(revenue),
     };
   });
+}
+
+/**
+ * Angka ringkas halaman Owner "Penginapan" + delta vs periode sebelumnya.
+ *
+ * Total pendapatan/booking dihitung langsung dari `bookingsInRange`, BUKAN
+ * dari penjumlahan `calcRoomTypePerformance` — pendapatan per tipe di sana
+ * hasil pembagian proporsional yang dibulatkan per tipe, jadi jumlahnya bisa
+ * meleset beberapa rupiah dari total sebenarnya.
+ */
+export function calcPenginapanStats(range: DateRange, ref: PeriodRef = DEFAULT_REF) {
+  const current = bookingsInRange(range, ref);
+  const previous = bookingsInRange(range, previousPeriod(range, ref));
+
+  const currentRevenue = current.reduce((s, b) => s + b.total, 0);
+  const previousRevenue = previous.reduce((s, b) => s + b.total, 0);
+  const currentAvg = current.length > 0 ? currentRevenue / current.length : 0;
+  const previousAvg = previous.length > 0 ? previousRevenue / previous.length : 0;
+
+  return {
+    revenue: {
+      key: 'statRevenue' as const,
+      value: formatIDR(currentRevenue),
+      raw: currentRevenue,
+      unit: 'idr' as StatUnit,
+      ...deltaPct(currentRevenue, previousRevenue),
+    },
+    bookings: {
+      key: 'statBooking' as const,
+      value: String(current.length),
+      raw: current.length,
+      unit: 'int' as StatUnit,
+      ...deltaPct(current.length, previous.length),
+    },
+    avgPerBooking: {
+      key: 'statAvgPerBooking' as const,
+      value: formatIDR(currentAvg),
+      raw: currentAvg,
+      unit: 'idr' as StatUnit,
+      ...deltaPct(currentAvg, previousAvg),
+    },
+  };
 }

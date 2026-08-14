@@ -1,8 +1,9 @@
 'use client';
 
+import { ArrowUpRight, Download } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { StatusBadge } from '@/components/admin/penginapan/StatusBadge';
-import { cn } from '@/lib/cn';
 import { effectiveStatus, roomsSummary, statusLabelId } from '@/lib/data/admin';
 import {
   bookingsInRange,
@@ -10,16 +11,20 @@ import {
   calcRecentTransactions,
   calcRevenueByUnit,
   calcRevenueTrend,
+  calcStatSparklines,
   calcUnitRevenue,
   periodRangeLabel,
+  totalCapacity,
   type CustomRange,
   type DateRange,
+  type OwnerStatKey,
 } from '@/lib/data/owner';
-import { formatIDR } from '@/lib/format';
+import { formatDate, formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { exportReportPdf, OWNER_REPORT_THEME } from '@/lib/pdf/report';
 import { DonutChart, RevenueLineChart, UnitBarChart } from './Charts';
 import { OwnerLayout, Panel } from './OwnerLayout';
+import { HeroRevenueCard, OccupancyCard, StatCard } from './OwnerStats';
 import { RangeFilter } from '@/components/ui';
 
 const COMPARE_LABEL_KEY: Record<DateRange, string> = {
@@ -36,10 +41,21 @@ export function OwnerOverviewPage() {
   const ref = { today: new Date(), custom: customRange };
 
   const ownerStats = calcOwnerStats(range, ref);
+  const sparklines = calcStatSparklines(range, ref);
   const revenueTrend = calcRevenueTrend();
   const unitRevenue = calcUnitRevenue(range, ref);
   const revenueByUnit = calcRevenueByUnit(range, ref);
   const recentBookings = calcRecentTransactions(8);
+  const periodLabel = periodRangeLabel(range, ref);
+  const compareLabel = t(`owner.${COMPARE_LABEL_KEY[range]}`);
+  const newLabel = t('owner.newThisPeriod');
+
+  // Diambil per-key (bukan lewat urutan array) supaya kartu tetap benar kalau
+  // suatu saat urutan/isi `calcOwnerStats` berubah.
+  const byKey = Object.fromEntries(ownerStats.map((s) => [s.key, s])) as Record<
+    OwnerStatKey,
+    (typeof ownerStats)[number]
+  >;
 
   function handleExport() {
     const unitTotal = revenueByUnit.reduce((sum, u) => sum + u.value, 0);
@@ -124,81 +140,130 @@ export function OwnerOverviewPage() {
         <button
           type="button"
           onClick={handleExport}
-          className="bg-terracotta-500 hover:bg-terracotta-600 self-start rounded-lg px-5 py-2.5 text-[13.5px] font-semibold text-white"
+          className="bg-terracotta-500 hover:bg-terracotta-600 inline-flex items-center gap-2 self-start rounded-lg px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors"
         >
+          <Download size={15} strokeWidth={2.2} aria-hidden />
           {t('owner.export')}
         </button>
       </div>
 
-      {/* Stat cards */}
-      <div className="mt-5 grid gap-4.5 sm:grid-cols-2 lg:grid-cols-4">
-        {ownerStats.map((s) => (
-          <Panel key={s.key}>
-            <div className="text-muted text-[13px]">{t(`owner.${s.key}`)}</div>
-            <div className="text-forest-700 mt-1.5 font-serif text-[26px] font-extrabold">{s.value}</div>
-            {s.isNew ? (
-              <div className="mt-1 text-xs font-semibold text-[#8a6d1f]">{t('owner.newThisPeriod')}</div>
-            ) : (
-              <div
-                className={cn('mt-1 text-xs font-semibold', s.up ? 'text-[#2f6b41]' : 'text-[#b23b30]')}
-              >
-                {s.up ? '▲' : '▼'} {s.delta} {t(`owner.${COMPARE_LABEL_KEY[range]}`)}
-              </div>
-            )}
-          </Panel>
-        ))}
+      {/* Pendapatan tampil sebagai kartu utama (gelap, besar) — angka yang
+          paling dicari Owner; tiga metrik lain jadi kartu pendamping. */}
+      <div className="mt-5 grid gap-3 sm:gap-4.5 lg:grid-cols-[1.35fr_1fr]">
+        <HeroRevenueCard
+          stat={byKey.statRevenue}
+          label={t('owner.statRevenue')}
+          periodLabel={periodLabel}
+          compareLabel={compareLabel}
+          newLabel={newLabel}
+          sparkline={sparklines.statRevenue}
+        />
+        {/* 2 kolom sejak mobile — sebagai kartu selebar layar angkanya jadi
+            terlalu dominan dan halamannya kepanjangan buat di-scroll. */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4.5">
+          <StatCard
+            stat={byKey.statBooking}
+            label={t('owner.statBooking')}
+            compareLabel={compareLabel}
+            newLabel={newLabel}
+            sparkline={sparklines.statBooking}
+          />
+          <StatCard
+            stat={byKey.statVisitors}
+            label={t('owner.statVisitors')}
+            compareLabel={compareLabel}
+            newLabel={newLabel}
+            sparkline={sparklines.statVisitors}
+          />
+        </div>
       </div>
 
-      {/* Line + bar */}
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+      <div className="mt-4.5 grid gap-4.5 lg:grid-cols-[1.35fr_1fr]">
         <Panel>
-          <div className="text-base font-bold">{t('owner.revenueTrend')}</div>
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="text-base font-bold">{t('owner.revenueTrend')}</div>
+            {/* Disembunyikan di mobile: teksnya soal kursor, sementara di sana
+                grafiknya dioperasikan dengan sentuhan — sekalian ngasih ruang
+                buat judul yang kalau tidak begitu jadi ikut terpotong 2 baris. */}
+            <div className="text-muted hidden text-[11.5px] sm:block">{t('owner.chartHint')}</div>
+          </div>
           <RevenueLineChart data={revenueTrend} />
         </Panel>
+        <OccupancyCard
+          stat={byKey.statOccupancy}
+          label={t('owner.statOccupancy')}
+          compareLabel={compareLabel}
+          newLabel={newLabel}
+          capacityNote={t('owner.occupancyOf', { units: totalCapacity() })}
+        />
+      </div>
+
+      {/* Donut + bar — breakdown per tipe tenda & sumber booking sekarang ada di
+          halaman Penginapan (deep-dive khusus unit itu), donut Ringkasan cukup
+          kontribusi lintas 3 unit bisnis (Penginapan/Tiket/Cafe). */}
+      <div className="mt-4.5 grid gap-4.5 lg:grid-cols-2">
         <Panel>
-          <div className="text-base font-bold">{t('owner.revenuePerUnit')}</div>
+          <div className="text-[15px] font-bold">{t('owner.revenuePerUnit')}</div>
           <UnitBarChart bars={unitRevenue} />
-          <div className="mt-2 text-center text-[11.5px] text-[#a09a8c]">{t('owner.notActiveYet')}</div>
+          <div className="mt-2 text-center text-[11.5px] text-[#a09a8c]">
+            {t('owner.notActiveYet')}
+          </div>
+        </Panel>
+        <Panel>
+          <div className="text-[15px] font-bold">{t('owner.revenueByUnit')}</div>
+          <DonutChart segments={revenueByUnit} centerLabel={t('owner.donutCenterTotal')} />
         </Panel>
       </div>
 
-      {/* Donut + transaksi — breakdown per tipe tenda & sumber booking sekarang
-          ada di halaman Penginapan (deep-dive khusus unit itu), donut Ringkasan
-          cukup kontribusi lintas 3 unit bisnis (Penginapan/Tiket/Cafe). */}
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.4fr]">
-        <Panel>
-          <div className="text-[15px] font-bold">{t('owner.revenueByUnit')}</div>
-          <DonutChart segments={revenueByUnit} />
-          <div className="mt-2 text-center text-[11.5px] text-[#a09a8c]">{t('owner.notActiveYet')}</div>
-        </Panel>
-        <Panel>
-          <div className="mb-3 text-[15px] font-bold">{t('owner.recentTx')}</div>
-          <div className="max-h-[320px] overflow-y-auto">
-            <table className="w-full text-left text-[12.5px]">
-              <thead className="text-muted text-[10.5px] uppercase">
-                <tr>
-                  <th className="px-1.5 py-2">{t('owner.txCode')}</th>
-                  <th className="px-1.5 py-2">{t('owner.txUnit')}</th>
-                  <th className="px-1.5 py-2">{t('owner.txAmount')}</th>
-                  <th className="px-1.5 py-2">{t('owner.txStatus')}</th>
+      {/* Tabel dikasih baris sendiri selebar halaman — waktu dia diapit dua
+          panel grafik, kolom "Tipe Tenda" kepaksa wrap 3 baris dan malah susah
+          dibaca. Lebar penuh sekalian muat kolom tamu & tanggal check-in. */}
+      <Panel className="mt-4.5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="text-[15px] font-bold">{t('owner.recentTx')}</div>
+          <Link
+            href="/admin/penginapan/booking"
+            className="text-accent inline-flex items-center gap-1 text-[12.5px] font-semibold hover:underline"
+          >
+            {t('owner.seeAll')}
+            <ArrowUpRight size={13} strokeWidth={2.4} aria-hidden />
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[12.5px]">
+            <thead className="text-muted text-[10.5px] uppercase">
+              <tr>
+                <th className="px-1.5 py-2 font-semibold">{t('owner.txCode')}</th>
+                <th className="px-1.5 py-2 font-semibold">{t('admin.tGuest')}</th>
+                <th className="px-1.5 py-2 font-semibold">{t('owner.txUnit')}</th>
+                <th className="px-1.5 py-2 font-semibold">{t('admin.tCheckIn')}</th>
+                <th className="px-1.5 py-2 text-right font-semibold">{t('owner.txAmount')}</th>
+                <th className="px-1.5 py-2 font-semibold">{t('owner.txStatus')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0ebe0]">
+              {recentBookings.map((b) => (
+                <tr key={b.kode} className="transition-colors hover:bg-[#faf8f3]">
+                  <td className="text-forest-700 px-1.5 py-2.5 font-semibold whitespace-nowrap">
+                    {b.kode}
+                  </td>
+                  <td className="px-1.5 py-2.5">{b.guest}</td>
+                  <td className="text-muted px-1.5 py-2.5">{roomsSummary(b.rooms)}</td>
+                  <td className="text-muted px-1.5 py-2.5 whitespace-nowrap">
+                    {formatDate(b.checkIn)}
+                  </td>
+                  <td className="px-1.5 py-2.5 text-right font-semibold tabular-nums whitespace-nowrap">
+                    {formatIDR(b.total)}
+                  </td>
+                  <td className="px-1.5 py-2.5">
+                    <StatusBadge status={effectiveStatus(b)} />
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f0ebe0]">
-                {recentBookings.map((b) => (
-                  <tr key={b.kode}>
-                    <td className="text-forest-700 px-1.5 py-2.5 font-semibold">{b.kode}</td>
-                    <td className="text-muted px-1.5 py-2.5">{roomsSummary(b.rooms)}</td>
-                    <td className="px-1.5 py-2.5 font-semibold">{formatIDR(b.total)}</td>
-                    <td className="px-1.5 py-2.5">
-                      <StatusBadge status={effectiveStatus(b)} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
     </OwnerLayout>
   );
 }

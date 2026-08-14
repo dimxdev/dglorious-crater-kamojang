@@ -20,15 +20,18 @@ export function RangeFilter({ range, onRangeChange, customRange, onCustomRangeCh
 
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      {/* overflow-x-auto: kalau layar sempit gak muat 4 tombol, geser ke samping
-          daripada tombolnya kepotong/wrap acak-acakan di tengah kata. */}
-      <div className="flex max-w-full gap-1.5 overflow-x-auto rounded-xl border border-[#e8e2d5] bg-white p-1.5">
+      {/* Padding & ukuran teks dikecilin di mobile supaya 4 tombolnya muat utuh
+          di layar 375px — sebelumnya meleber ~33px dan memunculkan scrollbar.
+          `overflow-x-auto` tetap dipertahankan sebagai jaring pengaman (bahasa
+          lain bisa lebih panjang), tapi batang scrollbar-nya disembunyikan
+          lewat `no-scrollbar` karena lebih mengganggu daripada membantu. */}
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl border border-[#e8e2d5] bg-white p-1.5 sm:gap-1.5">
         {RANGES.map((r) => (
           <button
             key={r}
             onClick={() => onRangeChange(r)}
             className={cn(
-              'shrink-0 rounded-lg px-4 py-2 text-[13px] font-semibold whitespace-nowrap transition-colors',
+              'shrink-0 rounded-lg px-2.5 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors sm:px-4 sm:text-[13px]',
               range === r ? 'bg-forest-700 text-white' : 'text-muted',
             )}
           >

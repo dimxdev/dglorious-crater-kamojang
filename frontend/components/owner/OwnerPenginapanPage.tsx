@@ -1,10 +1,12 @@
 'use client';
 
+import { Download } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 import {
   calcBookingByType,
   calcBySource,
+  calcPenginapanStats,
   calcRoomTypePerformance,
   periodRangeLabel,
   type CustomRange,
@@ -13,9 +15,18 @@ import {
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { exportReportPdf, OWNER_REPORT_THEME } from '@/lib/pdf/report';
-import { DonutChart, UnitBarChart } from './Charts';
+import { DonutChart } from './Charts';
 import { OwnerLayout, Panel } from './OwnerLayout';
+import { StatCard, TopTypeCard } from './OwnerStats';
+import { RoomTypeLeaderboard } from './RoomTypeLeaderboard';
 import { RangeFilter } from '@/components/ui';
+
+const COMPARE_LABEL_KEY: Record<DateRange, string> = {
+  rangeToday: 'vsYesterday',
+  rangeWeek: 'vsLastWeek',
+  rangeMonth: 'vsLastMonth',
+  rangeCustom: 'vsLastMonth',
+};
 
 /**
  * Performa tiap tipe tenda/villa — level bisnis (Owner), bukan operasional.
@@ -31,15 +42,18 @@ export function OwnerPenginapanPage() {
   const performance = calcRoomTypePerformance(range, ref);
   const bookingByType = calcBookingByType(range, ref);
   const bySource = calcBySource(range, ref);
-  const totalRevenue = performance.reduce((sum, r) => sum + r.revenue, 0);
-  const totalBookings = performance.reduce((sum, r) => sum + r.bookingsCount, 0);
-  // Nominal dikonversi ke "juta" biar konsisten sama UnitBarChart yang
-  // dipakai di Ringkasan (lihat OwnerOverviewPage.tsx).
-  const revenueBars = performance.map((r) => ({
-    label: r.name,
-    value: Math.round(r.revenue / 1_000_000),
-    active: true,
-  }));
+  const stats = calcPenginapanStats(range, ref);
+  const compareLabel = t(`owner.${COMPARE_LABEL_KEY[range]}`);
+  const newLabel = t('owner.newThisPeriod');
+
+  // Total dari `stats` (dihitung langsung dari booking), bukan penjumlahan
+  // `performance` yang tiap tipenya sudah dibulatkan sendiri-sendiri.
+  const totalRevenue = stats.revenue.raw;
+  const totalBookings = stats.bookings.raw;
+  const topType = performance.reduce<(typeof performance)[number] | null>(
+    (best, r) => (r.bookingsCount > 0 && (!best || r.revenue > best.revenue) ? r : best),
+    null,
+  );
 
   function toBreakdownRows(segments: typeof bookingByType) {
     const total = segments.reduce((sum, s) => sum + s.value, 0);
@@ -115,75 +129,79 @@ export function OwnerPenginapanPage() {
           <button
             type="button"
             onClick={handleExport}
-            className="bg-terracotta-500 hover:bg-terracotta-600 self-start rounded-lg px-5 py-2.5 text-[13.5px] font-semibold text-white"
+            className="bg-terracotta-500 hover:bg-terracotta-600 inline-flex items-center gap-2 self-start rounded-lg px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors"
           >
+            <Download size={15} strokeWidth={2.2} aria-hidden />
             {t('owner.export')}
           </button>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4.5 sm:grid-cols-2">
-        <Panel>
-          <div className="text-muted text-[13px]">{t('owner.statRevenue')}</div>
-          <div className="text-forest-700 mt-1.5 font-serif text-[26px] font-extrabold">
-            {formatIDR(totalRevenue)}
-          </div>
-        </Panel>
-        <Panel>
-          <div className="text-muted text-[13px]">{t('owner.statBooking')}</div>
-          <div className="text-forest-700 mt-1.5 font-serif text-[26px] font-extrabold">
-            {totalBookings}
-          </div>
-        </Panel>
+      {/* 2 kolom sejak mobile (2×2), baru memanjang jadi 4 kolom di layar lebar. */}
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4.5 xl:grid-cols-4">
+        <StatCard
+          stat={stats.revenue}
+          label={t('owner.statRevenue')}
+          compareLabel={compareLabel}
+          newLabel={newLabel}
+        />
+        <StatCard
+          stat={stats.bookings}
+          label={t('owner.statBooking')}
+          compareLabel={compareLabel}
+          newLabel={newLabel}
+        />
+        <StatCard
+          stat={stats.avgPerBooking}
+          label={t('owner.statAvgPerBooking')}
+          compareLabel={compareLabel}
+          newLabel={newLabel}
+        />
+        <TopTypeCard
+          label={t('owner.statTopType')}
+          name={topType?.name ?? null}
+          category={topType?.category}
+          revenueText={topType ? formatIDR(topType.revenue) : undefined}
+          sharePct={
+            topType && totalRevenue > 0
+              ? Math.round((topType.revenue / totalRevenue) * 100)
+              : undefined
+          }
+          shareLabel={t('owner.ofTotalRevenue')}
+          emptyText={t('owner.noBookingsInPeriod')}
+        />
       </div>
 
-      <Panel className="mt-5">
-        <div className="text-[15px] font-bold">{t('owner.roomPerfRevenueChart')}</div>
-        <UnitBarChart bars={revenueBars} />
-      </Panel>
-
-      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+      <div className="mt-4.5 grid gap-4.5 sm:grid-cols-2">
         <Panel>
           <div className="text-[15px] font-bold">{t('owner.bookingByType')}</div>
-          <DonutChart segments={bookingByType} />
+          <DonutChart
+            segments={bookingByType}
+            centerLabel={t('owner.donutCenterBookings')}
+            centerUnit="count"
+          />
         </Panel>
         <Panel>
           <div className="text-[15px] font-bold">{t('owner.onlineVsWalkin')}</div>
-          <DonutChart segments={bySource} />
+          <DonutChart
+            segments={bySource}
+            centerLabel={t('owner.donutCenterBookings')}
+            centerUnit="count"
+          />
         </Panel>
       </div>
 
-      <Panel className="mt-5">
-        <div className="mb-3.5 flex items-center justify-between">
+      <Panel className="mt-4.5">
+        <div className="mb-3.5 flex items-center justify-between gap-3">
           <div className="text-[15px] font-bold">{t('owner.roomPerfTitle')}</div>
-          <Link href="/admin/penginapan/booking" className="text-accent text-[13px] font-semibold">
+          <Link
+            href="/admin/penginapan/booking"
+            className="text-accent inline-flex items-center gap-1 text-[13px] font-semibold hover:underline"
+          >
             {t('owner.viewBookingDetailCta')}
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13px]">
-            <thead className="text-muted border-b border-[#f0ebe0] text-[11px] uppercase">
-              <tr>
-                <th className="px-2 py-2.5">{t('owner.roomPerfType')}</th>
-                <th className="px-2 py-2.5">{t('owner.roomPerfCategory')}</th>
-                <th className="px-2 py-2.5">{t('owner.roomPerfTotalUnits')}</th>
-                <th className="px-2 py-2.5">{t('owner.roomPerfBookings')}</th>
-                <th className="px-2 py-2.5">{t('owner.roomPerfRevenue')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f0ebe0]">
-              {performance.map((r) => (
-                <tr key={r.slug}>
-                  <td className="text-forest-700 px-2 py-2.5 font-semibold">{r.name}</td>
-                  <td className="text-muted px-2 py-2.5">{r.category}</td>
-                  <td className="text-muted px-2 py-2.5">{r.totalUnits}</td>
-                  <td className="text-muted px-2 py-2.5">{r.bookingsCount}</td>
-                  <td className="px-2 py-2.5 font-semibold">{formatIDR(r.revenue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <RoomTypeLeaderboard rows={performance} />
         <p className="text-muted mt-3 text-[11.5px]">{t('owner.roomPerfApproxNote')}</p>
       </Panel>
     </OwnerLayout>
