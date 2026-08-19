@@ -1,7 +1,6 @@
-import { Users } from 'lucide-react';
+import { ArrowRight, Tent, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button, ImagePlaceholder } from '@/components/ui';
 import type { PublicRoomTypeSummary } from '@/lib/api/roomTypes';
 import { resolveImageUrl } from '@/lib/api/roomTypes';
 import { formatIDR } from '@/lib/format';
@@ -9,87 +8,125 @@ import { getIcon, type IconName } from '@/lib/icons';
 
 type RoomCardProps = {
   room: PublicRoomTypeSummary;
-  /** 'home' = badge kapasitas + "mulai dari"; 'listing' = badge Tersedia + tag fasilitas */
+  /** 'home' = ringkas; 'listing' = tambah baris fasilitas untuk dibandingkan. */
   variant?: 'home' | 'listing';
   t: (key: string, params?: Record<string, string | number>) => string;
 };
 
+/**
+ * Kartu unit penginapan.
+ *
+ * Dua keputusan yang mengubah isinya:
+ *
+ * 1. HARGA WEEKEND IKUT DITAMPILKAN. Datanya (`priceWeekend`) sudah dikirim
+ *    API sejak awal tapi tidak pernah dipakai — kartu lama cuma menulis
+ *    "mulai dari" harga weekday. Padahal orang merencanakan menginap di akhir
+ *    pekan, jadi harga yang mereka lihat di situs bukan harga yang mereka
+ *    bayar, dan selisihnya baru ketahuan saat chat. Itu bukan cuma soal
+ *    transparansi: kejutan harga di tengah percakapan adalah tempat calon
+ *    tamu paling sering mundur.
+ *
+ * 2. TAGLINE JADI PEMBEDA UTAMA, bukan keterangan kecil. Enam unit di sini
+ *    perlu dibandingkan cepat, dan yang membedakannya justru ada di tagline
+ *    ("kolam air panas sendiri", "menghadap lembah") — bukan di namanya.
+ *
+ * Seluruh kartu tetap satu tautan: sasaran kliknya sebesar kartunya, dan
+ * pembaca layar mendengar satu tautan bernama unit itu, bukan deretan
+ * "Lihat Detail" yang semuanya berbunyi sama.
+ */
 export function RoomCard({ room, variant = 'home', t }: RoomCardProps) {
   const capLabel = t('common.guestsCount', { count: room.capacity });
+  const sameRate = room.priceWeekend === room.priceWeekday;
 
   return (
-    <div className="group border-border overflow-hidden rounded-[22px] border bg-white shadow-[0_14px_34px_-26px_rgba(23,20,15,0.45)] transition-shadow duration-500 hover:shadow-[0_22px_44px_-26px_rgba(23,20,15,0.5)]">
-      <div className="relative h-56 overflow-hidden">
+    <Link
+      href={`/penginapan/${room.slug}`}
+      className="group border-ash-300/70 focus-visible:ring-mineral-500 focus-visible:ring-offset-ash-100 hover:border-ash-400/80 flex flex-col overflow-hidden rounded-[22px] border bg-white transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+    >
+      <div className="relative h-52 overflow-hidden">
         {room.coverImageUrl ? (
           <Image
             src={resolveImageUrl(room.coverImageUrl)}
-            alt={room.name}
+            alt=""
             fill
             sizes="(min-width: 1024px) 380px, (min-width: 768px) 50vw, 100vw"
-            className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+            className="object-cover"
           />
         ) : (
-          <ImagePlaceholder icon="🏕️" className="absolute inset-0" />
+          <div className="bg-ash-200 text-ash-500 flex h-full w-full items-center justify-center">
+            <Tent size={30} strokeWidth={1.25} aria-hidden />
+          </div>
         )}
-        {variant === 'home' ? (
-          <span className="text-basalt-800 absolute top-3.5 left-3.5 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold">
-            <Users size={13} strokeWidth={1.5} aria-hidden />
+        <span className="text-ash-800 absolute top-3.5 left-3.5 rounded-full bg-white/95 px-3 py-1.5 text-[11.5px] font-semibold tracking-[0.08em] uppercase">
+          {room.category}
+        </span>
+      </div>
+
+      <div className="flex flex-1 flex-col p-5.5">
+        <h3 className="text-ash-900 font-serif text-[1.4rem] leading-tight">
+          {room.name}
+        </h3>
+        {room.tagline && (
+          <p className="text-ash-700 mt-2 text-[15px] leading-snug">
+            {room.tagline}
+          </p>
+        )}
+
+        {/* Baris spesifikasi — dipindai, bukan dibaca. Kapasitas selalu di
+            depan karena itu penyaring pertama: rombongan berapa orang. */}
+        <div className="text-ash-600 mt-4 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[12.5px]">
+          <span className="text-ash-800 flex items-center gap-1.5 font-medium">
+            <Users size={13} strokeWidth={1.75} aria-hidden />
             {capLabel}
           </span>
-        ) : (
-          <span className="bg-basalt-800 absolute top-3.5 right-3.5 rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-white">
-            {t('listing.available')}
-          </span>
-        )}
-      </div>
-
-      <div className="p-5.5">
-        <div className="flex items-center gap-2">
-          <h3 className="font-serif text-[22px] font-semibold">{room.name}</h3>
-          <span className="bg-chip text-muted-strong rounded-full px-2 py-0.5 text-[10.5px] font-medium">
-            {room.category}
-          </span>
-        </div>
-        <p className="text-muted mt-1.5 text-sm">
-          {variant === 'listing'
-            ? `${capLabel} · ${room.tagline}`
-            : room.tagline}
-        </p>
-
-        {variant === 'listing' && (
-          <div className="mt-3.5 flex flex-wrap gap-1.5">
-            {room.facilities.slice(0, 3).map((f) => {
-              const Icon = getIcon(f.icon as IconName);
-              return (
-                <span
-                  key={f.label}
-                  className="bg-chip text-muted-strong flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11.5px]"
-                >
-                  <Icon size={12} strokeWidth={1.5} aria-hidden />
-                  {f.label}
+          {room.facilities.slice(0, variant === 'listing' ? 3 : 2).map((f) => {
+            const Icon = getIcon(f.icon as IconName);
+            return (
+              <span key={f.label} className="flex items-center gap-1.5">
+                <span className="text-ash-400" aria-hidden>
+                  ·
                 </span>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="mt-5 flex flex-nowrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            {variant === 'home' && (
-              <div className="text-muted text-xs">{t('home.startFrom')}</div>
-            )}
-            <div className="text-basalt-900 font-serif text-xl leading-tight font-semibold whitespace-nowrap">
-              {formatIDR(room.priceWeekday)}
-            </div>
-            <div className="text-muted mt-0.5 text-[12px] whitespace-nowrap">
-              {t('listing.perNight')}
-            </div>
-          </div>
-          <Link href={`/penginapan/${room.slug}`} className="shrink-0">
-            <Button size="sm">{t('listing.viewDetail')}</Button>
-          </Link>
+                <Icon size={12} strokeWidth={1.5} aria-hidden />
+                {f.label}
+              </span>
+            );
+          })}
         </div>
+
+        {/* Dua tarif berdampingan. Kalau nilainya sama, satu kolom saja —
+            dua kolom identik cuma bikin orang mengira ada yang salah baca. */}
+        <div className="border-ash-200 mt-auto flex items-end justify-between gap-4 border-t pt-4.5">
+          <dl className="flex min-w-0 gap-6">
+            <div>
+              <dt className="text-ash-600 text-[11.5px] tracking-[0.12em] uppercase">
+                {sameRate ? t('listing.rateAllDays') : t('listing.rateWeekday')}
+              </dt>
+              <dd className="text-ash-900 mt-1 font-serif text-[1.25rem] leading-none whitespace-nowrap">
+                {formatIDR(room.priceWeekday)}
+              </dd>
+            </div>
+            {!sameRate && (
+              <div>
+                <dt className="text-ash-600 text-[11.5px] tracking-[0.12em] uppercase">
+                  {t('listing.rateWeekend')}
+                </dt>
+                <dd className="text-ash-800 mt-1 font-serif text-[1.25rem] leading-none whitespace-nowrap">
+                  {formatIDR(room.priceWeekend)}
+                </dd>
+              </div>
+            )}
+          </dl>
+          {/* Penanda visual, bukan tombol — seluruh kartunya sudah tautan,
+              jadi ini tidak boleh bisa difokus sendiri. */}
+          <span
+            aria-hidden
+            className="text-mineral-700 bg-mineral-50 group-hover:bg-mineral-100 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors"
+          >
+            <ArrowRight size={17} strokeWidth={1.75} />
+          </span>
+        </div>
+        <p className="text-ash-600 mt-2 text-[11.5px]">{t('listing.perNight')}</p>
       </div>
-    </div>
+    </Link>
   );
 }

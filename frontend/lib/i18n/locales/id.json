@@ -13,19 +13,23 @@
     "rangeToday": "Hari Ini",
     "rangeWeek": "Minggu Ini",
     "rangeMonth": "Bulan Ini",
-    "rangeCustom": "Custom"
+    "rangeCustom": "Custom",
+    "retry": "Coba lagi"
   },
   "nav": {
     "home": "Beranda",
     "about": "Tentang",
-    "lodging": "Penginapan"
+    "lodging": "Penginapan",
+    "reserve": "Hubungi Reservasi",
+    "openMenu": "Buka menu",
+    "closeMenu": "Tutup menu"
   },
   "hero": {
     "badge": "Bandung – Garut, Jawa Barat",
     "title": "Menginap di Jantung Kawah Kamojang",
-    "subtitle": "Uap panas bumi, pemandian air hangat, dan glamping mewah di ketinggian berkabut. Satu tempat, seribu pengalaman.",
-    "ctaPrimary": "Booking Penginapan",
-    "ctaSecondary": "Jelajahi Wisata"
+    "subtitle": "Empat kawah, kolam air panas alami, dan tenda di lereng 1.500 meter. Satu setengah jam berkendara dari Bandung.",
+    "ctaPrimary": "Lihat Unit & Harga",
+    "ctaSecondary": "Apa Saja yang Ada"
   },
   "footer": {
     "tagline": "Destinasi wisata kawah geothermal, pemandian air panas & glamping di Kamojang, Jawa Barat.",
@@ -34,7 +38,11 @@
     "location": "Lokasi",
     "adminPortal": "Portal Pengelola",
     "legal": "Syarat & Ketentuan · Kebijakan Privasi",
-    "rights": "Seluruh hak cipta dilindungi."
+    "rights": "Seluruh hak cipta dilindungi.",
+    "terms": "Syarat & Ketentuan",
+    "waReservation": "WhatsApp reservasi",
+    "openMaps": "Buka di Peta",
+    "mapTitle": "Peta lokasi D’Glorious Crater Kamojang"
   },
   "home": {
     "attractionsEyebrow": "Daya Tarik",
@@ -48,17 +56,20 @@
     "infoEyebrow": "Info Praktis",
     "infoTitle": "Rencanakan kunjunganmu",
     "ctaTitle": "Kamar terbatas tiap akhir pekan.",
-    "ctaSubtitle": "Amankan tanggalmu sekarang — tanpa perlu daftar akun.",
-    "ctaButton": "Cek Ketersediaan"
+    "ctaSubtitle": "Ketersediaan tanggal, harga, dan aturan DP diurus lewat WhatsApp bersama admin kami. Balasannya biasanya tidak lama.",
+    "ctaButton": "Cek Ketersediaan",
+    "facilitiesTeaser": "Empat kawah, empat kolam air panas, tiga jembatan gantung, dan sembilan fasilitas lain di dalam satu kawasan.",
+    "facilitiesLink": "Lihat semua fasilitas",
+    "lodgingSub": "Enam tipe unit. Tarif akhir pekan berbeda, dan keduanya ditulis di tiap kartu."
   },
   "about": {
     "eyebrow": "Tentang Kami",
     "title": "Dari Kawah Kamojang ke D'Glorious Crater",
     "historyLead": "Kawah Kamojang telah dikenal sejak era kolonial sebagai salah satu ladang panas bumi tertua di Indonesia.",
-    "historyBody": "Uap yang menyembur dari celah bebatuan dan aroma belerang yang khas telah lama menjadi bagian dari kehidupan warga sekitar. Bagi masyarakat setempat, kawah ini bukan sekadar fenomena alam — ia menyimpan cerita turun-temurun tentang kekuatan bumi yang harus dihormati, sekaligus berkah yang menghangatkan lewat mata air panasnya.",
-    "historyBody2": "Berawal dari kawasan konservasi panas bumi yang ramai dikunjungi peneliti dan pelancong, kami melihat potensi untuk menata ulang pengalaman ini menjadi sesuatu yang lebih utuh. Pada 2023, D'Glorious Crater Kamojang resmi hadir — memadukan keajaiban geotermal, pemandian air panas alami, dan penginapan glamping berkelas di ketinggian berkabut perbatasan Bandung–Garut, tanpa menghilangkan karakter liar yang membuat tempat ini istimewa sejak awal.",
-    "historyBody3": "Kini, D'Glorious Crater Kamojang menjadi rumah bagi wisatawan yang mencari ketenangan: dari uap kawah yang mengepul di pagi hari, pemandian air panas alami yang menyembuhkan lelah setelah perjalanan panjang, hingga malam berkabut ditemani taburan bintang dari dalam tenda glamping. Setiap sudut dirancang untuk mengajak tamu melambat sejenak, menikmati keheningan yang sulit ditemukan di kota.",
-    "historyBody4": "Kami percaya, alam yang dijaga baik akan selalu punya cerita untuk dibagikan. Karena itu, misi kami sederhana namun teguh: menghadirkan kemewahan yang menyatu dengan alam, merawat kawah dan hutan di sekitarnya sama seriusnya dengan melayani setiap tamu yang datang — supaya keindahan ini bisa terus dinikmati generasi berikutnya.",
+    "historyBody": "Uap yang keluar dari celah bebatuan dan bau belerang yang khas sudah lama jadi bagian keseharian warga sekitar. Bagi mereka kawah ini bukan cuma gejala alam. Ada cerita turun-temurun soal kekuatan bumi yang harus dihormati, dan ada mata air panas yang menghangatkan.",
+    "historyBody2": "Kawasan konservasi panas bumi ini sudah lama ramai didatangi peneliti dan pelancong. Pada 2023 D’Glorious Crater Kamojang mulai beroperasi di sini, menata ulang akses ke kawah, kolam air panas, dan area menginap tanpa mengubah karakter tempatnya.",
+    "historyBody3": "Pagi di sini hampir selalu berkabut. Siang sampai sore orang berkumpul di kolam air panas, dan begitu matahari turun suhunya ikut turun ke belasan derajat. Tamu yang menginap biasanya menghabiskan malam di depan tenda, bukan di dalamnya.",
+    "historyBody4": "Yang kami jaga sederhana: kawah dan hutan di sekitarnya tidak boleh rusak karena kami ada di sini. Sebagian kawasan sengaja dibiarkan apa adanya, dan jumlah tenda dibatasi supaya lereng ini tidak berubah jadi tempat parkir.",
     "statFoundedLabel": "Berdiri",
     "statFoundedValue": "2023",
     "statElevationLabel": "Ketinggian",
@@ -71,7 +82,7 @@
     "ticketTitle": "Harga Tiket Masuk",
     "ticketDaytime": "Pukul 06.00–19.00",
     "ticketNighttime": "Pukul 19.00–06.00",
-    "ticketNote": "Harga dapat berubah sewaktu-waktu — hubungi kami via WhatsApp untuk info terbaru.",
+    "ticketNote": "Harga bisa berubah sewaktu-waktu. Hubungi kami lewat WhatsApp untuk memastikan tarif terbaru.",
     "parkingTitle": "Tarif Parkir"
   },
   "listing": {
@@ -79,7 +90,22 @@
     "title": "Pilih tempat menginapmu",
     "available": "Tersedia",
     "perNight": "per malam",
-    "viewDetail": "Lihat Detail"
+    "viewDetail": "Lihat Detail",
+    "lead": "Enam tipe unit, dari tenda berdua sampai cottage dengan kolam air panas sendiri. Tarif akhir pekan berbeda, dan keduanya ditulis apa adanya di tiap kartu.",
+    "metaUnitTypes": "Tipe unit",
+    "metaCheckIn": "Check-in",
+    "metaCheckInValue": "Mulai 14.00",
+    "resultCount": "{count} tipe unit ditampilkan",
+    "empty": "Belum ada unit yang ditampilkan",
+    "emptyHint": "Katalog sedang diperbarui. Hubungi kami lewat WhatsApp untuk menanyakan ketersediaan.",
+    "errorHint": "Katalog gagal dimuat. Periksa koneksi, lalu muat ulang.",
+    "rateWeekday": "Senin–Jumat",
+    "rateWeekend": "Sabtu–Minggu",
+    "rateAllDays": "Semua hari",
+    "metaRange": "Kisaran tarif",
+    "helpTitle": "Belum yakin yang mana?",
+    "helpBody": "Kirim tanggal rencanamu dan jumlah orangnya. Admin kami yang cek unit mana yang muat dan tanggalnya masih kosong.",
+    "gridHeading": "Daftar unit penginapan"
   },
   "detail": {
     "notFound": "Tenda/villa yang kamu cari tidak ditemukan.",
@@ -106,7 +132,11 @@
     "total": "Total",
     "contactNote": "Hubungi kami via WhatsApp untuk cek ketersediaan tanggal dan booking.",
     "contactWa": "Hubungi via WhatsApp",
-    "noCharge": "Belum ada biaya yang ditagih"
+    "noCharge": "Belum ada biaya yang ditagih",
+    "notFoundHint": "Unit ini mungkin sudah tidak ditawarkan atau tautannya keliru.",
+    "backToList": "Lihat semua unit",
+    "photoAlt": "Foto unit {name}",
+    "categoryLabel": "Tipe"
   },
   "login": {
     "consoleLabel": "Management Console",
@@ -163,8 +193,6 @@
     "tWa": "No. WA",
     "tType": "Tipe",
     "tBookingDate": "Tgl. Booking",
-    "tCheckIn": "Check-in",
-    "tCheckOut": "Check-out",
     "tSource": "Sumber",
     "tTotal": "Total",
     "tStatus": "Status",
@@ -456,7 +484,9 @@
   "terms": {
     "eyebrow": "Informasi Penting",
     "title": "Syarat & Ketentuan",
-    "subtitle": "Mohon dibaca sebelum melakukan reservasi penginapan di D'Glorious Crater Kamojang."
+    "subtitle": "Mohon dibaca sebelum melakukan reservasi penginapan di D'Glorious Crater Kamojang.",
+    "questionTitle": "Masih ada yang ingin ditanyakan?",
+    "questionBody": "Nego harga, aturan DP, dan ketersediaan tanggal diurus langsung lewat WhatsApp bersama admin kami."
   },
   "roles": {
     "SUPER_ADMIN": "Super Admin",
@@ -464,5 +494,25 @@
     "ADMIN_PENGINAPAN": "Admin Penginapan",
     "ADMIN_PORTAL": "Admin Tiket Masuk",
     "ADMIN_CAFFE": "Admin Cafe"
+  },
+  "visit": {
+    "routeTitle": "Cara ke sini",
+    "routeLead": "Hampir semua tamu menempuh perjalanan lebih dari satu jam untuk sampai ke sini. Ada dua jalur masuk, dan pilihannya bergantung pada mobil yang kamu bawa.",
+    "faqTitle": "Yang sering ditanyakan",
+    "faqLead": "Reservasi diurus lewat WhatsApp bersama admin kami. Yang di bawah ini biasanya sudah menjawab sebelum kamu sempat bertanya."
+  },
+  "notFound": {
+    "kicker": "Kesasar",
+    "title": "Halaman ini tidak ada",
+    "lead": "Tautannya mungkin sudah berubah, atau ada salah ketik di alamatnya. Semua isi situs ini bisa dicapai dari beranda.",
+    "home": "Kembali ke beranda",
+    "orTry": "Atau langsung ke",
+    "linkLodging": "Lihat pilihan penginapan",
+    "linkAbout": "Tentang & daya tarik wisata"
+  },
+  "kawasan": {
+    "title": "Apa saja yang ada di sana",
+    "note": "Empat kawah, empat kolam air panas, tiga jembatan gantung. Cukup untuk mengisi satu hari penuh tanpa keluar dari kawasan.",
+    "disclaimer": "Urutan di sini cuma pengelompokan, bukan denah. Letak sebenarnya di kawasan bisa berbeda."
   }
 }

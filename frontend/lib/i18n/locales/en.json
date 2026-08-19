@@ -13,19 +13,23 @@
     "rangeToday": "Today",
     "rangeWeek": "This Week",
     "rangeMonth": "This Month",
-    "rangeCustom": "Custom"
+    "rangeCustom": "Custom",
+    "retry": "Try again"
   },
   "nav": {
     "home": "Home",
     "about": "About",
-    "lodging": "Lodging"
+    "lodging": "Lodging",
+    "reserve": "Contact Reservations",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "hero": {
     "badge": "Bandung – Garut, West Java",
     "title": "Stay in the Heart of Kamojang Crater",
-    "subtitle": "Geothermal steam, warm springs, and luxury glamping in the misty highlands. One place, a thousand experiences.",
-    "ctaPrimary": "Book a Stay",
-    "ctaSecondary": "Explore the Attractions"
+    "subtitle": "Four craters, natural hot spring pools, and tents on a slope at 1,500 metres. An hour and a half from Bandung.",
+    "ctaPrimary": "See Units & Rates",
+    "ctaSecondary": "What Is There"
   },
   "footer": {
     "tagline": "Geothermal crater tourism, hot springs & glamping in Kamojang, West Java.",
@@ -34,7 +38,11 @@
     "location": "Location",
     "adminPortal": "Staff Portal",
     "legal": "Terms & Conditions · Privacy Policy",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "terms": "Terms & Conditions",
+    "waReservation": "WhatsApp reservations",
+    "openMaps": "Open in Maps",
+    "mapTitle": "Map of D’Glorious Crater Kamojang"
   },
   "home": {
     "attractionsEyebrow": "Attractions",
@@ -48,17 +56,20 @@
     "infoEyebrow": "Practical Info",
     "infoTitle": "Plan your visit",
     "ctaTitle": "Rooms are limited every weekend.",
-    "ctaSubtitle": "Secure your dates now — no account needed.",
-    "ctaButton": "Check Availability"
+    "ctaSubtitle": "Dates, rates, and deposit terms are handled over WhatsApp with our admin. You usually will not wait long for a reply.",
+    "ctaButton": "Check Availability",
+    "facilitiesTeaser": "Four craters, four hot pools, three suspension bridges, and nine more facilities inside the same grounds.",
+    "facilitiesLink": "See every facility",
+    "lodgingSub": "Six unit types. Weekend rates differ, and both are printed on every card."
   },
   "about": {
     "eyebrow": "About Us",
     "title": "From Kamojang Crater to D'Glorious Crater",
     "historyLead": "Kamojang Crater has been known since colonial times as one of the oldest geothermal fields in Indonesia.",
-    "historyBody": "Steam rising from cracks in the rock and the distinct scent of sulfur have long been part of daily life for the surrounding community. For locals, the crater is more than a natural phenomenon — it carries generations of stories about a force of the earth to be respected, and a blessing that warms through its hot springs.",
-    "historyBody2": "Starting as a geothermal conservation area popular among researchers and travelers, we saw the potential to reshape this experience into something more complete. In 2023, D'Glorious Crater Kamojang officially opened — blending geothermal wonders, natural hot springs, and premium glamping in the misty highlands on the Bandung–Garut border, without losing the untamed character that made this place special from the start.",
-    "historyBody3": "Today, D'Glorious Crater Kamojang is home to travelers seeking stillness: steam rising from the crater at dawn, natural hot springs that soothe tired bodies after a long journey, and misty nights under a blanket of stars from inside a glamping tent. Every corner is designed to invite guests to slow down and savor a quiet that's hard to find in the city.",
-    "historyBody4": "We believe well-cared-for nature always has a story to share. That's why our mission is simple yet steadfast: to deliver luxury that lives in harmony with nature, caring for the crater and surrounding forest as seriously as we care for every guest who visits — so this beauty can be enjoyed by generations to come.",
+    "historyBody": "Steam from the cracks in the rock and the smell of sulfur have long been part of daily life here. To people nearby the crater is not just a natural feature. There are stories passed down about the power of the earth, and there is hot spring water that keeps you warm.",
+    "historyBody2": "This geothermal conservation area has drawn researchers and travellers for years. In 2023 D’Glorious Crater Kamojang began operating here, reworking access to the crater, the hot pools, and the places to stay without changing the character of the site.",
+    "historyBody3": "Mornings here are almost always foggy. Through the afternoon people gather at the hot pools, and once the sun drops the temperature follows it into the teens. Guests who stay the night usually spend it outside the tent rather than in it.",
+    "historyBody4": "What we protect is simple: the crater and the forest around it should not be worse off for our being here. Parts of the site are deliberately left alone, and the number of tents is capped so this slope does not turn into a car park.",
     "statFoundedLabel": "Founded",
     "statFoundedValue": "2023",
     "statElevationLabel": "Elevation",
@@ -71,7 +82,7 @@
     "ticketTitle": "Entry Ticket Prices",
     "ticketDaytime": "06:00–19:00",
     "ticketNighttime": "19:00–06:00",
-    "ticketNote": "Prices may change at any time — contact us via WhatsApp for the latest info.",
+    "ticketNote": "Prices can change. Message us on WhatsApp to confirm current rates.",
     "parkingTitle": "Parking Fees"
   },
   "listing": {
@@ -79,7 +90,22 @@
     "title": "Choose where to stay",
     "available": "Available",
     "perNight": "per night",
-    "viewDetail": "View Detail"
+    "viewDetail": "View Detail",
+    "lead": "Six unit types, from a tent for two to a cottage with its own hot pool. Weekend rates differ, and both are printed on every card.",
+    "metaUnitTypes": "Unit types",
+    "metaCheckIn": "Check-in",
+    "metaCheckInValue": "From 2 PM",
+    "resultCount": "{count} unit types shown",
+    "empty": "No units to show yet",
+    "emptyHint": "The catalogue is being updated. Message us on WhatsApp to ask about availability.",
+    "errorHint": "The catalogue failed to load. Check your connection, then reload.",
+    "rateWeekday": "Mon–Fri",
+    "rateWeekend": "Sat–Sun",
+    "rateAllDays": "Any day",
+    "metaRange": "Rate range",
+    "helpTitle": "Not sure which one?",
+    "helpBody": "Send us your dates and how many people. Our admin checks which unit fits and which dates are still open.",
+    "gridHeading": "List of lodging units"
   },
   "detail": {
     "notFound": "The lodging you're looking for could not be found.",
@@ -106,7 +132,11 @@
     "total": "Total",
     "contactNote": "Contact us via WhatsApp to check date availability and book.",
     "contactWa": "Contact via WhatsApp",
-    "noCharge": "You won't be charged yet"
+    "noCharge": "You won't be charged yet",
+    "notFoundHint": "This unit may no longer be offered, or the link is wrong.",
+    "backToList": "See all units",
+    "photoAlt": "Photo of {name}",
+    "categoryLabel": "Type"
   },
   "login": {
     "consoleLabel": "Management Console",
@@ -163,8 +193,6 @@
     "tWa": "WhatsApp",
     "tType": "Type",
     "tBookingDate": "Booking Date",
-    "tCheckIn": "Check-in",
-    "tCheckOut": "Check-out",
     "tSource": "Source",
     "tTotal": "Total",
     "tStatus": "Status",
@@ -456,7 +484,9 @@
   "terms": {
     "eyebrow": "Important Information",
     "title": "Terms & Conditions",
-    "subtitle": "Please read before making a lodging reservation at D'Glorious Crater Kamojang."
+    "subtitle": "Please read before making a lodging reservation at D'Glorious Crater Kamojang.",
+    "questionTitle": "Anything else you need to know?",
+    "questionBody": "Rates, deposit terms, and date availability are all handled directly over WhatsApp with our admin."
   },
   "roles": {
     "SUPER_ADMIN": "Super Admin",
@@ -464,5 +494,25 @@
     "ADMIN_PENGINAPAN": "Lodging Admin",
     "ADMIN_PORTAL": "Ticketing Admin",
     "ADMIN_CAFFE": "Cafe Admin"
+  },
+  "visit": {
+    "routeTitle": "Getting here",
+    "routeLead": "Nearly every guest drives more than an hour to get here. Two roads lead in, and which one suits you depends on the car you are driving.",
+    "faqTitle": "Common questions",
+    "faqLead": "Reservations run through WhatsApp with our admin. The answers below usually land before you need to ask."
+  },
+  "notFound": {
+    "kicker": "Lost",
+    "title": "This page does not exist",
+    "lead": "The link may have changed, or there is a typo in the address. Everything on this site can be reached from the home page.",
+    "home": "Back to home",
+    "orTry": "Or go straight to",
+    "linkLodging": "See the places to stay",
+    "linkAbout": "About & things to do"
+  },
+  "kawasan": {
+    "title": "What is actually there",
+    "note": "Four craters, four hot pools, three suspension bridges. Enough to fill a whole day without leaving the grounds.",
+    "disclaimer": "These are groupings, not a site plan. The real layout on the ground may differ."
   }
 }

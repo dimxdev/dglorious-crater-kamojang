@@ -1,367 +1,400 @@
 'use client';
 
-import Link from 'next/link';
+import { BedDouble, ChevronRight, Info, Tent, Users } from 'lucide-react';
 import Image from 'next/image';
-import { BedDouble, Info, MessageCircle, Users } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { PageMast, Skeleton, actionClass } from '@/components/public/ui';
+import { ApiError } from '@/lib/api/client';
 import {
   fetchPublicRoomTypeBySlug,
   resolveImageUrl,
   type PublicRoomTypeDetail,
 } from '@/lib/api/roomTypes';
-import { ApiError } from '@/lib/api/client';
-import { fetchPublicSettings } from '@/lib/api/settings';
 import { getImage } from '@/lib/data/images';
 import { formatIDR } from '@/lib/format';
 import { getIcon, type IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 
 // Fase 1: belum ada booking online, jadi CTA mengarah ke WhatsApp reservasi
-// (bukan form booking). Nomor & jam check-in/out diambil dari `GET /settings`
-// (§8.3 PROJECT.md) — bukan bagian dari room-types, itu config global.
+// (bukan form booking). Nomor & jam check-in/out dari `GET /settings`
+// (§8.3 PROJECT.md) — config global, bukan bagian dari room-types.
 
 export function DetailPage({ slug }: { slug: string }) {
   const { t, locale } = useTranslation();
   const [room, setRoom] = useState<PublicRoomTypeDetail | null>(null);
-  const [settings, setSettings] = useState<Record<string, string> | null>(null);
   const [notFoundState, setNotFoundState] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { settings } = usePublicSettings();
 
   useEffect(() => {
+    let active = true;
     setRoom(null);
     setNotFoundState(false);
     setError(null);
 
-    Promise.all([fetchPublicRoomTypeBySlug(slug, locale), fetchPublicSettings()])
-      .then(([roomData, settingsData]) => {
-        setRoom(roomData);
-        setSettings(settingsData);
-      })
+    fetchPublicRoomTypeBySlug(slug, locale)
+      .then((data) => active && setRoom(data))
       .catch((e) => {
-        if (e instanceof ApiError && e.status === 404) {
-          setNotFoundState(true);
-        } else {
-          setError(e instanceof Error ? e.message : t('common.loadError'));
-        }
+        if (!active) return;
+        if (e instanceof ApiError && e.status === 404) setNotFoundState(true);
+        else setError(e instanceof Error ? e.message : t('common.loadError'));
       });
+    return () => {
+      active = false;
+    };
   }, [slug, locale, t]);
 
   if (notFoundState) {
     return (
-      <div className="container-page py-24 text-center">
-        <p className="text-muted-strong">{t('detail.notFound')}</p>
-        <Link href="/penginapan" className="text-accent mt-3 inline-block font-semibold">
-          {t('nav.lodging')}
-        </Link>
-      </div>
+      <EmptyShell
+        title={t('detail.notFound')}
+        body={t('detail.notFoundHint')}
+        actionLabel={t('detail.backToList')}
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="container-page py-24 text-center">
-        <p className="text-sm text-red-600">{error}</p>
-      </div>
+      <EmptyShell
+        title={t('common.loadError')}
+        body={error}
+        actionLabel={t('detail.backToList')}
+      />
     );
   }
 
-  if (!room || !settings) {
-    return (
-      <div className="container-page py-24 text-center">
-        <p className="text-muted text-sm">{t('common.loading')}</p>
-      </div>
-    );
-  }
+  if (!room || !settings) return <DetailSkeleton />;
 
   const cover = room.images.find((i) => i.isCover) ?? room.images[0];
   const otherImages = room.images.filter((i) => i !== cover);
-  // Kalau foto tenda belum lengkap (< 3), sisa slot thumbnail dipinjam dari
-  // foto umum lokasi/atraksi — bukan dari tenda lain, supaya tidak terkesan
-  // menampilkan unit yang salah. Ini asset statis situs, bukan data tenda.
-  const ambience1 = getImage('attractionAirPanas');
-  const ambience2 = getImage('locationValley');
+  // Kalau foto unit belum lengkap (< 3), sisa slot dipinjam dari foto umum
+  // lokasi/atraksi — bukan dari unit lain, supaya tidak terkesan menampilkan
+  // unit yang salah. Ini aset statis situs, bukan data unit.
+  const ambience = [getImage('attractionAirPanas'), getImage('locationValley')];
 
-  const waHref = `https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(
-    `Halo D'Glorious Crater, saya ingin tanya ketersediaan & booking untuk ${room.name}.`,
-  )}`;
+  const waHref = waLink(
+    settings.whatsapp_number,
+    `Halo D’Glorious Crater, saya ingin tanya ketersediaan & booking untuk ${room.name}.`,
+  );
 
   return (
-    <div className="container-page pt-8 pb-24">
-      {/* Breadcrumb */}
-      <div className="text-muted text-[13px]">
-        <Link href="/penginapan">{t('nav.lodging')}</Link> /{' '}
-        <span className="text-foreground">{room.name}</span>
-      </div>
+    <div className="pb-24">
+      <PageMast
+        title={room.name}
+        lead={room.description ?? undefined}
+        meta={[
+          { label: t('detail.categoryLabel'), value: room.category },
+          {
+            label: t('detail.baseCapacity'),
+            value: t('common.guestsCount', { count: room.capacity }),
+          },
+          ...(room.bedInfo
+            ? [{ label: t('detail.bedInfo'), value: room.bedInfo }]
+            : []),
+          { label: t('detail.checkIn'), value: settings.check_in_time },
+          { label: t('detail.checkOut'), value: settings.check_out_time },
+        ]}
+      >
+        <nav aria-label="Breadcrumb" className="mb-6">
+          <ol className="text-ash-600 flex items-center gap-1.5 text-[13px]">
+            <li>
+              <Link
+                href="/penginapan"
+                className="hover:text-mineral-700 transition-colors"
+              >
+                {t('nav.lodging')}
+              </Link>
+            </li>
+            <ChevronRight size={13} strokeWidth={1.75} aria-hidden />
+            <li className="text-ash-700" aria-current="page">
+              {room.name}
+            </li>
+          </ol>
+        </nav>
+      </PageMast>
 
-      {/* Gallery */}
-      <div className="mt-4 grid h-110 grid-cols-1 gap-3.5 md:grid-cols-[2fr_1fr]">
-        <div className="relative overflow-hidden rounded-xl">
-          {cover ? (
-            <Image
-              src={resolveImageUrl(cover.url)}
-              alt={room.name}
-              fill
-              sizes="(min-width: 768px) 60vw, 100vw"
-              priority
-              className="object-cover"
-            />
-          ) : (
-            <div className="from-basalt-700 to-basalt-900 flex h-full w-full items-center justify-center bg-linear-to-br text-4xl">
-              🏕️
-            </div>
-          )}
-        </div>
-        <div className="hidden grid-rows-2 gap-3.5 md:grid">
-          <div className="relative overflow-hidden rounded-xl">
-            {otherImages[0] ? (
+      {/* GALERI */}
+      <div className="container-page pt-10">
+        <div className="grid h-[26rem] grid-cols-1 gap-3 md:h-[30rem] md:grid-cols-[2fr_1fr]">
+          <figure className="relative overflow-hidden rounded-2xl">
+            {cover ? (
               <Image
-                src={resolveImageUrl(otherImages[0].url)}
-                alt={room.name}
+                src={resolveImageUrl(cover.url)}
+                alt={t('detail.photoAlt', { name: room.name })}
                 fill
-                sizes="30vw"
+                sizes="(min-width: 768px) 62vw, 100vw"
+                priority
                 className="object-cover"
               />
             ) : (
-              <Image
-                src={ambience1.src}
-                alt={ambience1.alt}
-                fill
-                sizes="30vw"
-                className="object-cover"
-                style={{ objectPosition: ambience1.objectPosition }}
-              />
+              <div className="bg-ash-200 text-ash-500 flex h-full w-full items-center justify-center">
+                <Tent size={38} strokeWidth={1.25} aria-hidden />
+              </div>
             )}
-          </div>
-          <div className="relative overflow-hidden rounded-xl">
-            {otherImages[1] ? (
-              <Image
-                src={resolveImageUrl(otherImages[1].url)}
-                alt={room.name}
-                fill
-                sizes="30vw"
-                className="object-cover"
-              />
-            ) : (
-              <Image
-                src={ambience2.src}
-                alt={ambience2.alt}
-                fill
-                sizes="30vw"
-                className="object-cover"
-                style={{ objectPosition: ambience2.objectPosition }}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Body + kartu kontak */}
-      <div className="mt-11 grid gap-12 lg:grid-cols-[1fr_380px]">
-        <div>
-          <span className="bg-chip text-muted-strong inline-block rounded-full px-2.5 py-0.5 text-xs font-medium">
-            {room.category}
-          </span>
-          <h1 className="mt-2.5 font-serif text-3xl font-extrabold sm:text-4xl">
-            {room.name}
-          </h1>
-          <div className="text-muted mt-2 text-[15px]">
-            👥 {t('detail.capacity')}{' '}
-            {t('common.guestsCount', { count: room.capacity })}
-            {room.bedInfo ? ` · ${room.bedInfo}` : ''}
-          </div>
-          {room.description && (
-            <p className="text-muted-strong mt-6 text-base leading-8">
-              {room.description}
-            </p>
-          )}
-
-          {/* Kapasitas & Extra Bed */}
-          <h2 className="mt-9 font-serif text-2xl font-bold">
-            {t('detail.capacityTitle')}
-          </h2>
-          <div className="border-border mt-4 grid gap-4 rounded-2xl border bg-white p-5 sm:grid-cols-2">
-            <div className="flex items-start gap-3">
-              <span className="bg-chip text-accent flex h-11 w-11 shrink-0 items-center justify-center rounded-xl">
-                <Users size={20} strokeWidth={1.5} aria-hidden />
-              </span>
-              <div>
-                <div className="text-muted text-xs">
-                  {t('detail.baseCapacity')}
-                </div>
-                <div className="mt-0.5 font-serif text-xl font-semibold">
-                  {t('common.guestsCount', { count: room.capacity })}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="bg-chip text-accent flex h-11 w-11 shrink-0 items-center justify-center rounded-xl">
-                <BedDouble size={20} strokeWidth={1.5} aria-hidden />
-              </span>
-              <div>
-                <div className="text-muted text-xs">{t('detail.bedInfo')}</div>
-                <div className="mt-0.5 font-serif text-lg font-semibold">
-                  {room.bedInfo}
-                </div>
-              </div>
-            </div>
-
-            {/* Tarif tambah orang — beda struktur utk Campervan (flat) vs unit lain (bed/tanpa-bed) */}
-            <div className="sm:col-span-2">
-              <div className="text-muted-strong mb-2 text-sm font-medium">
-                {t('detail.extraGuestTitle')}
-              </div>
-              {room.extraFlatPrice != null ? (
-                <div className="border-border flex items-center justify-between rounded-xl border border-dashed bg-[#faf8f4] px-4 py-3">
-                  <span className="text-muted-strong text-sm">
-                    {t('detail.extraFlatLabel')}
-                  </span>
-                  <span className="text-forest-700 font-serif text-lg font-bold">
-                    {formatIDR(room.extraFlatPrice)}
-                  </span>
-                </div>
-              ) : (
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  <div className="border-border flex items-center justify-between rounded-xl border border-dashed bg-[#faf8f4] px-4 py-3">
-                    <span className="text-muted-strong text-sm">
-                      {t('detail.withBed')}
-                    </span>
-                    <span className="text-forest-700 font-serif text-base font-bold">
-                      {formatIDR(room.extraBedPrice ?? 0)}
-                    </span>
-                  </div>
-                  <div className="border-border flex items-center justify-between rounded-xl border border-dashed bg-[#faf8f4] px-4 py-3">
-                    <span className="text-muted-strong text-sm">
-                      {t('detail.withoutBed')}
-                    </span>
-                    <span className="text-forest-700 font-serif text-base font-bold">
-                      {formatIDR(room.extraNoBedPrice ?? 0)}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Catatan aturan anak */}
-          <div className="border-accent/25 bg-accent/5 mt-3.5 flex gap-2.5 rounded-xl border p-4">
-            <Info
-              size={17}
-              strokeWidth={1.5}
-              className="text-accent mt-0.5 shrink-0"
-              aria-hidden
-            />
-            <div>
-              <div className="text-[13.5px] font-semibold">
-                {t('detail.childrenRuleTitle')}
-              </div>
-              <p className="text-muted-strong mt-1 text-[13px] leading-relaxed">
-                {t('detail.childrenRule')}
-              </p>
-            </div>
-          </div>
-
-          {/* Fasilitas */}
-          <h2 className="mt-9 font-serif text-2xl font-bold">
-            {t('detail.facilities')}
-          </h2>
-          {room.bathroomInfo && (
-            <div className="text-muted mt-1 text-[13px]">{room.bathroomInfo}</div>
-          )}
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {room.facilities.map((f) => {
-              const Icon = getIcon(f.icon as IconName);
+          </figure>
+          <div className="hidden grid-rows-2 gap-3 md:grid">
+            {[0, 1].map((i) => {
+              const own = otherImages[i];
+              const fallback = ambience[i];
               return (
-                <div
-                  key={f.label}
-                  className="text-muted-strong flex items-center gap-2.5 text-[14.5px]"
-                >
-                  <Icon
-                    size={17}
-                    strokeWidth={1.5}
-                    className="text-accent shrink-0"
-                    aria-hidden
+                <figure key={i} className="relative overflow-hidden rounded-2xl">
+                  <Image
+                    src={own ? resolveImageUrl(own.url) : fallback.src}
+                    alt={own ? t('detail.photoAlt', { name: room.name }) : fallback.alt}
+                    fill
+                    sizes="30vw"
+                    className="object-cover"
+                    style={own ? undefined : { objectPosition: fallback.objectPosition }}
                   />
-                  {f.label}
-                </div>
+                </figure>
               );
             })}
           </div>
-          <p className="text-muted mt-4 text-[13px]">
-            {t('detail.universalFacilitiesNote')}{' '}
-            <Link href="/tentang#fasilitas" className="text-accent font-medium">
-              {t('detail.universalFacilitiesLink')}
-            </Link>
-          </p>
+        </div>
+      </div>
 
-          {/* Jam — global settings, bukan per-unit (§4.6 PROJECT.md) */}
-          <div className="mt-9 flex flex-wrap gap-10">
-            <div>
-              <div className="text-muted text-xs">{t('detail.checkIn')}</div>
-              <div className="mt-0.5 font-semibold">{settings.check_in_time}</div>
-            </div>
-            <div>
-              <div className="text-muted text-xs">{t('detail.checkOut')}</div>
-              <div className="mt-0.5 font-semibold">{settings.check_out_time}</div>
-            </div>
-          </div>
+      <div className="container-page mt-14 grid gap-14 lg:grid-cols-[1fr_23rem]">
+        <div className="min-w-0">
+          {/* KAPASITAS & TARIF TAMBAH ORANG — baris berpembatas garis, bukan
+              kotak di dalam kotak. Kartu bersarang selalu memperlemah
+              hierarki: dua tepi bersaing menandai batas yang sama. */}
+          <section>
+            <h2 className="text-ash-900 font-serif text-2xl">
+              {t('detail.capacityTitle')}
+            </h2>
+            <dl className="divide-ash-200 border-ash-200 mt-5 divide-y border-y">
+              <Row
+                icon={<Users size={18} strokeWidth={1.5} aria-hidden />}
+                label={t('detail.baseCapacity')}
+                value={t('common.guestsCount', { count: room.capacity })}
+              />
+              {room.bedInfo && (
+                <Row
+                  icon={<BedDouble size={18} strokeWidth={1.5} aria-hidden />}
+                  label={t('detail.bedInfo')}
+                  value={room.bedInfo}
+                />
+              )}
+              {room.extraFlatPrice != null ? (
+                <Row
+                  label={t('detail.extraFlatLabel')}
+                  value={formatIDR(room.extraFlatPrice)}
+                />
+              ) : (
+                <>
+                  <Row
+                    label={t('detail.withBed')}
+                    value={formatIDR(room.extraBedPrice ?? 0)}
+                  />
+                  <Row
+                    label={t('detail.withoutBed')}
+                    value={formatIDR(room.extraNoBedPrice ?? 0)}
+                  />
+                </>
+              )}
+            </dl>
 
-          {/* Aturan — satu paragraf (RoomTypeTranslation.rules cuma satu string, bukan array) */}
+            <div className="border-mineral-200 bg-mineral-50 mt-5 flex gap-3 rounded-xl border p-4">
+              <Info
+                size={17}
+                strokeWidth={1.5}
+                className="text-mineral-600 mt-0.5 shrink-0"
+                aria-hidden
+              />
+              <div>
+                <div className="text-ash-900 text-[13.5px] font-semibold">
+                  {t('detail.childrenRuleTitle')}
+                </div>
+                <p className="text-ash-700 mt-1 max-w-[60ch] text-[13px] leading-relaxed">
+                  {t('detail.childrenRule')}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* FASILITAS */}
+          <section className="mt-14">
+            <h2 className="text-ash-900 font-serif text-2xl">
+              {t('detail.facilities')}
+            </h2>
+            {room.bathroomInfo && (
+              <p className="text-ash-600 mt-1.5 text-[13px]">{room.bathroomInfo}</p>
+            )}
+            <ul className="mt-5 grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
+              {room.facilities.map((f) => {
+                const Icon = getIcon(f.icon as IconName);
+                return (
+                  <li
+                    key={f.label}
+                    className="text-ash-800 flex items-center gap-3 text-[14.5px]"
+                  >
+                    <Icon
+                      size={17}
+                      strokeWidth={1.5}
+                      className="text-mineral-600 shrink-0"
+                      aria-hidden
+                    />
+                    {f.label}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="text-ash-600 mt-5 max-w-[62ch] text-[13px] leading-relaxed">
+              {t('detail.universalFacilitiesNote')}{' '}
+              <Link
+                href="/tentang#fasilitas"
+                className="text-mineral-600 hover:text-mineral-700 font-medium underline underline-offset-2"
+              >
+                {t('detail.universalFacilitiesLink')}
+              </Link>
+            </p>
+          </section>
+
           {room.rules && (
-            <>
-              <h2 className="mt-9 font-serif text-2xl font-bold">
-                {t('detail.rules')}
-              </h2>
-              <p className="text-muted-strong mt-3.5 text-[14.5px] leading-8">
+            <section className="mt-14">
+              <h2 className="text-ash-900 font-serif text-2xl">{t('detail.rules')}</h2>
+              <p className="text-ash-700 mt-4 max-w-[62ch] text-[14.5px] leading-[1.8]">
                 {room.rules}
               </p>
-            </>
+            </section>
           )}
         </div>
 
-        {/* Kartu harga + kontak WhatsApp */}
-        <div className="self-start">
-          <div className="border-border rounded-[22px] border bg-white p-6 shadow-[0_20px_44px_-26px_rgba(20,53,42,0.5)]">
-            <div className="grid grid-cols-2 gap-3">
+        {/* KARTU HARGA — menempel saat digulir supaya CTA WhatsApp tetap
+            terjangkau sepanjang halaman detail yang panjang. */}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="border-ash-300/70 rounded-[22px] border bg-white p-6">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-muted text-[11px]">
+                <div className="text-ash-600 text-[11.5px] tracking-[0.1em] uppercase">
                   {t('detail.priceWeekday')}
                 </div>
-                <div className="text-forest-700 font-serif text-xl font-extrabold">
+                <div className="text-ash-900 mt-1.5 font-serif text-[1.4rem] leading-none">
                   {formatIDR(room.priceWeekday)}
                 </div>
               </div>
               <div>
-                <div className="text-muted text-[11px]">
+                <div className="text-ash-600 text-[11.5px] tracking-[0.1em] uppercase">
                   {t('detail.priceWeekend')}
                 </div>
-                <div className="text-forest-700 font-serif text-xl font-extrabold">
+                <div className="text-ash-900 mt-1.5 font-serif text-[1.4rem] leading-none">
                   {formatIDR(room.priceWeekend)}
                 </div>
               </div>
             </div>
-            <div className="text-muted mt-2 text-[11.5px] italic">
+            <p className="text-ash-600 mt-3 text-[12.5px] leading-relaxed">
               {t('detail.highSeasonNote')}
-            </div>
+            </p>
 
-            <p className="text-muted mt-4 text-[13.5px] leading-relaxed">
+            <hr className="border-ash-200 my-5" />
+
+            <p className="text-ash-600 text-[13.5px] leading-relaxed">
               {t('detail.contactNote')}
             </p>
 
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4.5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
-            >
-              <MessageCircle size={18} strokeWidth={1.5} aria-hidden />
-              {t('detail.contactWa')}
-            </a>
-            <div className="text-muted mt-2.5 text-center text-xs">
+            {waHref && (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={actionClass('whatsapp', 'lg', 'mt-5 w-full')}
+              >
+                <WhatsAppGlyph />
+                {t('detail.contactWa')}
+              </a>
+            )}
+            <p className="text-ash-600 mt-3 text-center text-xs">
               {t('detail.noCharge')}
-            </div>
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  icon,
+  label,
+  value,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-6 py-3.5">
+      <dt className="text-ash-600 flex items-center gap-2.5 text-sm">
+        {icon && <span className="text-mineral-600 shrink-0">{icon}</span>}
+        {label}
+      </dt>
+      <dd className="text-ash-900 shrink-0 font-serif text-[1.05rem]">{value}</dd>
+    </div>
+  );
+}
+
+function EmptyShell({
+  title,
+  body,
+  actionLabel,
+}: {
+  title: string;
+  body: string;
+  actionLabel: string;
+}) {
+  return (
+    <div className="container-page py-28 text-center">
+      <p className="text-ash-900 font-serif text-2xl">{title}</p>
+      <p className="text-ash-600 mx-auto mt-3 max-w-md text-sm leading-relaxed">
+        {body}
+      </p>
+      <Link href="/penginapan" className={actionClass('quiet', 'md', 'mt-7')}>
+        {actionLabel}
+      </Link>
+    </div>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="pb-24">
+      <div className="border-ash-300/70 border-b">
+        <div className="container-page pt-14 pb-12 sm:pt-20 sm:pb-16">
+          <Skeleton className="h-3 w-40" />
+          <Skeleton className="mt-6 h-3 w-24" />
+          <Skeleton className="mt-4 h-11 w-3/4 max-w-lg" />
+          <Skeleton className="mt-5 h-3.5 w-full max-w-xl" />
+        </div>
+      </div>
+      <div className="container-page pt-10">
+        <div className="grid h-[26rem] grid-cols-1 gap-3 md:h-[30rem] md:grid-cols-[2fr_1fr]">
+          <Skeleton className="h-full rounded-2xl" />
+          <div className="hidden grid-rows-2 gap-3 md:grid">
+            <Skeleton className="h-full rounded-2xl" />
+            <Skeleton className="h-full rounded-2xl" />
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Lambang WhatsApp asli — sama seperti tombol mengambang, supaya kanalnya
+ *  langsung dikenali dan tidak tertukar dengan tombol biasa. */
+function WhatsAppGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="currentColor"
+      aria-hidden
+      focusable="false"
+    >
+      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.32 4.96L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23Zm4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.24-1.47-1.38-1.72-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.44.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.22.25-.85.84-.85 2.03s.87 2.35.99 2.51c.12.17 1.71 2.61 4.15 3.66.58.25 1.03.4 1.39.51.58.19 1.11.16 1.53.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29Z" />
+    </svg>
   );
 }

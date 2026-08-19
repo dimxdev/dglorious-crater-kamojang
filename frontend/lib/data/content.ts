@@ -13,10 +13,15 @@ import type { Locale } from '@/lib/i18n/config';
 // `getFeaturedAttractions`. Urutan array menentukan layout bento di homepage:
 // elemen featured pertama jadi kartu besar.
 //
-// TODO: "Sky Bridge" & "Jalur Trekking" masih placeholder (nama dugaan,
-// foto pinjam). "Nirwana Pool", "Kolam Berendam (Kawah Hujan)", dan
-// "Jacuzzi Private" namanya SUDAH dikonfirmasi dari price list resmi
-// klien — tapi fotonya masih pinjam foto lain, ganti begitu ada foto asli.
+// Nama SEMUA spot di bawah sekarang sudah dikonfirmasi: "Nirwana Pool",
+// "Kolam Berendam (Kawah Hujan)", dan "Jacuzzi Private" dari price list resmi
+// klien; "Glory Bridge" dan "Jungle Track" dari spanduk resmi di lokasi
+// (foto, 2026-08-18) — sebelumnya dua nama itu masih tebakan ("Sky Bridge",
+// "Jalur Trekking").
+//
+// TODO yang tersisa: FOTO. Semuanya masih meminjam foto stok, bukan foto
+// tempat aslinya. Ganti begitu klien mengirim foto asli — daftar lengkap
+// fasilitas kawasan ada di lib/data/kawasan.ts.
 type AttractionSource = {
   icon: IconName;
   photo: HomeImageKey;
@@ -56,10 +61,10 @@ const attractionSources: AttractionSource[] = [
   {
     icon: 'Landmark',
     photo: 'locationValley',
-    name: { id: 'Sky Bridge', en: 'Sky Bridge' },
+    name: { id: 'Glory Bridge', en: 'Glory Bridge' },
     desc: {
-      id: 'Jembatan gantung yang membentang di atas lembah berkabut — spot foto paling dicari pengunjung.',
-      en: "A suspension bridge stretching over the misty valley — visitors' most sought-after photo spot.",
+      id: 'Jembatan gantung yang menyeberangi lembah. Ada satu lagi di sisi hutan, namanya Jungle Bridge.',
+      en: 'A suspension bridge across the valley. There is a second one on the forest side, called Jungle Bridge.',
     },
     featured: true,
   },
@@ -106,10 +111,10 @@ const attractionSources: AttractionSource[] = [
   {
     icon: 'Footprints',
     photo: 'roomTenda',
-    name: { id: 'Jalur Trekking', en: 'Trekking Trail' },
+    name: { id: 'Jungle Track', en: 'Jungle Track' },
     desc: {
-      id: 'Susuri jalur setapak menembus hutan pinus, cocok untuk yang ingin bergerak sebelum bersantai.',
-      en: 'Follow a footpath through the pine forest — perfect for stretching your legs before relaxing.',
+      id: 'Jalur setapak menembus hutan, menghubungkan sisi kawah dengan area tenda.',
+      en: 'A footpath through the forest, linking the crater side to the tent area.',
     },
     featured: false,
   },

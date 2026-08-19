@@ -89,10 +89,17 @@ const TERMS_EN = [
   '12. Payment via transfer to BSI Account 7262292465 a/n KOPERASI ALAM LESTARI.',
 ].join('\n');
 
+// Kontak di bawah diambil dari spanduk resmi di lokasi (foto, 2026-08-18) —
+// nomor reservasi, akun Instagram, email, dan domain yang tercetak di sana.
+// Nomor WA sebelumnya `6282112345678` cuma placeholder seed, dan halaman
+// publik memakainya untuk SEMUA tombol reservasi — jadi tiap CTA di situs
+// mengarah ke nomor yang tidak ada.
 const SETTINGS: { key: string; value: string }[] = [
   { key: 'check_in_time', value: '14:00' },
   { key: 'check_out_time', value: '12:00' },
-  { key: 'whatsapp_number', value: '6282112345678' },
+  { key: 'whatsapp_number', value: '6281110003016' },
+  { key: 'contact_email', value: 'dgloriouscraterkamojang@gmail.com' },
+  { key: 'instagram_url', value: 'https://www.instagram.com/dgloriouscraterkamojang' },
   { key: 'bank_account', value: 'BSI 7262292465 a/n KOPERASI ALAM LESTARI' },
   { key: 'terms_conditions_id', value: TERMS_ID },
   { key: 'terms_conditions_en', value: TERMS_EN },

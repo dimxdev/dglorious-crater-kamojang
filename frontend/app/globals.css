@@ -301,3 +301,235 @@ h3,
     }
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PALET PUBLIK — diturunkan dari logo D'Glorious Crater Kamojang
+   ═══════════════════════════════════════════════════════════════════
+
+   Token di blok ini HANYA dipakai halaman publik (`components/public/*`
+   dan layout publik). Token lama di blok @theme paling atas sengaja
+   TIDAK disentuh satu nilai pun, karena dashboard admin & owner memakai
+   token itu di 186 tempat — keputusan user 2026-08-18: tampilan admin
+   harus tetap persis seperti sebelumnya.
+
+   Tiga warna diambil dari logo, masing-masing dapat SATU tugas supaya
+   tidak saling berebut perhatian:
+     · sulfur  — nyala emas pada logo  → panas bumi. HANYA tombol CTA.
+     · mineral — tetes air biru        → air panas. Tautan, eyebrow, fokus.
+     · moss    — daun hijau            → alam. Permukaan gelap & scrim foto.
+
+   `ash` sengaja netral DINGIN (r − b ≤ 1 pada lightness tinggi), bukan
+   krem hangat: latar off-white kemerahan adalah penanda paling khas
+   halaman buatan AI dan langsung ditandai detektor slop.
+*/
+@theme {
+  /* ── Moss — daun hijau logo (#8dc63f) → alam, permukaan gelap ── */
+  --color-moss-50: #f1f7e9;
+  --color-moss-100: #ddedc7;
+  --color-moss-200: #c2df9c;
+  --color-moss-300: #a3ce6b;
+  --color-moss-400: #8dc63f; /* hijau logo, apa adanya */
+  --color-moss-500: #6fa32e;
+  --color-moss-600: #547d23;
+  --color-moss-700: #3d5c1b;
+  --color-moss-800: #283d13;
+  --color-moss-900: #16240e; /* dasar gelap: footer, scrim — bukan hitam murni */
+
+  /* ── Mineral — tetes biru logo (#1c74bc) → air panas, interaktif ── */
+  --color-mineral-50: #eaf3fb;
+  --color-mineral-100: #cbe3f6;
+  --color-mineral-200: #9bc9ed;
+  --color-mineral-300: #63abe0;
+  --color-mineral-400: #3389cf;
+  --color-mineral-500: #1c74bc; /* biru logo, apa adanya */
+  --color-mineral-600: #175e99; /* teks tautan — kontras aman di latar terang */
+  --color-mineral-700: #144a78;
+  --color-mineral-800: #113a5e;
+  --color-mineral-900: #0e2a44;
+
+  /* ── Sulfur — nyala emas logo (#dfa22b) → panas bumi, CTA ──
+     Emas berkontras rendah di latar putih: JANGAN dipakai sebagai warna
+     teks di atas terang. Pakai sulfur-400 sebagai LATAR tombol dengan
+     teks moss-900 di atasnya (kontras tinggi), atau sulfur-700 kalau
+     memang butuh teks berwarna emas. */
+  --color-sulfur-50: #fdf5e6;
+  --color-sulfur-100: #f9e7c0;
+  --color-sulfur-200: #f2d189;
+  --color-sulfur-300: #e9b955;
+  --color-sulfur-400: #dfa22b; /* emas logo, apa adanya — latar tombol CTA */
+  --color-sulfur-500: #c0851b;
+  --color-sulfur-600: #9c6a15;
+  --color-sulfur-700: #785012; /* satu-satunya nilai emas yang aman jadi teks */
+  --color-sulfur-800: #55380f;
+
+  /* ── Ash — netral dingin, permukaan & teks ── */
+  --color-ash-50: #f7f8f7;
+  --color-ash-100: #eef0ef; /* latar halaman publik */
+  --color-ash-200: #e3e6e5;
+  --color-ash-300: #d1d5d3; /* garis pemisah */
+  --color-ash-400: #aeb3b1;
+  --color-ash-500: #858a88;
+  --color-ash-600: #626765; /* teks sekunder */
+  --color-ash-700: #474b49;
+  --color-ash-800: #2c2f2e;
+  --color-ash-900: #191c1b; /* teks utama — bukan hitam murni */
+}
+
+/*
+  Utility khusus halaman publik.
+
+  Latar halaman publik adalah `ash-100`, sedangkan `body` tetap memakai
+  `--color-background` lama supaya dashboard tidak ikut berubah. Karena itu
+  kabut publik butuh versi sendiri yang meleburnya ke `ash-100` — kalau
+  memakai `mist-edge` lama, ujung fotonya akan melebur ke warna yang beda
+  tipis dari latar di bawahnya dan menyisakan pita abu-abu yang terlihat.
+*/
+@utility haze-bottom {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 9rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-ash-100) 0%, transparent) 0%,
+    color-mix(in oklab, var(--color-ash-100) 10%, transparent) 40%,
+    color-mix(in oklab, var(--color-ash-100) 38%, transparent) 65%,
+    color-mix(in oklab, var(--color-ash-100) 74%, transparent) 85%,
+    var(--color-ash-100) 100%
+  );
+}
+
+@utility haze-top {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 7rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--color-ash-100) 0%, transparent) 0%,
+    color-mix(in oklab, var(--color-ash-100) 10%, transparent) 40%,
+    color-mix(in oklab, var(--color-ash-100) 38%, transparent) 65%,
+    color-mix(in oklab, var(--color-ash-100) 74%, transparent) 85%,
+    var(--color-ash-100) 100%
+  );
+}
+
+/* Eyebrow versi publik — biru mineral dari logo, bukan --color-accent lama. */
+@utility eyebrow-brand {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-mineral-600);
+}
+
+/*
+  Kilau tipis yang menyapu placeholder saat data masih dimuat. Dipakai kartu
+  skeleton di katalog & detail. Murni transform, jadi jalan di compositor dan
+  tidak memicu layout ulang; ikut mati sendiri saat reduced-motion karena
+  seluruh aturannya dikurung di `no-preference`.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  [data-shimmer] {
+    position: relative;
+    overflow: hidden;
+  }
+
+  [data-shimmer]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--color-ash-50) 70%, transparent) 50%,
+      transparent 100%
+    );
+    animation: public-shimmer 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  @keyframes public-shimmer {
+    to {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/*
+  Satu momen gerak yang diniatkan: rangkaian masuk hero beranda.
+
+  Sebelumnya tiap seksi di beranda dan /tentang memakai reveal-saat-scroll yang
+  identik — entrance yang sama diulang enam kali bukan koreografi, itu cuma
+  tic. Diganti satu rangkaian di tempat yang memang menyambut pengunjung,
+  sisanya tampil tenang tanpa animasi.
+
+  Seluruh aturannya dikurung di `no-preference`, jadi saat pengguna minta
+  reduced-motion elemennya langsung tampil utuh — tanpa percabangan JSX yang
+  bisa bikin SSR dan klien tidak sinkron.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  [data-enter] {
+    animation: hero-enter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  @keyframes hero-enter {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/*
+  Anchor di /tentang (#atraksi, #fasilitas, #tiket) digulir halus. Next 16
+  tidak lagi menimpa `scroll-behavior` saat pindah rute secara otomatis, jadi
+  tanpa `data-scroll-behavior="smooth"` di <html> perpindahan halaman ikut
+  ter-animasi dan terasa lambat. Atribut itu dipasang di app/layout.tsx.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  /* `:has(#konten)` membatasi ini ke halaman yang memakai PublicLayout —
+     `#konten` adalah target lompatan papan ketik di layout itu. Dipasang
+     langsung di `html` scroll-nya akan ikut halus di dashboard juga, dan
+     dashboard bukan bagian dari pekerjaan ini. */
+  html:has(#konten) {
+    scroll-behavior: smooth;
+  }
+}
+
+/*
+  Garis kontur yang menggambar dirinya sendiri saat seksi fasilitas masuk
+  layar. Tiap garis punya jeda sendiri, jadi terbaca seperti medan yang
+  ditarik pelan dari kiri ke kanan, bukan satu blok yang menyembul.
+
+  `stroke-dashoffset` dianimasikan, bukan lebar atau posisi — properti ini
+  tidak memicu layout ulang. Seluruh aturannya dikurung di `no-preference`,
+  jadi saat pengguna minta reduced-motion garisnya langsung tampil utuh:
+  nilai `stroke-dasharray` default-nya memang tidak pernah dipasang di luar
+  blok ini, jadi tidak ada yang perlu dibatalkan.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  svg[data-draw] path {
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+  }
+
+  svg[data-draw='shown'] path {
+    animation: contour-draw 1400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--draw-index, 0) * 90ms);
+  }
+
+  @keyframes contour-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}
