@@ -1,8 +1,13 @@
 'use client';
 
 import { Download } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ApiError } from '@/lib/api/client';
+import { fetchAdminBookings, toAdminBookingMock } from '@/lib/api/bookings';
+import { fetchAdminRoomTypes } from '@/lib/api/roomTypes';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import type { AdminBooking } from '@/lib/data/admin';
 import {
   calcBookingByType,
   calcBySource,
@@ -11,6 +16,7 @@ import {
   periodRangeLabel,
   type CustomRange,
   type DateRange,
+  type OwnerRoomSummary,
 } from '@/lib/data/owner';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -35,14 +41,64 @@ const COMPARE_LABEL_KEY: Record<DateRange, string> = {
  */
 export function OwnerPenginapanPage() {
   const { t } = useTranslation();
+  const { token } = useAuth();
   const [range, setRange] = useState<DateRange>('rangeMonth');
   const [customRange, setCustomRange] = useState<CustomRange>({ from: '', to: '' });
   const ref = { today: new Date(), custom: customRange };
 
-  const performance = calcRoomTypePerformance(range, ref);
-  const bookingByType = calcBookingByType(range, ref);
-  const bySource = calcBySource(range, ref);
-  const stats = calcPenginapanStats(range, ref);
+  const [bookings, setBookings] = useState<AdminBooking[] | null>(null);
+  const [rooms, setRooms] = useState<OwnerRoomSummary[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!token) return;
+    try {
+      setLoadError(null);
+      const [bookingList, roomTypes] = await Promise.all([
+        fetchAdminBookings(token),
+        fetchAdminRoomTypes(token),
+      ]);
+      setBookings(bookingList.map(toAdminBookingMock));
+      setRooms(roomTypes.filter((r) => r.isActive));
+    } catch (e) {
+      setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
+    }
+  }, [token, t]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  if (loadError) {
+    return (
+      <OwnerLayout title={t('owner.navPenginapan')}>
+        <div className="rounded-2xl border border-[#e8e2d5] bg-white px-4 py-8 text-center">
+          <p className="text-sm text-red-600">{loadError}</p>
+          <button
+            onClick={() => void refresh()}
+            className="text-accent mt-2 text-sm font-semibold underline"
+          >
+            {t('admin.retry')}
+          </button>
+        </div>
+      </OwnerLayout>
+    );
+  }
+
+  if (bookings === null || rooms === null) {
+    return (
+      <OwnerLayout title={t('owner.navPenginapan')}>
+        <div className="text-muted rounded-2xl border border-[#e8e2d5] bg-white px-4 py-8 text-center text-sm">
+          {t('admin.loading')}
+        </div>
+      </OwnerLayout>
+    );
+  }
+
+  const performance = calcRoomTypePerformance(bookings, rooms, range, ref);
+  const bookingByType = calcBookingByType(bookings, rooms, range, ref);
+  const bySource = calcBySource(bookings, range, ref);
+  const stats = calcPenginapanStats(bookings, range, ref);
   const compareLabel = t(`owner.${COMPARE_LABEL_KEY[range]}`);
   const newLabel = t('owner.newThisPeriod');
 

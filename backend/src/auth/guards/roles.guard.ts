@@ -14,7 +14,12 @@ import { AuthUser } from '../types/jwt-payload';
  * Enforces `@Roles(...)` metadata. Must run AFTER JwtAuthGuard so that
  * `request.user` is already populated.
  *
- * SUPER_ADMIN passes every role check (full access, §5 PROJECT.md).
+ * No blanket SUPER_ADMIN bypass (§5 PROJECT.md, revised 2026-08-21) — every
+ * protected route must list the roles it wants to admit explicitly. All
+ * current `@Roles(...)` usages already include `RoleName.SUPER_ADMIN`
+ * alongside `OWNER`/`ADMIN_PENGINAPAN`, so this tightening changes nothing
+ * for existing endpoints; it only stops a *future* owner-only endpoint from
+ * accidentally admitting SUPER_ADMIN too.
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -36,11 +41,6 @@ export class RolesGuard implements CanActivate {
 
     if (!user) {
       throw new ForbiddenException('Not authenticated');
-    }
-
-    // SUPER_ADMIN can reach everything (§5).
-    if (user.role === RoleName.SUPER_ADMIN) {
-      return true;
     }
 
     if (!requiredRoles.includes(user.role)) {

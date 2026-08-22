@@ -14,9 +14,13 @@ import type { AuthUser, RoleName } from './types';
  * nothing here is a security boundary.
  *
  * - Not logged in → redirect to `/login`.
- * - Logged in but role not allowed → redirect to that role's own home
+ * - Logged in but role not in `allow` → redirect to that role's own home
  *   (e.g. ADMIN_PENGINAPAN hitting `/owner` bounces back to `/admin/penginapan`).
- * - SUPER_ADMIN always passes (§5 — full access).
+ *
+ * No blanket SUPER_ADMIN bypass — every caller must list the roles it wants
+ * to let through explicitly (§5 PROJECT.md, revised 2026-08-21: SUPER_ADMIN
+ * reaches every ADMIN dashboard but NOT the Owner dashboard, which is
+ * exclusive to `OWNER`).
  */
 export function useRequireRole(allow: RoleName[]): {
   user: AuthUser | null;
@@ -26,7 +30,7 @@ export function useRequireRole(allow: RoleName[]): {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  const isAllowed = !!user && (user.role === 'SUPER_ADMIN' || allow.includes(user.role));
+  const isAllowed = !!user && allow.includes(user.role);
 
   useEffect(() => {
     if (isLoading) return;

@@ -1,0 +1,33 @@
+# Dashboard Owner — Ringkasan
+
+**Route:** `/owner`
+**Status:** ✅ Selesai (Versi 1)
+**File utama:** `frontend/components/owner/OwnerOverviewPage.tsx`
+
+## Ringkasan
+Dashboard statistik & rekap tingkat bisnis untuk pemilik — eksklusif role `OWNER`. Menyajikan pendapatan, tren, kontribusi antar unit bisnis, dan transaksi terbaru untuk periode yang dipilih.
+
+## Cara Kerja
+Halaman fetch `GET /admin/bookings` + `GET /admin/room-types` (dengan loading/error + retry), memetakan booking lewat adapter bersama `toAdminBookingMock()`, lalu mengoper hasilnya ke fungsi-fungsi analitik di `lib/data/owner.ts`. Semua fungsi analitik itu (`calcOwnerStats`, `calcRevenueTrend`, dll) menerima data booking + tipe tenda sebagai argumen dan menghitung metrik untuk periode yang dipilih via `RangeFilter`. Tiap metrik utama juga dihitung untuk periode sebelumnya yang sepadan (kemarin/minggu lalu/bulan lalu tergantung filter) untuk memunculkan delta persentase naik/turun.
+
+## Sub-fitur
+- **Filter Periode** (`RangeFilter`: Hari Ini/Minggu Ini/Bulan Ini/Custom).
+- **4 metrik utama** — Total Pendapatan (kartu hero besar), Total Booking, Total Pengunjung, Rata-rata Tenda Terisi. Semua dengan delta % vs periode sebelumnya yang sepadan + sparkline mini.
+- **Grafik Tren Pendapatan** — 6 bulan terakhir, skala Y dinamis mengikuti data.
+- **Bar chart Pendapatan per Unit Bisnis** — Penginapan aktif; Tiket Masuk & Cafe "Belum Aktif".
+- **Donut Kontribusi per Unit Bisnis** — proporsi 3 unit bisnis.
+- **Tabel Transaksi Terbaru** — klik baris membuka `BookingDetailModal` yang sama dengan Admin.
+- **Export Laporan (PDF)** — mengikuti filter periode aktif.
+
+## Keputusan Desain Penting
+Fungsi analitik di `lib/data/owner.ts` **mewajibkan** data booking/rooms dioper sebagai parameter — tidak ada default yang diam-diam mengambil data mock. Ini disengaja: kalau suatu pemanggil lupa mengoper data asli, TypeScript menolak compile, bukan diam-diam menampilkan angka dummy. Dengan begitu tidak ada risiko dashboard menampilkan angka yang tidak mencerminkan booking sungguhan.
+
+Kontribusi Tiket Masuk & Cafe selalu 0% karena sistemnya memang belum ada (Versi 2) — jadi Penginapan wajar tampil 100% untuk sekarang. Ini representasi jujur kondisi saat ini, bukan bug, dan otomatis terbagi begitu dua unit lain aktif.
+
+Proteksi RBAC: halaman ini **eksklusif `OWNER`** — Super Admin sekalipun tidak bisa masuk (lihat `fitur-login-rbac.md`).
+
+## Terhubung ke
+- `GET /admin/bookings`, `GET /admin/room-types`
+- `lib/data/owner.ts` (`calcOwnerStats`, `calcStatSparklines`, `calcRevenueTrend`, `calcUnitRevenue`, `calcRevenueByUnit`, `calcRecentTransactions`)
+- `lib/api/bookings.ts` (`toAdminBookingMock`)
+- `lib/pdf/report.ts` (`OWNER_REPORT_THEME`)

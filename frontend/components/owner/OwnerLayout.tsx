@@ -31,9 +31,9 @@ export function Panel({ className, children }: { className?: string; children: R
 
 /**
  * Shell dashboard Owner: sidebar + header, dipakai tiap halaman `/owner/*`
- * (route asli, bukan tab-switch di satu komponen). Eksklusif OWNER +
- * SUPER_ADMIN (§5 PROJECT.md) — ADMIN_PENGINAPAN dipentalkan balik ke
- * dashboardnya sendiri.
+ * (route asli, bukan tab-switch di satu komponen). Eksklusif `OWNER` (§5
+ * PROJECT.md, revisi 2026-08-21) — SUPER_ADMIN & ADMIN_PENGINAPAN sama-sama
+ * dipentalkan balik ke dashboardnya sendiri lewat `roleHome.ts`.
  */
 export function OwnerLayout({ title, children }: { title: string; children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -41,7 +41,7 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout } = useAuth();
-  const { user, isAllowed } = useRequireRole(['SUPER_ADMIN', 'OWNER']);
+  const { user, isAllowed } = useRequireRole(['OWNER']);
 
   const navItems: NavItem[] = [
     { href: '/owner', icon: '▦', label: t('owner.navRingkasan'), exact: true },

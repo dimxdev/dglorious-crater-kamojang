@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { AdminBooking, BookingChannel, BookingStoredStatus } from '@/lib/data/admin';
 
 export type CreateBookingItemInput = {
   roomTypeId: number;
@@ -134,4 +135,32 @@ export function editBooking(token: string, code: string, dto: EditBookingInput) 
     token,
     body: dto,
   });
+}
+
+/**
+ * Bentuk `AdminBooking` (mock) dipetakan dari `AdminBookingDetail` (API) —
+ * biar fungsi analitik yang sudah ada (`occupiedQtyOnDate`, `effectiveStatus`,
+ * `lib/data/owner.ts`) tetap kepakai apa adanya tanpa ubah bentuknya sama
+ * sekali. Dipakai bersama oleh Admin Overview (FASE 9) & Dashboard Owner
+ * (FASE 10, 2026-08-21) — dulu ada 2 salinan nyaris identik, sekarang satu
+ * sumber. `adults`/`children`/`extraBedQty` cuma dijumlah kasar (dashboard
+ * ringkasan gak pernah menampilkan rincian per-item booking).
+ */
+export function toAdminBookingMock(b: AdminBookingDetail): AdminBooking {
+  return {
+    kode: b.bookingCode,
+    guest: b.guestName,
+    wa: b.guestPhone,
+    rooms: b.items.map((i) => ({ slug: i.roomTypeSlug, qty: 1 })),
+    createdAt: b.createdAt.slice(0, 10),
+    checkIn: b.checkIn.slice(0, 10),
+    checkOut: b.checkOut.slice(0, 10),
+    source: b.bookingChannel as BookingChannel,
+    total: b.priceSnapshot,
+    status: b.status as BookingStoredStatus,
+    adults: b.items.reduce((s, i) => s + i.adults, 0),
+    children: b.items.reduce((s, i) => s + i.children, 0),
+    extraBedQty: b.items.reduce((s, i) => s + i.extraBedQty, 0),
+    hasKtpPhoto: false,
+  };
 }

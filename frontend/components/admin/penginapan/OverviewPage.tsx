@@ -20,6 +20,7 @@ import { Card, CardContent, TBody, Td, Th, THead, Table, Tr } from '@/components
 import { ApiError } from '@/lib/api/client';
 import {
   fetchAdminBookings,
+  toAdminBookingMock,
   updateBookingStatus,
   type AdminBookingDetail,
   type BookingStatusUpdate,
@@ -27,13 +28,7 @@ import {
 import { fetchAdminRoomTypes, type AdminRoomTypeListItem } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
-import {
-  occupiedQtyOnDate,
-  roomsSummary,
-  type AdminBooking,
-  type BookingChannel,
-  type BookingStoredStatus,
-} from '@/lib/data/admin';
+import { occupiedQtyOnDate, roomsSummary, type AdminBooking } from '@/lib/data/admin';
 import { periodRangeLabel } from '@/lib/data/owner';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -75,34 +70,6 @@ function toISO(year: number, monthIndex: number, day: number): string {
   return `${year}-${pad(monthIndex + 1)}-${pad(day)}`;
 }
 
-/**
- * Bentuk `AdminBooking` (mock) dipetakan dari `AdminBookingDetail` (API) —
- * biar fungsi yang sudah ada (`occupiedQtyOnDate`, `bookingsOnDate`,
- * `getRecentBookings`, `effectiveStatus`) tetap kepakai apa adanya tanpa
- * ubah `lib/data/admin.ts` sama sekali (masih dipakai Dashboard Owner &
- * dropdown 2 form Tambah, di luar scope sesi ini). `adults`/`children`/
- * `extraBedQty` cuma buat memenuhi shape — Ringkasan gak pernah menampilkan
- * rincian per-item, cukup dijumlah kasar.
- */
-function toOverviewBooking(b: AdminBookingDetail): AdminBooking {
-  return {
-    kode: b.bookingCode,
-    guest: b.guestName,
-    wa: b.guestPhone,
-    rooms: b.items.map((i) => ({ slug: i.roomTypeSlug, qty: 1 })),
-    createdAt: b.createdAt.slice(0, 10),
-    checkIn: b.checkIn.slice(0, 10),
-    checkOut: b.checkOut.slice(0, 10),
-    source: b.bookingChannel as BookingChannel,
-    total: b.priceSnapshot,
-    status: b.status as BookingStoredStatus,
-    adults: b.items.reduce((s, i) => s + i.adults, 0),
-    children: b.items.reduce((s, i) => s + i.children, 0),
-    extraBedQty: b.items.reduce((s, i) => s + i.extraBedQty, 0),
-    hasKtpPhoto: false,
-  };
-}
-
 export function OverviewPage() {
   const { t, locale } = useTranslation();
   const { token } = useAuth();
@@ -133,7 +100,7 @@ export function OverviewPage() {
         fetchAdminBookings(token),
         fetchAdminRoomTypes(token),
       ]);
-      setBookings(bookingList.map(toOverviewBooking));
+      setBookings(bookingList.map(toAdminBookingMock));
       setRawBookings(bookingList);
       setActiveRoomTypes(roomTypes.filter((r) => r.isActive));
     } catch (e) {

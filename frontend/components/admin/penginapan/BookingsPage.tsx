@@ -145,7 +145,7 @@ export function BookingsPage() {
           b.guest.toLowerCase().includes(q) ||
           b.wa.toLowerCase().includes(q),
       )
-    : bookingsInRange(range, ref, all);
+    : bookingsInRange(all, range, ref);
 
 
   const matchesStatus = (b: DisplayBooking) =>
@@ -168,7 +168,7 @@ export function BookingsPage() {
   // tabel (operasional) tapi tidak dihitung di stats Agustus.
   const statsBookings = searchActive
     ? exportBookings
-    : bookingsCreatedInRange(range, ref, exportBookings);
+    : bookingsCreatedInRange(exportBookings, range, ref);
   const filtered = exportBookings.filter(
     (b) => checkInDate === '' || b.checkIn === checkInDate,
   );

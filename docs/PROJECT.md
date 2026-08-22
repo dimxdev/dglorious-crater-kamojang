@@ -2,11 +2,15 @@
 
 Konteks proyek untuk Claude Code. Baca file ini sebelum mengerjakan task apa pun.
 
-> **⚠️ Scope Fase 1 (hasil data gathering + form booking asli klien).**
-> Fase 1 = **company profile / katalog publik + pencatatan booking internal oleh admin**.
+> **⚠️ Penamaan versi.** "FASE" (FASE 0, 1, 2, ... di TASK.md) = urutan kerja **di dalam** satu versi.
+> "VERSI" = pembungkus scope rilis di atasnya — **Versi 1** (sekarang, s.d. deploy) vs **Versi 2**
+> (rencana selanjutnya, belum dikerjakan). Dua istilah beda level, jangan disamakan.
+
+> **⚠️ Scope Versi 1 (hasil data gathering + form booking asli klien).**
+> Versi 1 = **company profile / katalog publik + pencatatan booking internal oleh admin**.
 > Admin **hanya menginput booking yang SUDAH FIX** (negosiasi harga & aturan DP/pelunasan
 > terjadi di WhatsApp, **di luar sistem**). **Booking online mandiri (Midtrans, guest
-> checkout, email, tiket PDF/QR, auto-expire) + bahasa Mandarin digeser ke fase berikutnya** —
+> checkout, email, tiket PDF/QR, auto-expire) + bahasa Mandarin digeser ke Versi 2** —
 > strukturnya tetap disiapkan, hanya belum diimplementasi.
 
 ---
@@ -15,13 +19,13 @@ Konteks proyek untuk Claude Code. Baca file ini sebelum mengerjakan task apa pun
 
 Sistem informasi & reservasi untuk destinasi wisata **D'Glorious Crater Kamojang** (kawah geothermal, pemandian air panas, glamping) di perbatasan Kabupaten Bandung–Garut, Jawa Barat.
 
-**Fase 1 (fokus saat ini):**
+**Versi 1 (fokus saat ini):**
 - **Katalog/company profile publik** — brosur digital: etalase tiap unit (foto, kapasitas, harga) + info + Syarat & Ketentuan. **Tanpa booking online**; CTA cukup **"Hubungi Reservasi via WhatsApp"**.
 - **Pencatatan booking internal oleh admin** — tamu menghubungi admin lewat WhatsApp, deal disepakati di sana, lalu **admin menginput booking yang sudah fix** di dashboard.
 - **Dashboard admin penginapan** (data booking, tambah booking, check-in, CMS unit).
 - **Dashboard owner** (statistik & rekap).
 
-**Fase berikutnya (belum dikerjakan, tapi struktur data harus siap):**
+**Versi 2 (belum dikerjakan, tapi struktur data harus siap):**
 - **Booking online mandiri** — Midtrans Snap, guest checkout, kode booking yang diakses tamu, email otomatis, tiket PDF+QR, **auto-expire 1×24 jam**, halaman `/cek-booking` & `/booking/[kode]`.
 - **Bahasa Mandarin (中文)** — struktur i18n & tabel translations sudah multi-bahasa; tinggal menambah data.
 - **Sistem tiket masuk (portal)** dan **sistem transaksi cafe**.
@@ -83,17 +87,19 @@ dglorious/
 
 ---
 
-## 5. Role & Hak Akses (RBAC) — *tetap berlaku penuh di fase 1*
+## 5. Role & Hak Akses (RBAC) — *tetap berlaku penuh di Versi 1*
+
+> **Revisi 2026-08-21:** Sebelumnya `SUPER_ADMIN` juga diizinkan masuk ke dashboard Owner (dan guard-nya lolos semua `@Roles` tanpa syarat). Diperketat: `SUPER_ADMIN` sekarang punya hub navigasi sendiri (`/super-admin`, lihat `SuperAdminLayout.tsx`) ke semua dashboard **ADMIN**, tapi dashboard **Owner** jadi eksklusif `OWNER` — bukan lagi "yang di atas otomatis boleh". Ditegakkan di 2 lapis: frontend `useRequireRole()` (gak ada bypass blanket lagi, tiap layout wajib sebut role yang diizinkan eksplisit) dan backend `RolesGuard` (gak ada bypass `SUPER_ADMIN` implisit — harus disebut eksplisit di tiap `@Roles(...)`, walau di semua endpoint yang sudah ada saat ini memang selalu disertakan).
 
 | Role | Akses |
 |---|---|
-| `SUPER_ADMIN` | Semua dashboard, CRUD penuh, + kelola akun & setting sistem |
-| `OWNER` | Dashboard owner (eksklusif) + semua dashboard admin, CRUD penuh |
+| `SUPER_ADMIN` | Hub navigasi (`/super-admin`) + semua dashboard **admin** (Penginapan/Tiket/Cafe), CRUD penuh, + kelola akun & setting sistem. **Bukan** dashboard Owner. |
+| `OWNER` | Dashboard owner (eksklusif — satu-satunya role yang boleh masuk) + semua dashboard admin, CRUD penuh |
 | `ADMIN_PENGINAPAN` | Hanya dashboard penginapan, CRUD penuh di area tersebut |
 | `ADMIN_PORTAL` | *(fase berikutnya)* Hanya dashboard tiket masuk |
 | `ADMIN_CAFFE` | *(fase berikutnya)* Hanya dashboard cafe |
 
-**Aturan arah akses:** Owner & Super Admin bisa masuk "ke bawah" (dashboard admin). Admin **tidak bisa** naik ke dashboard owner. Dashboard owner hanya untuk `OWNER` dan `SUPER_ADMIN`.
+**Aturan arah akses:** Owner bisa masuk "ke bawah" (semua dashboard admin). Super Admin juga bisa masuk ke semua dashboard admin, tapi **tidak** ke dashboard Owner — itu privat buat Owner sendiri. Admin **tidak bisa** naik ke dashboard manapun di atasnya (Owner maupun Super Admin).
 
 ---
 
@@ -180,7 +186,7 @@ Guest checkout → SIMPAN (PENDING, generate booking_code, kunci tanggal) → em
 
 ---
 
-## 8. Halaman yang Dibutuhkan (Fase 1)
+## 8. Halaman yang Dibutuhkan (Versi 1)
 
 ### Publik — Katalog / Company Profile (etalase, TANPA booking online)
 - `/` — Homepage (hero, daya tarik, preview tenda, info praktis)
@@ -189,17 +195,18 @@ Guest checkout → SIMPAN (PENDING, generate booking_code, kunci tanggal) → em
 - `/penginapan/[slug]` — Detail unit. **CTA = "Hubungi Reservasi via WhatsApp"** (bukan booking online)
 - `/syarat-ketentuan` — Halaman Syarat & Ketentuan (12 poin, teks dari `settings`)
 
-### Admin & Owner
+### Admin & Owner (Versi 1)
 - `/login` — **satu halaman login** untuk semua role
 - `/admin/penginapan` — Ringkasan (stat, booking terbaru, kalender okupansi)
 - `/admin/penginapan/booking` — Tabel data booking (filter status, sumber; search nama/kode/WA) — **juga tempat ubah status** (Tandai Lunas/Check-in/Batalkan/Edit Tanggal langsung dari detail baris, lihat §6.2). Menu Check-in terpisah **dihapus 2026-07-26**, fungsinya dilebur ke sini.
 - `/admin/penginapan/booking-whatsapp` — **Menu inti fase 1, jalur A** (lihat §8.1) — booking sudah dealing di WhatsApp, tamu belum tiba, mulai dari status `DP`
 - `/admin/penginapan/walk-in` — **Menu inti fase 1, jalur B** (lihat §8.1) — tamu datang & pesan langsung di lokasi, bayar saat itu juga (langsung `CHECKED_IN`, skip `DP`/`LUNAS`)
 - `/admin/penginapan/kelola` — CMS tenda (CRUD + tab bahasa + galeri)
-- `/admin/settings` — *digeser ke Fase 2 (2026-07-26) — dianggap belum cukup penting utk MVP KP, lihat TASK.md FASE 4*
-- `/owner` — Dashboard owner (stat + grafik + rekap + export)
+- `/owner` — Dashboard owner (stat + grafik + rekap + export) — **eksklusif `OWNER`** (§5, revisi 2026-08-21), data sudah dari API asli sejak 2026-08-21 (sebelumnya sempat hitung dari mock, lihat TASK.md FASE 10)
 
-> **Fase berikutnya (halaman publik tamu):** `/booking` (guest checkout + Midtrans), `/cek-booking`, `/booking/[kode]` adaptif.
+> **Versi 2 — belum dikerjakan:**
+> - `/admin/settings` — konfigurasi global *(digeser dari Versi 1, 2026-07-26 — dianggap belum cukup penting utk MVP KP, lihat TASK.md FASE 4)*
+> - Halaman publik tamu: `/booking` (guest checkout + Midtrans), `/cek-booking`, `/booking/[kode]` adaptif
 
 ### 8.1 Form "Booking WhatsApp" & "Tamu Langsung" (fitur inti fase 1)
 
@@ -256,7 +263,7 @@ Menegakkan S&K poin 7 & 8:
 
 ---
 
-## 10. Skema Database (Fase 1)
+## 10. Skema Database (Versi 1)
 
 - **`roles`** — id, name, permissions (JSON)
 - **`users`** — id, role_id, name, email, password, created_at
@@ -348,3 +355,56 @@ Menegakkan S&K poin 7 & 8:
   - **Alasan bukan folder-per-role:** satu resource (mis. `room-types`) di-CRUD banyak role sekaligus (`SUPER_ADMIN`, `OWNER`, `ADMIN_PENGINAPAN` — lihat tabel §5). Folder per role akan memaksa duplikasi service atau balik lagi butuh satu sumber logic bersama. Role tetap ditegakkan lewat `@Roles(...)` di tiap controller (§4.2) — bukan lewat lokasi file.
 - **Struktur folder `frontend/components/admin/` — ikut pola yang sama (keputusan 2026-08-02).** `components/admin/penginapan/` menampung semua komponen dashboard Penginapan (`KelolaPage`, `BookingsPage`, dst), mirror `app/admin/penginapan/*` & konvensi backend di atas. `portal/`/`cafe/` **belum dibuat** — nunggu ada kode sungguhan buat diisi (folder kosong gak ada gunanya, git juga gak nge-track direktori kosong), bukan scaffolding di depan. `components/ui/`, `components/layout/`, `components/public/`, `components/owner/` **tidak** ikut pola ini — masing-masing sudah punya pengelompokan sendiri yang jelas (generik lintas-halaman / shell layout / katalog publik / dashboard Owner), bukan area yang bakal pecah jadi banyak unit bisnis.
 - **`frontend/lib/api/` sengaja TETAP flat, satu file per resource backend** (`roomTypes.ts`, nanti `bookings.ts`, `settings.ts`) — beda dari alasan controller backend dipecah (ada pemaksa teknis: guard/`@Roles` beda per controller), di frontend gak ada pemaksa serupa, cuma kumpulan fungsi fetch biasa. Ini juga konsisten sama pola `lib/data/` yang sudah lebih dulu ada (`rooms.ts`, `admin.ts`, `owner.ts`, `settings.ts` — flat, gak ada subfolder).
+
+---
+
+## 14. Dokumentasi per Fitur (`docs/fitur/`)
+
+**Wajib dijaga mulai 2026-08-21.** Selain TASK.md (log kronologis "apa berubah tanggal berapa") dan PROJECT.md (konteks proyek), tiap fitur di granularitas **halaman/modul** (lihat daftar 19 fitur di bawah) punya file sendiri di `docs/fitur/fitur-<nama>.md`.
+
+**Beda tujuan dari TASK.md — JANGAN dicampur:**
+- **TASK.md** = histori revisi kronologis (tanggal, apa yang berubah, kenapa) — tetap begini, jangan diringkas jadi kondisi akhir.
+- **`docs/fitur/*.md`** = **snapshot kondisi fitur SAAT INI** (bukan revisinya) — orang baca sekali langsung paham fitur itu utuh, tanpa perlu telusuri histori tanggal.
+
+**⚠️ Aturan gaya penulisan (revisi 2026-08-21, penting):**
+1. **Tulis dalam bentuk KONDISI SEKARANG, bukan rantai perubahan.** DILARANG framing "dulu X → sekarang Y", "sebelumnya mock, sekarang API", "sempat ditunda, ternyata sudah dibangun", atau tanggal revisi. Itu semua histori → tempatnya TASK.md. Di sini tulis seolah fitur ini memang dari awal begini. **Kecuali** kalau kondisi lama itu masih relevan sebagai jebakan/gotcha yang bisa menyesatkan pembaca kode sekarang — itupun ditulis sebagai peringatan ("Perhatikan: X terlihat seperti Y padahal Z"), bukan sebagai jurnal tanggal.
+2. **Fitur kompleks (banyak alur/state) tulis dengan NARASI, bukan cuma bullet padat.** Tambah 1-2 paragraf yang menceritakan alur kerjanya utuh, supaya orang yang belum pernah baca kodenya bisa paham tanpa harus menyambungkan bullet sendiri. Fitur simpel cukup ringkas.
+3. **"Keputusan Desain Penting" isinya ALASAN arsitektur saat ini** — kenapa dibangun begini, bukan bagaimana sampai di sini. "Ketersediaan dihitung per-qty bukan per-unit fisik, karena unit spesifik baru ditentukan saat check-in" ✅ (alasan). "Awalnya per-unit lalu diubah jadi per-qty tanggal 4 Agustus" ❌ (histori → TASK.md).
+
+**Kapan file dibuat/diupdate:** setiap kali selesai membangun fitur baru, atau selesai mengedit signifikan fitur yang sudah ada (bukan tiap commit kecil/fix typo) — buat/update file `docs/fitur/fitur-<nama-fitur>.md` yang bersangkutan sebagai bagian dari pekerjaan itu, tanpa perlu diminta ulang tiap kali.
+
+**Format tiap file:**
+```markdown
+# <Nama Fitur>
+
+**Route:** `/path/terkait` (kalau ada)
+**Status:** ✅ Selesai (Versi 1) / 🚧 Sebagian / dll
+**File utama:** path file kode paling relevan
+
+## Ringkasan
+1-2 kalimat: fungsinya apa, siapa yang pakai.
+
+## Cara Kerja
+Narasi alur fitur — untuk fitur kompleks 1-3 paragraf yang menceritakan bagaimana fitur ini bekerja end-to-end (dari input user sampai efeknya). Fitur simpel boleh dilebur ke Ringkasan/Sub-fitur saja.
+
+## Sub-fitur
+- **Nama sub-fitur** — deskripsi kondisi sekarang, cukup detail buat dipahami tanpa buka kode.
+- ...
+
+## Keputusan Desain Penting
+Alasan arsitektur saat ini (kenapa begini), bukan histori perubahan. Cuma yang non-obvious / butuh penjelasan.
+
+## Terhubung ke
+Endpoint API yang dipakai, tabel DB terkait, halaman/komponen lain yang terhubung.
+```
+
+**19 fitur (granularitas halaman/modul, disepakati 2026-08-21):**
+
+*Publik:* Homepage, Tentang, Katalog Penginapan, Detail Unit, Syarat & Ketentuan
+*Auth & RBAC:* Login + proteksi akses
+*Admin Penginapan:* Ringkasan, Booking WhatsApp, Tamu Langsung/Walk-in, Data Booking (+ubah status), Kelola/CMS Penginapan (+galeri)
+*Owner:* Dashboard Ringkasan, Dashboard Penginapan
+*Super Admin:* Hub navigasi
+*Cross-cutting:* Modul Settings, Export PDF, Export Excel, Cek ketersediaan (anti double-booking), Mesin hitung harga
+
+**Semua 19 file sudah dibuat (2026-08-21)** — snapshot kondisi kode saat itu, ditulis lewat audit langsung ke source code (bukan cuma disalin dari TASK.md). Mulai sekarang, tiap fitur baru/edit signifikan → update file yang bersangkutan di `docs/fitur/`, jangan biarkan basi seperti yang sempat terjadi (lihat TASK.md FASE 7/8, audit 2026-08-21 — fitur Edit Booking & indikator ketersediaan real-time ternyata sudah dibangun tapi TASK.md tidak pernah di-update, baru ketahuan saat audit ini).

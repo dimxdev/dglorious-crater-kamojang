@@ -4,26 +4,37 @@ Urutan task dari nol sampai siap deploy. Kerjakan **berurutan dari atas ke bawah
 
 Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
-> **⚠️ Scope Fase 1.** Company profile/katalog publik + **pencatatan booking internal oleh admin**
+> **⚠️ Dokumentasi per fitur (`docs/fitur/`) — lihat PROJECT.md §14.** Selesai membangun/mengedit signifikan sebuah fitur → buat/update juga `docs/fitur/fitur-<nama>.md`-nya (snapshot kondisi fitur SEKARANG, bukan histori revisi — histori tetap di sini).
+
+> **⚠️ Penamaan versi.** "FASE" = urutan kerja di dalam satu versi (FASE 0, 1, 2, ... tetap dipakai
+> apa adanya). "VERSI" = pembungkus scope rilis di atasnya — **VERSI 1** (dikerjakan sekarang, FASE
+> 0–12 di bawah) vs **VERSI 2** (rencana selanjutnya, belum dikerjakan). Dua istilah beda level,
+> jangan disamakan.
+
+> **⚠️ Scope Versi 1.** Company profile/katalog publik + **pencatatan booking internal oleh admin**
 > (admin hanya input booking yang **sudah fix**; nego & pembayaran terjadi di WhatsApp/luar sistem).
 > **Booking online (Midtrans, guest checkout, email, tiket PDF/QR, auto-expire) + Mandarin
-> digeser ke "Yang TIDAK Dikerjakan di Fase Ini"** — struktur tetap disiapkan.
+> digeser ke VERSI 2** (lihat bagian paling bawah file ini) — struktur tetap disiapkan.
 > Istilah unit di UI: **"Tenda" / "Villa"** (entity DB tetap `room_types`).
 
 ---
 
+# VERSI 1 — Sekarang (s.d. Deploy)
+
 ## Peta Halaman
 
-### Publik — katalog / brosur digital (TANPA booking online)
+### FASE 1 (sekarang)
+
+#### Publik — katalog / brosur digital (TANPA booking online)
 - [x] `/` — **Homepage**: hero, daya tarik, preview tenda, info praktis, CTA
 - [x] `/tentang` — sejarah, galeri, fasilitas
 - [x] `/penginapan` — katalog tenda & villa
 - [x] `/penginapan/[slug]` — detail unit
 - [x] `/syarat-ketentuan` — halaman S&K (12 poin, teks dari `settings`) *(mock frontend, 12 poin sekarang teks resmi klien — update 2026-07-26)*
-- [ ] ⏳ **Revisi scope:** buang widget booking online dari detail → CTA **"Hubungi Reservasi via WhatsApp"**; tampilkan harga **weekday/weekend**; label **"Tenda"/"Villa"**
+- [x] ⏳ **Revisi scope:** buang widget booking online dari detail → CTA **"Hubungi Reservasi via WhatsApp"**; tampilkan harga **weekday/weekend**; label **"Tenda"/"Villa"** — selesai lewat FASE 6 (`/penginapan/[slug]` sudah CTA WA + harga weekday/weekend + label kategori dari API)
 - [x] Elemen global: navbar, footer, floating WhatsApp
 
-### Admin
+#### Admin
 - [x] `/login` — satu pintu semua role
 - [x] `/admin/penginapan` — Ringkasan
 - [x] `/admin/penginapan/booking-whatsapp` — Booking WhatsApp *(2026-07-26: rename dari `tambah-booking`; field mengikuti form reservasi WA resmi klien — lihat PROJECT.md §8.1)*
@@ -31,15 +42,11 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] `/admin/penginapan/booking` — Data Booking (tabel + filter + modal + **ubah status & edit tanggal langsung dari sini**, lihat FASE 8)
 - [x] ~~`/admin/penginapan/checkin`~~ — **dihapus 2026-07-26**, fungsinya dilebur ke Data Booking (lihat PROJECT.md §6.2 & §7)
 - [x] `/admin/penginapan/kelola` — Kelola/CMS (drawer tab bahasa + galeri)
-- [ ] `/admin/settings` — konfigurasi global (jam, WA, rekening, S&K) *(digeser ke Fase 2, lihat FASE 4 — dianggap belum cukup penting utk MVP KP)*
 
-### Owner
+#### Owner
 - [x] `/owner` — Ringkasan, `/owner/penginapan` — Performa per tipe tenda (real, lihat FASE 10), `/owner/laporan` — placeholder. **Update 2026-07-26:** dipecah jadi route asli per menu (`OwnerLayout.tsx` + `page.tsx` masing-masing), bukan tab-switch di satu komponen `OwnerDashboard.tsx` (dihapus) — biar bisa di-bookmark/share & konsisten sama pola Admin.
 
 > Semua halaman = **UI, data masih mock**. Penyambungan ke API + proteksi route (RBAC) di fase backend masing-masing.
->
-> ~~Diparkir untuk fase berikutnya (booking online, sudah terlanjur dibangun — jangan dihapus): `/booking` (form + modal pembayaran), `/cek-booking`, `/booking/[kode]` adaptif.~~
-> **Update 2026-07-26:** UI itu akhirnya **dihapus** (bukan diparkir). Rekening pembayaran & S&K yang sudah dibuat di `/admin/settings` & `/syarat-ketentuan` ternyata tidak nyambung ke flow itu karena isinya simulasi Midtrans/QRIS/VA + auto-expire — sudah kontradiktif dengan keputusan scope Fase 1 (manual only, status langsung `CONFIRMED`, tanpa payment gateway). Saat Fase Berikutnya (booking online) benar-benar dikerjakan, halaman ini perlu ditulis ulang dari awal mengikuti skema final, bukan dipakai ulang dari sisa UI lama.
 
 ---
 
@@ -123,12 +130,8 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ## FASE 4 — Modul Settings (Global)
 
-- [ ] Tabel `settings` + seeder nilai awal (§8.3 PROJECT.md)
-- [ ] Backend CRUD settings (hanya `SUPER_ADMIN`/`OWNER`)
-- [ ] Helper baca setting yang di-cache (dipakai banyak modul)
-- [ ] ⏳ **Update 2026-07-26:** Frontend `/admin/settings` (form edit jam/WA/rekening/S&K) sempat dibangun lalu **dihapus lagi** — dianggap belum cukup penting untuk MVP KP, digeser ke Fase 2. Data mock-nya (`lib/data/settings.ts`) **tetap dipertahankan** karena sudah dipakai halaman publik (lihat poin di bawah); yang dihapus cuma form admin-nya
-- [x] Konsumsi setting: no. WA di CTA publik & teks S&K di `/syarat-ketentuan` sudah pakai `getSettings()` (`lib/data/settings.ts`) — kontennya untuk sekarang cuma bisa diubah lewat edit kode, bukan lewat UI admin
-- [ ] ⏳ jam check-in/out di detail unit **masih per-room** (`RoomSource.checkInTime/checkOutTime`), belum dialihkan ke `settings` global — perlu keputusan apakah jam checkin/out tetap per-tipe-unit atau benar2 seragam semua unit
+- [x] Tabel `settings` + seeder nilai awal (§8.3 PROJECT.md) — selesai lewat FASE 1 (tabel + seed jam/WA/rekening/S&K) & FASE 6 (`GET /settings` read-only publik, `backend/src/settings/`)
+- [x] Konsumsi setting: no. WA di CTA publik & teks S&K di `/syarat-ketentuan` sudah pakai `GET /settings` — kontennya untuk sekarang cuma bisa diubah lewat edit database, bukan lewat UI admin (lihat Versi 2)
 
 ---
 
@@ -194,10 +197,8 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] `POST /admin/bookings`: `booking_source = MANUAL`, `created_by = admin`, status awal **`DP`/`LUNAS`** (Booking WhatsApp, admin pilih) atau **`CHECKED_IN`** (Tamu Langsung, dipaksa server-side apapun yang dikirim client)
 - [x] Dukung **multi-tenda** (buat `booking_items`) — diuji sampai 2 tenda beda tipe + extra bed dalam satu booking
 - [x] Validasi ketersediaan (`RoomTypesService.checkAvailability`, reuse FASE 5) — cegah double-booking, diuji sampai bener-bener kena `409` pas kapasitas penuh
-- [ ] **Validasi kapasitas & anak** (§8.2 PROJECT.md) — sengaja **tetap cuma catatan UI** (`childrenRuleHint`), TASK.md eksplisit bilang "jangan over-engineer" penghitungan umur otomatis; tidak ada validasi blocking di backend
 - [x] Hitung total: Σ(tarif weekday/weekend per tenda × malam) + (extra_bed_qty × extra_bed_price per malam), reuse `calcStayPrice`/`extraBedRate` dari `pricing.util.ts` (FASE 5) — **opsi override** → `is_price_override` + `manualTotal`
 - [x] Snapshot total ke `price_snapshot` (per item ke `subtotal_snapshot`) — diverifikasi manual lewat curl, angkanya cocok persis
-- [ ] Reschedule: admin edit tanggal *(validasi "maks H-7" = peningkatan opsional)* — lihat juga FASE 8, belum dikerjakan (scope FASE 8 frontend `BookingsPage.tsx` yang ditunda)
 - ⏳ **Update 2026-08-04 — gap nominal DP dibenerin:** `CreateBookingDto` dapat field baru `paidAmount` (wajib kalau `bookingChannel=WHATSAPP` & `initialStatus=DP` — nominal beneran yang sudah masuk, BUKAN diasumsikan tetap 50% dari S&K, karena nego bisa beda). `BookingsService.create()` sekarang bikin baris `Payment` untuk jalur WhatsApp juga (sebelumnya cuma Walk-in) — `method: BANK_TRANSFER` (di-hardcode, sesuai S&K), `amount` = `paidAmount` (DP) atau total penuh (langsung LUNAS). `updateStatus()` pas transisi ke LUNAS otomatis bikin 1 baris `Payment` lagi buat sisanya (`total − Σpayments PAID`), jadi begitu LUNAS, jumlah `payments` selalu pas sama `price_snapshot`. Response GET (`toAdminBooking()`) dapat field baru `paidTotal` (Σ `payments` yang `PAID`) — dipakai FASE 8/9 nampilin "Sudah dibayar: RpX dari RpY".
 - ⏳ **Migrasi skema (audit sebelum eksekusi, lihat catatan di atas):** `adults`/`children`/`extraBedQty`/`extraBedType`/`extraBedPrice` pindah dari `Booking` ke `BookingItem` (per tenda, bukan per booking) + `ktpPhotoUrl` dihapus total. Modul di `backend/src/penginapan/bookings/` (`BookingsService`, `BookingsAdminController` — pola sama `room-types/`).
 - ⏳ Walk-in yang baru dibuat sekaligus bikin 1 baris `Payment` (`status: PAID`, `paidAt: now()`) dari field `payMethod` — pemakaian tabel `payments` yang sudah ada, bukan kolom baru di `Booking`.
@@ -212,8 +213,7 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
   - [x] ⏳ **Revisi lanjutan lagi (sama hari, koreksi salah paham sebelumnya):** "Jumlah Extra Bed" **tetap ada seperti semula** (bukan direname) — yang dihapus cuma field **"Jenis Extra Bed"** (with/without) dari `RoomGroupEditor`, defaultnya di-hardcode `'with'` di kode (tidak dipilih admin lagi). `RoomItemsEditor`/modal edit Data Booking **tidak berubah**, masih ada pilihan jenisnya. Sebagai gantinya ditambah info **"X malam weekday, Y malam weekend"** (`calcNightsBreakdown` di `lib/pricing.ts`) di bawah tanggal check-in/out, biar admin lihat kenapa subtotalnya segitu.
 - [x] **Auto-hitung total** (`lib/pricing.ts`: `calcStayPrice`, `extraBedRate`, `calcGroupsTotal`) — subtotal per grup tenda (real-time, weekday/weekend per tanggal + extra bed per malam × qty) tampil di tiap kartu, **Total Keseluruhan** di bawahnya, plus **opsi override manual** (toggle "Ubah nominal manual"). Asumsi yang dipakai (belum dikonfirmasi klien, lihat PROJECT.md §11): definisi weekend = Sabtu–Minggu, tarif extra bed dihitung **per malam** (bukan sekali bayar).
 - [x] ⏳ **Kedua form beneran ke-wire ke API (2026-08-04):** tombol Simpan sekarang manggil `POST /admin/bookings` sungguhan (`frontend/lib/api/bookings.ts`) — sebelumnya no-op sama sekali. Field `name`/`phone`/`notes`/`paymentStatus`(WA)/`payMethod`(Walk-in) yang tadinya uncontrolled (tanpa `value`/`onChange`) dijadikan controlled state. Karena `RoomGroupEditor` masih pakai data mock `rooms.ts` (slug) buat dropdown sedangkan backend butuh `roomTypeId` numerik, form fetch `GET /admin/room-types` sekali di awal buat bikin pemetaan slug→id (slug-nya sudah sama persis dengan data API asli, jadi aman). Sukses → tampilkan kode booking yang baru dibuat + reset form; gagal (mis. `409` ketersediaan penuh) → pesan error inline, gak crash.
-- [ ] Indikator ketersediaan real-time + **peringatan kapasitas/anak** (dengan catatan aturan) — belum ada; validasi ketersediaan sekarang baru ketahuan **setelah** klik Simpan (dapat error 409), bukan preview sebelum submit
-
+- [x] ⏳ **KETEMU KETINGGALAN DICATAT (audit 2026-08-21):** indikator ketersediaan real-time ternyata **sudah dibangun juga** di sesi terpisah (baru ketahuan pas audit nulis `docs/fitur/`) — `RoomGroupEditor` sekarang query `checkRoomTypeAvailability` per slug (debounced 500ms) dan tampilkan status full/rendah/oke inline per grup tenda, memperhitungkan slug yang sama dipakai di grup lain dalam form yang sama biar gak overselling dalam satu form. Submit tetap diblok kalau ada grup yang resolve ke tidak tersedia. Validasi kapasitas/anak otomatis (di luar ketersediaan unit) tetap belum ada — itu masih benar tertunda.
 ---
 
 ## FASE 8 — Perubahan Status Booking
@@ -222,7 +222,6 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 - [x] ⏳ **Backend `PATCH /admin/bookings/:code/status` — selesai duluan di FASE 7 (2026-08-04)**, karena satu resource `BookingsService` yang sama: transisi `DP → LUNAS → CHECKED_IN` forward-only, `→ HANGUS` kapan saja sebelum check-in (ditolak `409` kalau sudah `CHECKED_IN`). Validasi mundur/loncat diuji manual sampai bener-bener kena `409` (DP→CHECKED_IN loncat, CHECKED_IN→LUNAS mundur, HANGUS dari CHECKED_IN).
 - [x] ⏳ **Backend: `computeEffectiveStatus()` — selesai duluan di FASE 7.** `COMPLETED` (dari `CHECKED_IN` + checkout lewat) & `NO_SHOW` (dari `LUNAS` + checkout lewat, belum checked-in) dihitung di `BookingsService`, port persis logika `effectiveStatus()` frontend (`lib/data/admin.ts`) — bukan kolom, bukan cron.
-- [ ] Backend `PATCH /admin/bookings/:code` — edit tanggal check-in/out + seluruh isi booking (reschedule manual admin, §6.1) — **belum dikerjakan**, ini scope FASE 8 asli yang masih ditunda (beda dari `PATCH .../status` di atas)
 - [x] ⏳ **Update 2026-08-04 — beneran wired:** tombol "Tandai Lunas" / "Tandai Check-in" di `BookingsPage.tsx` sekarang manggil `PATCH /admin/bookings/:code/status` sungguhan (refresh list on success, error inline kalau ditolak mis. `409`). **"Batalkan Booking" (HANGUS manual) tetap sengaja tidak dipasang** (keputusan lama, dikonfirmasi ulang — HANGUS murni status turunan otomatis). **"Edit Tanggal"/"Edit Booking" dihapus sementara dari modal** (bukan cuma disembunyikan-tanpa-alasan): editor lama (`RoomItemsEditor.tsx`, shape `{slug,qty}`) sudah gak cocok sama model per-tenda (`adults`/`children`/`extraBedQty` sekarang di `BookingItem`, bukan level `Booking`), dan endpoint `PATCH /admin/bookings/:code` buat edit-penuh belum dibangun — daripada nampilin tombol yang keliatan ada tapi gak nyimpen beneran, ditunda ke sesi terpisah. File `RoomItemsEditor.tsx` ikut dihapus (zero-import setelah ini, konsisten sama kebiasaan `lib/data/settings.ts` di FASE 6).
 
 ---
@@ -240,7 +239,8 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
   - Filter: status (5 nilai), sumber (WhatsApp/Walk-in), **tanggal check-in spesifik** (opsional, bisa dihapus), **bulan+tahun** (default bulan berjalan, **wajib terisi — tidak bisa dikosongkan**, biar data yang numpuk berbulan-bulan gak ditampilin semua sekaligus); search kode/nama/**no. WA**; **pagination 15/20 per halaman**
   - Modal detail (klik baris) — **update 2026-07-26**: dibikin lebih detail & dikelompokkan per section (Data Tamu / Detail Menginap / Pembayaran) — Dewasa, Anak-anak, Extra Bed, Catatan sekarang ikut ditampilkan biar admin gampang nyiapin unitnya. ⏳ **Update 2026-08-04 (data API asli):** baris "status Foto KTP" **dihapus** (kolom `ktp_photo_url` sudah gak ada di skema, FASE 7). Dewasa/Anak/Extra Bed sekarang ditampilkan **per-tenda** (dari `booking.items[]`, lebih akurat dari mock lama yang cuma satu angka gabungan). Section Pembayaran tampilkan **"Sudah dibayar: RpX dari RpY"** pakai field `paidTotal` baru (lihat FASE 7 Bagian 0). Tombol "Hubungi via WA" (dulu dekoratif tanpa `onClick`) di-wire ke link `wa.me` beneran.
   - [x] Tombol "Tandai Hangus" manual **dihapus** — Hangus sekarang murni status turunan otomatis (§6.2), tidak ada aksi manual buat itu lagi
-  - [x] ⏳ **Keputusan direvisi 2026-08-04:** rencana lama "Edit Booking diperluas jadi edit seluruh isi" **dibatalkan** — begitu halaman ini benar-benar di-wire ke API asli, editor lama (`RoomItemsEditor.tsx`, shape `{slug,qty}`) ketahuan sudah gak cocok sama model per-tenda yang baru, dan endpoint `PATCH /admin/bookings/:code` buat edit-penuh belum dibangun. **Tombol & mode Edit Booking dihapus sementara dari modal** (bukan disembunyikan doang) — ditunda ke sesi terpisah yang butuh endpoint baru + editor baru (kemungkinan mirip `RoomGroupEditor.tsx` per-tenda, bukan `RoomItemsEditor.tsx` per-qty). File `RoomItemsEditor.tsx` dihapus (zero-import).
+  - [x] ⏳ **Keputusan direvisi 2026-08-04:** rencana lama "Edit Booking diperluas jadi edit seluruh isi" **dibatalkan (sementara)** — begitu halaman ini benar-benar di-wire ke API asli, editor lama (`RoomItemsEditor.tsx`, shape `{slug,qty}`) ketahuan sudah gak cocok sama model per-tenda yang baru, dan endpoint `PATCH /admin/bookings/:code` buat edit-penuh belum dibangun. **Tombol & mode Edit Booking dihapus sementara dari modal** (bukan disembunyikan doang) — ditunda ke sesi terpisah yang butuh endpoint baru + editor baru (kemungkinan mirip `RoomGroupEditor.tsx` per-tenda, bukan `RoomItemsEditor.tsx` per-qty). File `RoomItemsEditor.tsx` dihapus (zero-import).
+  - [x] ⏳ **KETEMU KETINGGALAN DICATAT (audit 2026-08-21):** fitur Edit Booking ternyata **sudah dibangun** di sesi terpisah setelah entry di atas ditulis, tapi TASK.md gak pernah diupdate — baru ketahuan pas nulis dokumentasi per-fitur (`docs/fitur/`) dan cek ulang kode sungguhan. Sudah ada: `EditBookingDto` (backend, `guestName`/`guestPhone`/`checkIn`/`checkOut`/`items[]`/`priceOverride`/`discount` semua opsional + `note` wajib min 3 karakter alasan edit), `BookingsService.editBooking()` — hitung ulang harga only kalau tanggal/kamar berubah (reuse `checkAvailability` per item, exclude booking-nya sendiri biar gak collide sama diri sendiri), diff field-by-field jadi `changes` object, simpan ke tabel `bookingEditLog` (siapa yang edit, kapan, alasan, before/after tiap field) dalam satu transaksi bareng update booking-nya. Frontend: `app/admin/penginapan/booking/[code]/edit/page.tsx` → `EditBookingPage.tsx` (447 baris), tombol "Edit" di `BookingDetailModal.tsx` selalu tampil (gak digate status tertentu, cuma disable pas ada update lain in-flight), dan modal itu sendiri sekarang render **"Riwayat Edit"** — timeline semua editLog terbalik-kronologis dengan before/after per field. **Tidak ada validasi "maks H-7"** yang disebut §6.1 — masih belum diimplementasi.
   - [x] ⏳ **Filter periode disamain sama pola Owner (update 2026-07-26, direvisi lagi hari yg sama):** sempat dicoba pakai filter rentang manual "Dari Tanggal"–"Sampai Tanggal", tapi akhirnya diganti supaya **konsisten sama dashboard Owner** — pakai komponen `RangeFilter` yang sama persis (Hari Ini/Minggu Ini/Bulan Ini/Custom), sekarang dipindah ke `components/ui/RangeFilter.tsx` (tadinya di `components/owner/`) biar reusable lintas dashboard. Filter tanggal check-in spesifik (yang lama) **dikembalikan lagi sebagai filter TAMBAHAN** ("Cari Tanggal Check-in", opsional/clearable) — cuma buat mempersempit tabel di layar, **sengaja TIDAK ikut ke Export PDF** (PDF tetap ngikutin rentang RangeFilter aja, biar laporannya konsisten per periode, gak keganggu filter pencarian sesaat). i18n label 4 tombol rentang dipindah dari namespace `owner.*` ke `common.*` karena sekarang dipakai lintas dashboard.
   - [x] ⏳ **Selector "Tampilkan 15/20" per-halaman dihapus (update 2026-07-26):** pagination sekarang tetap ada (Sebelumnya/Berikutnya + "Halaman X/Y") tapi ukurannya di-hardcode `PAGE_SIZE = 20`, gak ada pilihan lagi — dianggap gak perlu dikonfigurasi user.
   - [x] ⏳ **Search dibikin independen dari filter lain (update 2026-07-26):** begitu kotak pencarian keisi, filter Periode/Status/Sumber **diabaikan sepenuhnya** — search jalan ke SEMUA booking (bukan cuma yang lolos filter lain), biar gampang nemuin booking spesifik walau lagi difilter periode/status/sumber yang beda. Dropdown Status/Sumber ikut disabled (opacity turun) selama search aktif biar jelas keliatan lagi gak dipakai, plus ada catatan kecil di bawah kotak search ("Pencarian aktif — mengabaikan filter periode/status/sumber..."). Konsekuensinya: Export PDF pas search aktif juga ikut nurut hasil pencarian (bukan periode), konsisten sama apa yang keliatan di layar. Filter "Cari Tanggal Check-in" tetap independen dari ini — tetap jalan di atas hasil manapun (search-mode atau filter-mode biasa).
@@ -255,15 +255,17 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] ⏳ **UI mobile Admin — bottom nav (update 2026-07-26):** disamain polanya sama dashboard Owner (lihat FASE 10). Sebelumnya `<Sidebar className="hidden md:flex" />` bikin menu Admin hilang total di HP tanpa pengganti — gak ada cara pindah menu maupun logout. Ditambahkan di `DashboardLayout.tsx`: bottom nav `fixed md:hidden` (5 menu), brand mark di header kiri buat mobile (judul halaman disembunyikan), dropdown akun+logout lewat avatar, `pb-24` di `<main>` biar konten gak ketutup, padding `env(safe-area-inset-bottom)`.
   - Daftar menu dipindah jadi satu sumber `useAdminNavItems()` di `Sidebar.tsx` (dipakai bareng sidebar desktop & bottom nav) + field `shortLabel` khusus mobile — label panjang ("Kelola Penginapan", "Booking WhatsApp") gak muat di tab selebar ~70px, jadi dipendekin ("Kelola", "WhatsApp").
   - 🐛 **Bug lama ikut kebenerin:** deteksi menu aktif dulu pakai `pathname.startsWith(href)` polos, jadi pas di `/admin/penginapan/booking-whatsapp` menu "Data Booking" (`/admin/penginapan/booking`) ikut nyala barengan. Diganti `isAdminNavActive()` yang bandingin `href + '/'`. Kalau gak dibenerin, bug-nya bakal kelihatan dobel (sidebar + bottom nav).
-- [ ] Proteksi semua route dashboard sesuai role
+- [x] ⏳ **Proteksi semua route dashboard sesuai role — dites & dikonfirmasi 2026-08-21:** RBAC diperketat (§5 PROJECT.md) + diuji end-to-end di browser (ADMIN_PENGINAPAN/SUPER_ADMIN dipental dari `/owner`, OWNER boleh akses `/admin/penginapan`, redirect otomatis kalau sudah login buka `/login`) + backend via curl (401 tanpa token, 403 role salah)
 
 ---
 
 ## FASE 10 — Dashboard Owner
 
 > **Update 2026-07-26:** Ringkasan Owner tadinya 100% angka dummy hardcoded (termasuk yang sudah kadaluarsa: nama kamar fiktif lama, "Online vs Walk-in", transaksi Tiket Masuk palsu ikut nyampur). Sekarang semua dihitung dari `adminBookings` yang sama dengan Data Booking admin (`lib/data/owner.ts`, fungsi `calc*`) — masih mock (belum API), tapi angkanya jujur/konsisten dgn data yang sama di seluruh dashboard.
+>
+> **Update 2026-08-21 — beneran ke API, bukan mock lagi:** seluruh `lib/data/owner.ts` di-refactor — semua fungsi `calc*` sekarang **wajib** menerima `bookings`/`rooms` sebagai parameter (tidak ada lagi fallback diam-diam ke `adminBookings` mock). `OwnerOverviewPage.tsx` & `OwnerPenginapanPage.tsx` fetch `GET /admin/bookings` + `GET /admin/room-types` sendiri (pola sama Admin `OverviewPage.tsx` FASE 9) + loading/error state. Adapter `toOverviewBooking()` yang tadinya private di `OverviewPage.tsx` dipindah jadi `toAdminBookingMock()` (`lib/api/bookings.ts`, di-export) — dipakai bersama 3 halaman (Admin Overview + 2 halaman Owner), bukan 3 salinan nyaris identik. Diverifikasi lewat browser sungguhan: booking test yang dibuat lewat form Admin (`DGC-AT4JNH`) langsung ikut kehitung di Dashboard Owner tanpa refresh manual data — sebelumnya nyangkut di 29 baris mock, sekarang benar-benar live. `npx tsc --noEmit`, `npx eslint`, dan `npx next build` semua lolos setelah refactor.
 
-- [ ] `/owner` — eksklusif `OWNER` + `SUPER_ADMIN` (wiring route + verifikasi build) — proteksi RBAC beneran belum ada
+- [x] ⏳ **`/owner` — proteksi RBAC beres & dites 2026-08-21:** eksklusif **`OWNER` saja** (revisi §5 PROJECT.md — `SUPER_ADMIN` tidak lagi diizinkan masuk sini, punya hub sendiri `/super-admin`), ditegakkan `useRequireRole(['OWNER'])` + diuji end-to-end di browser
 - [x] Filter rentang tanggal (hari ini / minggu ini / bulan ini / **custom**) — **beneran nge-filter** sekarang, bukan cuma UI. **Update 2026-07-26:** "Custom" sekarang beneran bisa pilih tanggal dari–sampai sendiri (`RangeFilter.tsx`, dipakai bareng di Ringkasan & Penginapan) — kalau belum diisi, sementara jatuh ke default "Bulan Ini"
 - [x] 4 stat card + indikator naik/turun **vs periode sebelumnya yang sesuai** (kemarin/minggu lalu/bulan lalu, bukan selalu "vs bulan lalu")
 - [x] Grafik garis: tren pendapatan 6 bulan (real, dari `adminBookings`) — skala Y sekarang dinamis mengikuti data asli (bukan hardcode 140–340 yang cuma cocok buat angka dummy lama)
@@ -275,7 +277,6 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
   - Export Excel masih belum ada — nanti nyusul kalau dibutuhkan.
 - [x] ⏳ **Export PDF juga di `/owner/penginapan` (update 2026-07-26):** tombol "Export Laporan" baru ditambahin di halaman ini (sebelumnya cuma ada di Ringkasan), pola visual disamain persis (header dark+gold, stat card, dst) via `lib/pdf/ownerReport.ts` yang digeneralisasi supaya reusable dua halaman — parameter `units`/`bookings` yang tadinya spesifik-Ringkasan diganti jadi `breakdowns` (list section legenda donut, bisa lebih dari satu — di sini "Booking per Tipe" + "WhatsApp vs Walk-in") & `table` generik (di sini "Performa per Tipe Tenda", bukan daftar booking). Isinya juga ngikutin filter rentang aktif di halaman ini.
 - [x] Menu sidebar "Tiket Masuk" & "Cafe" badge **Coming Soon** — sudah ada badge SOON, disabled (render `<div>`, bukan `<Link>`, jadi memang gak bisa diklik)
-- [ ] Sambungkan grafik & angka ke API analitik beneran (masih hitung di client dari mock)
 - [x] ⏳ **Route asli per menu (update 2026-07-26):** `OwnerDashboard.tsx` (tab-switch di 1 komponen) **dihapus**, diganti `OwnerLayout.tsx` (shell sidebar+header, dipakai bareng) + `OwnerOverviewPage.tsx`/`OwnerPenginapanPage.tsx`/`OwnerLaporanPage.tsx` masing-masing punya route sendiri (`/owner`, `/owner/penginapan`, `/owner/laporan`) — konsisten sama pola Admin
 - [x] **`/owner/penginapan` diisi konten real** (`calcRoomTypePerformance` di `lib/data/owner.ts`): tabel performa per 6 tipe tenda (booking, pendapatan, okupansi rata-rata) + link "Kelola detail di menu Admin →". ⚠️ Pendapatan booking yang mencakup >1 tipe tenda **diaproksimasi proporsional per qty** (`AdminBooking.total` cuma satu angka gabungan, belum ada subtotal per tipe yang tersimpan) — sudah dikasih catatan di UI, bukan pemisahan harga presisi
 - [x] **Bar chart "Pendapatan per Tipe Tenda"** (update 2026-07-26) — dipasang cuma di halaman Penginapan, sengaja **tidak** dipasang di semua halaman (lihat diskusi: Ringkasan udah ada chart, Laporan gak butuh chart karena fungsinya export bukan analitik, halaman operasional Admin tetap tabel/form polos)
@@ -286,26 +287,17 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] ⏳ **Donut baru "Kontribusi per Unit Bisnis" di Ringkasan (update 2026-07-26):** slot donut yang kosong abis 2 donut di atas dipindah, sekarang diisi perbandingan 3 unit bisnis (Penginapan/Tiket Masuk/Cafe) — `calcRevenueByUnit()` di `lib/data/owner.ts`. Tiket & Cafe otomatis 0% (sistemnya belum ada), jadi Penginapan wajar tampil 100% buat sekarang — bukan bug, memang representasi jujur kondisi saat ini, otomatis kebagi begitu 2 unit lain aktif.
 - [x] ⏳ **UI mobile Owner (update 2026-07-26):** sidebar `OwnerLayout.tsx` sebelumnya `hidden` total di bawah breakpoint `md` tanpa pengganti apa pun — di HP gak ada cara pindah menu maupun logout sama sekali. Ditambahkan **bottom nav bar** (`fixed`, `md:hidden`, pakai ulang `navItems` yang sama biar gak duplikasi, item "Soon" tetap non-klik) + tombol logout ikon di header (`md:hidden`, sidebar desktop tetap punya link Keluar sendiri) + padding bawah `<main>` (`pb-24` di mobile) biar konten gak ketutup bottom nav.
 - [x] ⏳ **`/owner/laporan` dihapus (update 2026-07-26):** dulu cuma placeholder "hub" export, sekarang gak kepake lagi karena tombol Export PDF udah nempel kontekstual di Ringkasan & Penginapan masing-masing (lihat 2 poin di atas). Dihapus: route `app/owner/laporan/page.tsx`, komponen `OwnerLaporanPage.tsx`, item nav "Laporan" di `OwnerLayout.tsx` (sidebar + bottom nav mobile), i18n key `owner.navLaporan` & `owner.laporanPlaceholder`.
-- [ ] ⏳ **Ide didiskusikan 2026-07-26, sengaja DITUNDA (bukan prioritas sekarang):**
-  - **Gateway navigasi Owner ↔ Admin** — link "Buka Dashboard Admin →" di sidebar Owner (ke `/admin/penginapan`) + link "← Kembali ke Owner" di sidebar Admin (`Sidebar.tsx`, dekat tombol Keluar). Bisa dikombinasikan sama deep-link kontekstual per halaman yang udah ada polanya (mis. "Lihat Detail Booking →" di `/owner/penginapan`) — dua-duanya gak saling eksklusif.
-  - **Menu "Kelola Akun"** (CRUD akun admin + reset password) — taruh di dashboard **Owner** aja (bukan Admin, soal keamanan/separation of duties — Admin gak boleh bisa bikin/nonaktifin sesama admin). Delete sebaiknya jadi **Nonaktifkan** (bukan hapus permanen), biar riwayat `created_by` di booking lama gak nyangkut ke akun yang udah ilang. Password: cuma ada aksi "Reset Password", jangan pernah nampilin/edit password asli langsung.
 
 ---
 
 ## FASE 11 — QA & Polish
 
-- [ ] Uji alur pencatatan booking end-to-end (tambah → Lunas → check-in → COMPLETED)
-- [ ] Uji multi-tenda dalam satu booking
-- [ ] Uji anti double-booking (dua booking bersamaan, tanggal & unit sama)
-- [ ] Uji check-in ulang → ditolak
-- [ ] Uji tarif weekday vs weekend + extra bed + override
-- [ ] Uji validasi kapasitas/anak (orang efektif > kapasitas → peringatan)
-- [ ] Uji settings (ubah jam/WA/rekening/S&K → berubah di UI)
-- [ ] Uji RBAC seluruh role (paksa lewat Postman)
-- [ ] Uji fallback bahasa (kosongkan EN → tampil ID)
-- [ ] Uji responsif mobile & desktop
-- [ ] Loading state & error handling di semua form
-- [ ] SEO dasar publik: meta tag, Open Graph, sitemap
+- [x] ⏳ **Uji alur pencatatan booking end-to-end (2026-08-21):** dites langsung di browser (bukan cuma curl) — buat booking baru lewat menu Booking WhatsApp (kode `DGC-AT4JNH`, status awal DP, DP Rp175.000/Rp350.000) → Tandai Lunas (sudah dibayar otomatis jadi Rp350.000 penuh) → Tandai Check-in (stat card "Sedang Menginap" naik real-time). Belum sampai ke COMPLETED karena butuh tanggal check-out benar-benar lewat (bukan sesuatu yang bisa disimulasikan tanpa mock tanggal sistem) — logikanya sendiri (`computeEffectiveStatus()`) sudah diverifikasi manual saat FASE 7/8.
+- [x] Uji multi-tenda dalam satu booking — sudah diverifikasi manual FASE 7 (2 tenda beda tipe + extra bed dalam satu booking)
+- [x] Uji anti double-booking — sudah diverifikasi manual FASE 5 (kena `409` pas kapasitas penuh)
+- [x] ⏳ **Uji check-in ulang & transisi ilegal ditolak (2026-08-21):** re-tes lewat curl atas booking yang sama persis abis dites end-to-end di atas — CHECKED_IN→LUNAS (mundur) `409`, HANGUS setelah CHECKED_IN `409`, CHECKED_IN→CHECKED_IN (double check-in) `409`. Semua guard transisi masih solid, tidak ada regresi dari perubahan RBAC sesi ini.
+- [x] Uji tarif weekday/weekend + extra bed + override — sudah diverifikasi manual via curl FASE 7 (angka cocok persis)
+- [x] ⏳ **Uji RBAC seluruh role (2026-08-21):** backend via curl — semua endpoint admin 401 tanpa token, login salah password 401, token rusak 401, ketiga role (SUPER_ADMIN/OWNER/ADMIN_PENGINAPAN) bisa akses endpoint yang mengizinkan mereka. Frontend via browser — fokus ke perubahan RBAC sesi ini: ADMIN_PENGINAPAN paksa buka `/owner` → dipental ke `/admin/penginapan`; SUPER_ADMIN login → landing `/super-admin` (bukan `/owner`), paksa buka `/owner` → dipental balik; OWNER login → landing `/owner`, **berhasil** akses `/admin/penginapan` (akses "ke bawah" tetap jalan); sudah login lalu buka `/login` lagi → otomatis dilempar ke dashboard sendiri. Semua 5 skenario lolos.
 
 ---
 
@@ -325,9 +317,33 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ---
 
-## Yang TIDAK Dikerjakan di Fase Ini
+# VERSI 2 — Rencana Selanjutnya (Belum Dikerjakan)
 
-Struktur data & enum **sudah disiapkan**, implementasi fase berikutnya:
+Struktur data & enum **sudah disiapkan**, implementasi menyusul di Versi 2:
+
+**Halaman:**
+- `/admin/settings` — konfigurasi global (jam, WA, rekening, S&K) *(digeser dari Versi 1, dianggap belum cukup penting utk MVP KP)*
+- `/booking` (form + modal pembayaran), `/cek-booking`, `/booking/[kode]` adaptif — UI lama sempat dibangun lalu **dihapus** (bukan diparkir, update 2026-07-26): isinya simulasi Midtrans/QRIS/VA + auto-expire, kontradiktif dengan scope Versi 1 (manual only, tanpa payment gateway). Saat benar-benar dikerjakan, tulis ulang dari awal mengikuti skema final, jangan pakai ulang sisa UI lama.
+
+**Modul Settings (backend):**
+- Backend CRUD settings (hanya `SUPER_ADMIN`/`OWNER`) — sekarang baru read-only (`GET /settings`)
+- Helper baca setting yang di-cache (dipakai banyak modul)
+- Keputusan jam check-in/out per-tipe-unit vs seragam semua unit (`RoomSource.checkInTime/checkOutTime` masih per-room, belum dialihkan ke `settings` global)
+
+**Booking WhatsApp/Walk-in — penyempurnaan:**
+- Validasi kapasitas & anak otomatis di backend (§8.2 PROJECT.md) — Versi 1 sengaja cuma catatan UI (`childrenRuleHint`), belum ada validasi blocking
+- Validasi "reschedule maks H-7 sebelum check-in" (S&K) — endpoint edit sendiri sudah ada (lihat FASE 8, audit 2026-08-21), tapi belum ada aturan H-7 ini secara spesifik
+
+**Dashboard Owner:**
+- Gateway navigasi Owner ↔ Admin (link "Buka Dashboard Admin →" / "← Kembali ke Owner")
+- Menu "Kelola Akun" (CRUD akun admin + reset password/nonaktifkan, taruh di dashboard Owner)
+
+**QA lanjutan (dari FASE 11):**
+- Uji fallback bahasa (kosongkan EN → tampil ID)
+- Uji responsif mobile & desktop (terutama halaman login yang baru di-redesign)
+- Loading state & error handling di semua form
+- SEO dasar publik: meta tag, Open Graph, sitemap
+- Uji validasi kapasitas/anak & uji settings (ubah jam/WA/rekening/S&K → berubah di UI) — nunggu 2 fitur di atas selesai dibangun dulu
 
 **Digeser dari fase 1 (perubahan scope):**
 - **Booking online mandiri oleh tamu** — guest checkout (`/booking`), **Midtrans Snap**, webhook + **verifikasi signature**

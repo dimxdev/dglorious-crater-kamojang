@@ -49,8 +49,15 @@ describe('RolesGuard', () => {
     ).toThrow(ForbiddenException);
   });
 
-  it('lets SUPER_ADMIN through every role check', () => {
+  it('rejects SUPER_ADMIN when the route does not list it explicitly (403)', () => {
     const guard = makeGuard([RoleName.OWNER]);
+    expect(() =>
+      guard.canActivate(makeContext(user(RoleName.SUPER_ADMIN))),
+    ).toThrow(ForbiddenException);
+  });
+
+  it('allows SUPER_ADMIN when the route lists it explicitly', () => {
+    const guard = makeGuard([RoleName.OWNER, RoleName.SUPER_ADMIN]);
     expect(guard.canActivate(makeContext(user(RoleName.SUPER_ADMIN)))).toBe(
       true,
     );

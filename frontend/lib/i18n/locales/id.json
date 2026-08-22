@@ -140,15 +140,19 @@
   },
   "login": {
     "consoleLabel": "Management Console",
+    "heroHeadline": "Kelola D'Glorious Crater dari satu tempat.",
+    "heroSub": "Reservasi, ketersediaan tenda, dan transaksi harian — semuanya rapi dalam satu portal pengelola.",
     "title": "Masuk",
     "subtitle": "Portal khusus pengelola. Tamu tidak perlu akun.",
     "email": "Email",
     "password": "Kata Sandi",
+    "showPassword": "Tampilkan kata sandi",
+    "hidePassword": "Sembunyikan kata sandi",
     "submit": "Masuk",
     "submitting": "Memproses...",
     "errorInvalid": "Email atau kata sandi salah.",
     "errorGeneric": "Terjadi kesalahan. Coba lagi.",
-    "backHome": "← Kembali ke situs publik"
+    "backHome": "Kembali ke situs publik"
   },
   "admin": {
     "console": "Admin Console",
@@ -456,6 +460,21 @@
     "reportNoBookings": "Tidak ada booking pada periode ini.",
     "reportFooterNote": "Dibuat otomatis oleh sistem D'Glorious Crater — bukan dokumen resmi bertanda tangan.",
     "reportPage": "Halaman {page} dari {total}"
+  },
+  "superAdmin": {
+    "portal": "Super Admin Portal",
+    "navHub": "Beranda",
+    "navAkun": "Kelola Akun",
+    "greeting": "Selamat datang, {name}",
+    "subtitle": "Pilih dashboard yang ingin dikelola.",
+    "cardPenginapanTitle": "Penginapan",
+    "cardPenginapanDesc": "Booking, kelola kamar, walk-in, dan data reservasi.",
+    "cardTiketTitle": "Tiket Masuk",
+    "cardTiketDesc": "Kelola penjualan tiket masuk wisata.",
+    "cardCafeTitle": "Cafe / Restoran",
+    "cardCafeDesc": "Kelola menu dan pesanan cafe.",
+    "openDashboard": "Buka Dashboard",
+    "soon": "Segera Hadir"
   },
   "preview": {
     "title": "Design System — Pratinjau",
