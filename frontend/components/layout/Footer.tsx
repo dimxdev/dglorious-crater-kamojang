@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, Mail, MapPin, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
-import { InstagramIcon } from '@/components/ui';
+import { FacebookIcon, InstagramIcon, TiktokIcon } from '@/components/ui';
 import { MAPS_URL } from '@/lib/data/visit';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
@@ -27,8 +27,23 @@ export function Footer() {
     settings?.whatsapp_number,
     'Halo D’Glorious Crater, saya ingin bertanya tentang penginapan.',
   );
+  const waHref2 = waLink(
+    settings?.whatsapp_number_2,
+    'Halo D’Glorious Crater, saya ingin bertanya tentang penginapan.',
+  );
   const email = settings?.contact_email;
   const instagram = settings?.instagram_url;
+  const tiktok = settings?.tiktok_url;
+  const facebook = settings?.facebook_url;
+
+  /** Nomor WA ditampilkan diformat "0811-1000-3016" dari angka mentah
+   *  settings (`6281110003016` dst) — supaya kalau nomornya ganti lewat
+   *  database, tampilannya ikut berubah otomatis, bukan teks hardcode. */
+  function formatWaNumber(raw?: string): string | null {
+    if (!raw) return null;
+    const local = raw.startsWith('62') ? `0${raw.slice(2)}` : raw;
+    return local.replace(/(\d{4})(\d{4})(\d+)/, '$1-$2-$3');
+  }
 
   return (
     <footer className="bg-moss-900 text-ash-300 pt-20 pb-8">
@@ -40,16 +55,42 @@ export function Footer() {
           <p className="text-ash-300/75 mt-4 max-w-64 text-sm leading-relaxed">
             {t('footer.tagline')}
           </p>
-          {instagram && (
-            <a
-              href={instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-ash-50/10 hover:bg-ash-50/20 focus-visible:ring-moss-400 text-ash-200 mt-6 inline-flex min-h-11 items-center gap-2.5 rounded-full px-4 py-2.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
-            >
-              <InstagramIcon size={15} />
-              @dgloriouscraterkamojang
-            </a>
+          {(instagram || tiktok || facebook) && (
+            <div className="mt-6 flex items-center gap-2.5">
+              {instagram && (
+                <a
+                  href={instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="bg-ash-50/10 hover:bg-ash-50/20 focus-visible:ring-moss-400 text-ash-200 flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  <InstagramIcon size={17} />
+                </a>
+              )}
+              {tiktok && (
+                <a
+                  href={tiktok}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="TikTok"
+                  className="bg-ash-50/10 hover:bg-ash-50/20 focus-visible:ring-moss-400 text-ash-200 flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  <TiktokIcon size={17} />
+                </a>
+              )}
+              {facebook && (
+                <a
+                  href={facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  className="bg-ash-50/10 hover:bg-ash-50/20 focus-visible:ring-moss-400 text-ash-200 flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  <FacebookIcon size={17} />
+                </a>
+              )}
+            </div>
           )}
         </div>
 
@@ -88,7 +129,18 @@ export function Footer() {
                 className="text-ash-300/85 hover:text-ash-50 focus-visible:ring-moss-400 -mx-2 flex min-h-10 items-center gap-2.5 rounded px-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
                 <MessageCircle size={15} strokeWidth={1.5} className="shrink-0" aria-hidden />
-                0811-1000-3016
+                {formatWaNumber(settings?.whatsapp_number)}
+              </a>
+            )}
+            {waHref2 && (
+              <a
+                href={waHref2}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-ash-300/85 hover:text-ash-50 focus-visible:ring-moss-400 -mx-2 flex min-h-10 items-center gap-2.5 rounded px-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              >
+                <MessageCircle size={15} strokeWidth={1.5} className="shrink-0" aria-hidden />
+                {formatWaNumber(settings?.whatsapp_number_2)}
               </a>
             )}
             {email && (

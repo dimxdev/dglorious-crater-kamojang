@@ -33,7 +33,7 @@ export function PageMast({ title, lead, meta, children }: PageMastProps) {
         variant="mast"
         className="text-mineral-600 pointer-events-none absolute inset-y-0 right-0 -z-10 hidden h-full w-full max-w-[900px] lg:block"
       />
-      <div className="container-page relative pt-16 pb-14 sm:pt-24 sm:pb-20">
+      <div className="container-page relative pt-7.5 pb-14 sm:pt-11.5 sm:pb-20">
         {children}
         {/* Tanpa kicker huruf-besar di atas judul. Label ber-tracking di atas
             h1 adalah pola yang dikenali detektor sebagai penanda halaman buatan

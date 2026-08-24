@@ -1,4 +1,4 @@
-import { ArrowRight, Tent, Users } from 'lucide-react';
+import { ChevronRight, Tent, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { PublicRoomTypeSummary } from '@/lib/api/roomTypes';
@@ -95,8 +95,8 @@ export function RoomCard({ room, variant = 'home', t }: RoomCardProps) {
 
         {/* Dua tarif berdampingan. Kalau nilainya sama, satu kolom saja —
             dua kolom identik cuma bikin orang mengira ada yang salah baca. */}
-        <div className="border-ash-200 mt-auto flex items-end justify-between gap-4 border-t pt-4.5">
-          <dl className="flex min-w-0 gap-6">
+        <div className="border-ash-200 mt-auto flex items-end justify-between gap-2 border-t pt-4.5 sm:gap-4">
+          <dl className="flex min-w-0 gap-4 sm:gap-6">
             <div>
               <dt className="text-ash-600 text-[11.5px] tracking-[0.12em] uppercase">
                 {sameRate ? t('listing.rateAllDays') : t('listing.rateWeekday')}
@@ -117,12 +117,18 @@ export function RoomCard({ room, variant = 'home', t }: RoomCardProps) {
             )}
           </dl>
           {/* Penanda visual, bukan tombol — seluruh kartunya sudah tautan,
-              jadi ini tidak boleh bisa difokus sendiri. */}
+              jadi ini tidak boleh bisa difokus sendiri. Lebar kartu di grid
+              3 kolom desktop (~378px) nggak jauh beda dari 1 kolom mobile,
+              jadi lingkaran 44px lama bisa nyempil di DUA-DUANYA begitu
+              harga cukup panjang — bukan cuma soal breakpoint layar, tapi
+              soal lebar kartu itu sendiri. Diganti chevron kecil tanpa
+              latar di semua ukuran, biar konsisten hemat ruang & tahan
+              kalau nanti ada tarif dengan lebih banyak digit. */}
           <span
             aria-hidden
-            className="text-mineral-700 bg-mineral-50 group-hover:bg-mineral-100 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors"
+            className="text-mineral-700 flex h-6 w-6 shrink-0 items-center justify-center"
           >
-            <ArrowRight size={17} strokeWidth={1.75} />
+            <ChevronRight size={18} strokeWidth={2} />
           </span>
         </div>
         <p className="text-ash-600 mt-2 text-[11.5px]">{t('listing.perNight')}</p>

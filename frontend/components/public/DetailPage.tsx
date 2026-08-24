@@ -9,9 +9,11 @@ import { ApiError } from '@/lib/api/client';
 import {
   fetchPublicRoomTypeBySlug,
   resolveImageUrl,
+  type PublicRoomImage,
   type PublicRoomTypeDetail,
 } from '@/lib/api/roomTypes';
-import { getImage } from '@/lib/data/images';
+import { cn } from '@/lib/cn';
+import { getImage, type SourcedImage } from '@/lib/data/images';
 import { formatIDR } from '@/lib/format';
 import { getIcon, type IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -116,16 +118,20 @@ export function DetailPage({ slug }: { slug: string }) {
         </nav>
       </PageMast>
 
-      {/* GALERI */}
+      {/* GALERI — grid 3-foto di md ke atas; di bawah itu satu kolom nggak
+          cukup lebar buat foto samping, jadi diganti slider geser sendiri
+          (`GalleryMobileSlider`) yang menampilkan set foto SAMA PERSIS
+          (cover + 2 lainnya, fallback ambience kalau unit belum lengkap
+          fotonya) — bukan cuma cover-nya doang seperti sebelumnya. */}
       <div className="container-page pt-10">
-        <div className="grid h-[26rem] grid-cols-1 gap-3 md:h-[30rem] md:grid-cols-[2fr_1fr]">
+        <div className="hidden h-[30rem] grid-cols-[2fr_1fr] gap-3 md:grid">
           <figure className="relative overflow-hidden rounded-2xl">
             {cover ? (
               <Image
                 src={resolveImageUrl(cover.url)}
                 alt={t('detail.photoAlt', { name: room.name })}
                 fill
-                sizes="(min-width: 768px) 62vw, 100vw"
+                sizes="62vw"
                 priority
                 className="object-cover"
               />
@@ -135,7 +141,7 @@ export function DetailPage({ slug }: { slug: string }) {
               </div>
             )}
           </figure>
-          <div className="hidden grid-rows-2 gap-3 md:grid">
+          <div className="grid grid-rows-2 gap-3">
             {[0, 1].map((i) => {
               const own = otherImages[i];
               const fallback = ambience[i];
@@ -154,6 +160,14 @@ export function DetailPage({ slug }: { slug: string }) {
             })}
           </div>
         </div>
+
+        <GalleryMobileSlider
+          cover={cover}
+          otherImages={otherImages}
+          ambience={ambience}
+          roomName={room.name}
+          photoAlt={(name) => t('detail.photoAlt', { name })}
+        />
       </div>
 
       <div className="container-page mt-14 grid gap-14 lg:grid-cols-[1fr_23rem]">
@@ -354,6 +368,101 @@ function EmptyShell({
       <Link href="/penginapan" className={actionClass('quiet', 'md', 'mt-7')}>
         {actionLabel}
       </Link>
+    </div>
+  );
+}
+
+type GallerySlide =
+  | { kind: 'room'; url: string }
+  | { kind: 'ambience'; src: string; alt: string; objectPosition?: string };
+
+/**
+ * Galeri md ke bawah cuma satu kolom — nggak cukup lebar buat foto samping
+ * berdampingan seperti di desktop, jadi diganti slider geser sendiri.
+ * Menampilkan set foto SAMA PERSIS dengan grid desktop (cover + 2 lainnya,
+ * fallback ambience kalau unit belum lengkap fotonya) lewat scroll-snap
+ * native — bukan library carousel tambahan, konsisten dengan pola situs ini.
+ */
+function GalleryMobileSlider({
+  cover,
+  otherImages,
+  ambience,
+  roomName,
+  photoAlt,
+}: {
+  cover?: PublicRoomImage;
+  otherImages: PublicRoomImage[];
+  ambience: SourcedImage[];
+  roomName: string;
+  photoAlt: (name: string) => string;
+}) {
+  const [active, setActive] = useState(0);
+
+  function slotToSlide(
+    own: PublicRoomImage | undefined,
+    fallback: SourcedImage | undefined,
+  ): GallerySlide | null {
+    if (own) return { kind: 'room', url: own.url };
+    if (fallback) {
+      return { kind: 'ambience', src: fallback.src, alt: fallback.alt, objectPosition: fallback.objectPosition };
+    }
+    return null;
+  }
+
+  const slides: GallerySlide[] = [
+    cover ? { kind: 'room', url: cover.url } : null,
+    slotToSlide(otherImages[0], ambience[0]),
+    slotToSlide(otherImages[1], ambience[1]),
+  ].filter((s): s is GallerySlide => s !== null);
+
+  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (el.clientWidth === 0) return;
+    setActive(Math.round(el.scrollLeft / el.clientWidth));
+  }
+
+  if (slides.length === 0) {
+    return (
+      <div className="bg-ash-200 text-ash-500 relative flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-2xl md:hidden">
+        <Tent size={38} strokeWidth={1.25} aria-hidden />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative md:hidden">
+      <div
+        onScroll={handleScroll}
+        className="no-scrollbar flex h-[22rem] snap-x snap-mandatory overflow-x-auto scroll-smooth rounded-2xl"
+      >
+        {slides.map((slide, i) => (
+          <figure key={i} className="relative h-full w-full shrink-0 snap-center">
+            <Image
+              src={slide.kind === 'room' ? resolveImageUrl(slide.url) : slide.src}
+              alt={slide.kind === 'room' ? photoAlt(roomName) : slide.alt}
+              fill
+              sizes="100vw"
+              priority={i === 0}
+              className="object-cover"
+              style={slide.kind === 'ambience' ? { objectPosition: slide.objectPosition } : undefined}
+            />
+          </figure>
+        ))}
+      </div>
+      {slides.length > 1 && (
+        <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-1.5">
+          {slides.map((_, i) => (
+            <span
+              key={i}
+              aria-hidden
+              className={cn(
+                'h-1.5 rounded-full bg-white transition-all',
+                i === active ? 'w-5 opacity-100' : 'w-1.5 opacity-60',
+              )}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
