@@ -50,7 +50,7 @@ export type AdminRoomTypeListItem = {
 };
 
 export type AdminTranslation = {
-  languageCode: 'ID' | 'EN' | 'ZH';
+  languageCode: 'ID' | 'EN';
   name: string;
   category: string;
   tagline: string | null;
@@ -61,7 +61,7 @@ export type AdminTranslation = {
 };
 
 export type AdminRoomImage = { id: number; imageUrl: string; isCover: boolean; sortOrder: number };
-export type AdminRoomUnit = { id: number; unitCode: string; status: 'AVAILABLE' | 'MAINTENANCE' | 'INACTIVE' };
+export type AdminRoomUnit = { id: number; unitCode: string; status: 'AVAILABLE' };
 
 export type AdminRoomTypeDetail = {
   id: number;

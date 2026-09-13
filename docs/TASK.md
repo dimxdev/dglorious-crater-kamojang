@@ -14,7 +14,9 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 > **⚠️ Scope Versi 1.** Company profile/katalog publik + **pencatatan booking internal oleh admin**
 > (admin hanya input booking yang **sudah fix**; nego & pembayaran terjadi di WhatsApp/luar sistem).
 > **Booking online (Midtrans, guest checkout, email, tiket PDF/QR, auto-expire) + Mandarin
-> digeser ke VERSI 2** (lihat bagian paling bawah file ini) — struktur tetap disiapkan.
+> digeser ke VERSI 2** (lihat bagian paling bawah file ini) — belum ada kepastian proyek lanjut
+> ke Versi 2, jadi placeholder skema/kode untuk ini sudah **dihapus** dari DB/backend/frontend
+> (2026-09-13, lihat audit di bagian VERSI 2 paling bawah). Kalau lanjut, ditulis ulang dari nol.
 > Istilah unit di UI: **"Tenda" / "Villa"** (entity DB tetap `room_types`).
 
 ---
@@ -91,8 +93,8 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] ⏳ **Migrasi diterapkan (2026-08-01)** — `npx prisma migrate dev --name sync_schema_with_frontend_decisions`, database di-reset & seed berhasil: 6 room type asli, 2 contoh booking (WhatsApp DP + Walk-in Checked-in), translations lengkap. Diverifikasi langsung lewat query, bukan cuma baca log migrasi.
 - [x] Tabel baru **`booking_items`** (booking ↔ beberapa tenda: room_type_id, room_unit_id nullable, qty, subtotal_snapshot)
 - [x] Tabel baru **`settings`** (key-value konfigurasi global)
-- [x] `BookingSource`: **`MANUAL`** (fase 1) + `ONLINE` (fase berikutnya)
-- [x] Tandai `WAITING_PAYMENT`/`PAID`/`EXPIRED`/`REJECTED` + `expired_at` sebagai **fase berikutnya** (tetap ada di enum/skema, belum dipakai). **Tidak ada auto-expire di fase 1.**
+- [x] `BookingSource`: **`MANUAL`** (fase 1) + `ONLINE` (fase berikutnya) *(nilai `ONLINE` dihapus dari enum 2026-09-13 — gapernah kepake, lihat audit §10 PROJECT.md)*
+- [x] Tandai `WAITING_PAYMENT`/`PAID`/`EXPIRED`/`REJECTED` + `expired_at` sebagai **fase berikutnya** (tetap ada di enum/skema, belum dipakai). **Tidak ada auto-expire di fase 1.** *(nilai-nilai ini + kolom `expired_at` dihapus dari skema 2026-09-13, lihat audit §10 PROJECT.md)*
 - [x] Migrasi baru (squash jadi satu `init` bersih — data lama cuma dummy) + update seeder (harga weekday/weekend dummy, source `MANUAL`, status `CONFIRMED`, seed `settings`: jam 14.00/12.00, no. WA, rekening BSI, teks S&K 12 poin, + 1 contoh booking multi-tenda)
 - [x] `zh.json` & translations 中文 dikosongkan dulu — struktur tetap multi-bahasa (translations sudah ID+EN sejak awal)
 
@@ -319,7 +321,16 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 # VERSI 2 — Rencana Selanjutnya (Belum Dikerjakan)
 
-Struktur data & enum **sudah disiapkan**, implementasi menyusul di Versi 2:
+> **Audit 2026-09-13:** belum ada kepastian dari pihak klien apakah proyek lanjut ke Versi 2.
+> Supaya tidak ada kode/skema nganggur yang membingungkan, semua placeholder yang "sudah
+> disiapkan tapi belum dipakai" berikut ini **sudah dihapus**: enum `RoleName.ADMIN_PORTAL` /
+> `ADMIN_CAFFE`, enum `BookingStatus.PENDING/WAITING_PAYMENT/PAID/EXPIRED/REJECTED`,
+> `Booking.expiredAt`, `Payment.midtransOrderId`, model `Ticket` (`qrUrl`/`pdfUrl`), enum
+> `LanguageCode.ZH` + file `frontend/lib/i18n/locales/zh.json`. Daftar di bawah ini tetap
+> jadi catatan scope kalau Versi 2 jadi dikerjakan, tapi ditulis ulang dari nol — jangan
+> dikira strukturnya masih ada di database.
+
+Rencana implementasi Versi 2 (skema akan ditulis ulang dari nol saat dikerjakan):
 
 **Halaman:**
 - `/admin/settings` — konfigurasi global (jam, WA, rekening, S&K) *(digeser dari Versi 1, dianggap belum cukup penting utk MVP KP)*
@@ -349,11 +360,11 @@ Struktur data & enum **sudah disiapkan**, implementasi menyusul di Versi 2:
 - **Booking online mandiri oleh tamu** — guest checkout (`/booking`), **Midtrans Snap**, webhook + **verifikasi signature**
 - **Kode booking yang diakses tamu** + `/cek-booking` + `/booking/[kode]` adaptif *(UI lama sudah dihapus 2026-07-26 karena kontradiktif dengan scope Fase 1 — tulis ulang dari nol saat fase ini benar-benar dikerjakan)*
 - **Email otomatis** (kode, tiket, reminder) — Nodemailer/SMTP + queue
-- **Auto-expire 1×24 jam** (cron job) → status **`EXPIRED`** + `expired_at`, lepas kunci tanggal — *dipakai saat booking online (admin fase 1 hanya input booking yang sudah fix, jadi tak ada booking menggantung)*
+- **Auto-expire 1×24 jam** (cron job) → status `EXPIRED` (enum dihapus 2026-09-13, tulis ulang saat dikerjakan), lepas kunci tanggal — *dipakai saat booking online (admin fase 1 hanya input booking yang sudah fix, jadi tak ada booking menggantung)*
 - **DP + upload bukti transfer** (fase 1 cukup penanda Belum Lunas/Lunas)
-- **Generate tiket PDF + QR** untuk tamu
-- Status alur online: `WAITING_PAYMENT`, `PAID` (ada di enum, belum dipakai)
-- **Bahasa Mandarin (中文)** — struktur i18n & translations siap, tinggal isi data
+- **Generate tiket PDF + QR** untuk tamu (model `Ticket` dihapus 2026-09-13, tulis ulang saat dikerjakan)
+- Status alur online: `WAITING_PAYMENT`, `PAID` (enum dihapus 2026-09-13, tulis ulang saat dikerjakan)
+- **Bahasa Mandarin (中文)** — `zh.json` & enum `LanguageCode.ZH` dihapus 2026-09-13 (belum ada data terjemahan), tulis ulang saat dikerjakan
 
 **Modul & hal lain (fase selanjutnya):**
 - Sistem tiket masuk / portal (`ADMIN_PORTAL`)

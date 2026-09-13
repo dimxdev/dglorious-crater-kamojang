@@ -25,6 +25,6 @@ Tidak ada bypass otomatis untuk `SUPER_ADMIN` — di backend, tiap endpoint haru
 
 ## Terhubung ke
 - `POST /auth/login`, `GET /auth/me` (`backend/src/auth/`)
-- `RoleName` enum: `SUPER_ADMIN | OWNER | ADMIN_PENGINAPAN | ADMIN_PORTAL | ADMIN_CAFFE`
+- `RoleName` enum: `SUPER_ADMIN | OWNER | ADMIN_PENGINAPAN`
 - `frontend/lib/auth/` (`AuthProvider.tsx`, `useRequireRole.ts`, `roleHome.ts`)
 - Semua layout dashboard: `SuperAdminLayout`, `OwnerLayout`, `DashboardLayout` (Admin)

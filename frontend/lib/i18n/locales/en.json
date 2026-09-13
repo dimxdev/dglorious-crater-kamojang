@@ -510,9 +510,7 @@
   "roles": {
     "SUPER_ADMIN": "Super Admin",
     "OWNER": "Owner",
-    "ADMIN_PENGINAPAN": "Lodging Admin",
-    "ADMIN_PORTAL": "Ticketing Admin",
-    "ADMIN_CAFFE": "Cafe Admin"
+    "ADMIN_PENGINAPAN": "Lodging Admin"
   },
   "visit": {
     "routeTitle": "Getting here",

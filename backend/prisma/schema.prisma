@@ -13,8 +13,6 @@ enum RoleName {
   SUPER_ADMIN
   OWNER
   ADMIN_PENGINAPAN
-  ADMIN_PORTAL
-  ADMIN_CAFFE
 }
 
 enum BookingStatus {
@@ -24,11 +22,6 @@ enum BookingStatus {
   HANGUS
   COMPLETED
   NO_SHOW
-  PENDING
-  WAITING_PAYMENT
-  PAID
-  EXPIRED
-  REJECTED
 }
 
 enum BookingChannel {
@@ -43,45 +36,32 @@ enum ExtraBedType {
 
 enum BookingSource {
   MANUAL
-  ONLINE
 }
 
 enum PaymentMethod {
   CASH
   QRIS
   BANK_TRANSFER
-  VIRTUAL_ACCOUNT
-  EWALLET
-  CREDIT_CARD
-  OTHER
 }
 
 enum PaymentStatus {
   PENDING
   PAID
-  FAILED
-  EXPIRED
-  CANCELLED
-  REFUNDED
 }
 
 enum RoomUnitStatus {
   AVAILABLE
-  MAINTENANCE
-  INACTIVE
 }
 
 enum LanguageCode {
   ID
   EN
-  ZH
 }
 
 model Role {
-  id          Int      @id @default(autoincrement())
-  name        RoleName @unique
-  permissions Json     @default("{}")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        Int      @id @default(autoincrement())
+  name      RoleName @unique
+  createdAt DateTime @default(now()) @map("created_at")
 
   users User[]
 
@@ -216,12 +196,10 @@ model Booking {
   lunasAt     DateTime? @map("lunas_at")
   checkedInAt DateTime? @map("checked_in_at")
   hangusAt    DateTime? @map("hangus_at")
-  expiredAt   DateTime? @map("expired_at")
 
   createdBy User?            @relation("BookingCreatedBy", fields: [createdById], references: [id])
   items     BookingItem[]
   payments  Payment[]
-  ticket    Ticket?
   editLogs  BookingEditLog[]
 
   @@index([status])
@@ -280,22 +258,8 @@ model Payment {
   verifiedById Int?          @map("verified_by")
   createdAt    DateTime      @default(now()) @map("created_at")
 
-  midtransOrderId String? @unique @map("midtrans_order_id")
-
   booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   verifiedBy User?   @relation("PaymentVerifiedBy", fields: [verifiedById], references: [id])
 
   @@map("payments")
-}
-
-model Ticket {
-  id        Int      @id @default(autoincrement())
-  bookingId Int      @unique @map("booking_id")
-  qrUrl     String?  @map("qr_url")
-  pdfUrl    String?  @map("pdf_url")
-  issuedAt  DateTime @default(now()) @map("issued_at")
-
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-
-  @@map("tickets")
 }

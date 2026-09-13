@@ -11,7 +11,9 @@ Konteks proyek untuk Claude Code. Baca file ini sebelum mengerjakan task apa pun
 > Admin **hanya menginput booking yang SUDAH FIX** (negosiasi harga & aturan DP/pelunasan
 > terjadi di WhatsApp, **di luar sistem**). **Booking online mandiri (Midtrans, guest
 > checkout, email, tiket PDF/QR, auto-expire) + bahasa Mandarin digeser ke Versi 2** —
-> strukturnya tetap disiapkan, hanya belum diimplementasi.
+> belum ada kepastian lanjut, jadi placeholder skema untuk fitur ini sudah **dihapus**
+> dari database/backend/frontend (2026-09-13); jika Versi 2 jadi dikerjakan, struktur
+> ini ditulis ulang dari nol, bukan diaktifkan dari sisa lama.
 
 ---
 
@@ -25,9 +27,9 @@ Sistem informasi & reservasi untuk destinasi wisata **D'Glorious Crater Kamojang
 - **Dashboard admin penginapan** (data booking, tambah booking, check-in, CMS unit).
 - **Dashboard owner** (statistik & rekap).
 
-**Versi 2 (belum dikerjakan, tapi struktur data harus siap):**
+**Versi 2 (belum dikerjakan, belum ada kepastian lanjut — lihat catatan di atas):**
 - **Booking online mandiri** — Midtrans Snap, guest checkout, kode booking yang diakses tamu, email otomatis, tiket PDF+QR, **auto-expire 1×24 jam**, halaman `/cek-booking` & `/booking/[kode]`.
-- **Bahasa Mandarin (中文)** — struktur i18n & tabel translations sudah multi-bahasa; tinggal menambah data.
+- **Bahasa Mandarin (中文)** — struktur i18n multi-bahasa masih ada di frontend (`locales`/`Locale`), datanya belum diisi.
 - **Sistem tiket masuk (portal)** dan **sistem transaksi cafe**.
 
 **Konteks:** proyek Kerja Praktik, 2 orang (Dimas & Ihsan), 5 minggu (20 Juli – 23 Agustus 2026).
@@ -265,20 +267,30 @@ Menegakkan S&K poin 7 & 8:
 
 ## 10. Skema Database (Versi 1)
 
-- **`roles`** — id, name, permissions (JSON)
+> **Audit 2026-09-13:** seksi ini sempat menyebut beberapa kolom/tabel/nilai enum yang
+> ternyata tidak pernah dipakai kode manapun (sisa rencana Versi 2 yang belum pasti
+> dilanjutkan). Semuanya sudah **dihapus** dari skema per migrasi
+> `remove_versi2_unused_fields` + `prune_unused_enum_values` (2026-09-13): model
+> `tickets`, kolom `bookings.expired_at`, `payments.midtrans_order_id`,
+> `roles.permissions`, serta nilai enum `BookingStatus.PENDING/WAITING_PAYMENT/PAID/EXPIRED/REJECTED`,
+> `BookingSource.ONLINE`, `PaymentMethod.VIRTUAL_ACCOUNT/EWALLET/CREDIT_CARD/OTHER`,
+> `PaymentStatus.FAILED/EXPIRED/CANCELLED/REFUNDED`, `RoomUnitStatus.MAINTENANCE/INACTIVE`,
+> `RoleName.ADMIN_PORTAL/ADMIN_CAFFE`, `LanguageCode.ZH`. Daftar di bawah ini sudah
+> disesuaikan dengan skema yang benar-benar berjalan sekarang.
+
+- **`roles`** — id, name, created_at
 - **`users`** — id, role_id, name, email, password, created_at
 - **`settings`** — id, key, value (teks/JSON), updated_at, updated_by *(konfigurasi global §8.3)*
 - **`room_types`** — id, slug, **`price_weekday`**, **`price_weekend`**, capacity, total_units, facilities (JSON), is_active, created_by, created_at, deleted_at
   - Harga **TIDAK flat**: minimal 2 tarif (weekday & weekend); sistem memilih tarif per tanggal menginap. Jam check-in/out **bukan** di sini — ambil dari `settings`. *(Tarif high-season = perlu konfirmasi klien, §11.)*
-- **`room_type_translations`** — id, room_type_id, language_code, name, description, facilities_text, rules
+- **`room_type_translations`** — id, room_type_id, language_code (`ID`/`EN`), name, description, facilities_text, rules
 - **`room_images`** — id, room_type_id, image_url, is_cover, sort_order
-- **`room_units`** — id, room_type_id, unit_code, status
-- **`bookings`** — id, booking_code (unik, acak), guest_name, guest_phone, guest_email (nullable), check_in, check_out, **`price_snapshot`** (total dibekukan — **WAJIB**), **`is_price_override`** (bool), **`status`** (enum — `DP`/`LUNAS`/`CHECKED_IN`/`HANGUS` disimpan; `COMPLETED`/`NO_SHOW` dihitung di API dari tanggal, **bukan kolom**, lihat §6.2), booking_source (**`MANUAL`** fase 1 / `ONLINE` fase berikutnya), booking_channel (`WHATSAPP`/`WALK_IN`), notes (nullable), created_by, created_at, lunas_at, checked_in_at, hangus_at, *(disiapkan fase berikutnya: expired_at)*
+- **`room_units`** — id, room_type_id, unit_code, status (`AVAILABLE`)
+- **`bookings`** — id, booking_code (unik, acak), guest_name, guest_phone, guest_email (nullable), check_in, check_out, **`price_snapshot`** (total dibekukan — **WAJIB**), **`is_price_override`** (bool), **`status`** (enum — `DP`/`LUNAS`/`CHECKED_IN`/`HANGUS` disimpan; `COMPLETED`/`NO_SHOW` dihitung di API dari tanggal, **bukan kolom**, lihat §6.2), booking_source (`MANUAL`), booking_channel (`WHATSAPP`/`WALK_IN`), notes (nullable), created_by, created_at, lunas_at, checked_in_at, hangus_at
 - **`booking_items`** — id, booking_id, room_type_id, room_unit_id (nullable), qty, subtotal_snapshot, **`adults`**, **`children`**, **`extra_bed_qty`** (default 0), **`extra_bed_type`** (nullable), **`extra_bed_price`** *(satu booking bisa mencakup beberapa tenda — dewasa/anak/extra-bed disimpan PER TENDA di sini, bukan di `bookings`, karena tiap tenda dalam satu booking bisa beda komposisi tamu. Keputusan 2026-08-04, FASE 7 — sebelumnya field-field ini ada di level `bookings`.)* — `ktp_photo_url` **dihapus total** dari skema (2026-08-04, bukan lagi disimpan sistem, lihat §8.1)
-- **`payments`** — id, booking_id, method (cash/transfer/QRIS), amount, proof_url (nullable), status, paid_at, verified_by (nullable), *(disiapkan: midtrans_order_id nullable)*
-- **`tickets`** — id, booking_id, qr_url, pdf_url, issued_at *(struktur disiapkan; generate PDF/QR = fase berikutnya)*
+- **`payments`** — id, booking_id, method (`CASH`/`QRIS`/`BANK_TRANSFER`), amount, proof_url (nullable), status (`PENDING`/`PAID`), paid_at, verified_by (nullable)
 
-**Catatan:** `booking_code` yang dipakai sebagai referensi **wajib acak**. Enum status menyertakan nilai fase-berikutnya (`WAITING_PAYMENT`, `PAID`, `EXPIRED`) yang **belum dipakai** di fase 1.
+**Catatan:** `booking_code` yang dipakai sebagai referensi **wajib acak**.
 
 ---
 

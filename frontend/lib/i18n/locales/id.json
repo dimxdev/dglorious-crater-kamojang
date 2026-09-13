@@ -510,9 +510,7 @@
   "roles": {
     "SUPER_ADMIN": "Super Admin",
     "OWNER": "Owner",
-    "ADMIN_PENGINAPAN": "Admin Penginapan",
-    "ADMIN_PORTAL": "Admin Tiket Masuk",
-    "ADMIN_CAFFE": "Admin Cafe"
+    "ADMIN_PENGINAPAN": "Admin Penginapan"
   },
   "visit": {
     "routeTitle": "Cara ke sini",

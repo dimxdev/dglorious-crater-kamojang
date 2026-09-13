@@ -21,25 +21,18 @@ const DEFAULT_PASSWORD = 'password123';
 // ─────────────────────────────────────────────────────────────
 const ROLES: {
   name: RoleName;
-  // Sengaja BUKAN `Record<string, unknown>`: `unknown` gak bisa masuk ke tipe
-  // JSON-nya Prisma (`InputJsonValue`), jadi `tsc` nolak. Dipersempit ke bentuk
-  // yang emang dipakai di bawah.
-  permissions: Record<string, boolean | string[]>;
   user: { name: string; email: string };
 }[] = [
   {
     name: RoleName.SUPER_ADMIN,
-    permissions: { all: true },
     user: { name: 'Super Admin', email: 'superadmin@dglorious.com' },
   },
   {
     name: RoleName.OWNER,
-    permissions: { dashboards: ['owner', 'penginapan', 'portal', 'cafe'], crud: true },
     user: { name: "Owner D'Glorious", email: 'owner@dglorious.com' },
   },
   {
     name: RoleName.ADMIN_PENGINAPAN,
-    permissions: { dashboards: ['penginapan'], crud: true },
     user: { name: 'Admin Penginapan', email: 'admin.penginapan@dglorious.com' },
   },
 ];
@@ -390,8 +383,8 @@ async function seedRolesAndUsers() {
   for (const r of ROLES) {
     const role = await prisma.role.upsert({
       where: { name: r.name },
-      update: { permissions: r.permissions },
-      create: { name: r.name, permissions: r.permissions },
+      update: {},
+      create: { name: r.name },
     });
 
     await prisma.user.upsert({
@@ -440,19 +433,18 @@ async function seedRoomTypes(createdById: number) {
       create: { slug: rt.slug, ...pricing, createdById },
     });
 
-    // Translations (ID wajib, EN diisi fase 1; ZH menyusul fase berikutnya)
     for (const [lang, t] of Object.entries(rt.translations)) {
       await prisma.roomTypeTranslation.upsert({
         where: {
           roomTypeId_languageCode: {
             roomTypeId: roomType.id,
-            languageCode: lang as 'ID' | 'EN' | 'ZH',
+            languageCode: lang as 'ID' | 'EN',
           },
         },
         update: t,
         create: {
           roomTypeId: roomType.id,
-          languageCode: lang as 'ID' | 'EN' | 'ZH',
+          languageCode: lang as 'ID' | 'EN',
           ...t,
         },
       });

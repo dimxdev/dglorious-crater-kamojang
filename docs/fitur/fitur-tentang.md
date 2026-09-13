@@ -19,7 +19,7 @@ Seluruh isi halaman diambil dari data lokal (`lib/data/content.ts`, `lib/data/ka
 - **Tiket & Parkir** (`id="tiket"`) — 4 kartu perbandingan paket tiket masuk (harga siang/malam) plus tabel tarif parkir.
 
 ## Keputusan Desain Penting
-Halaman ini sepenuhnya self-contained dari data lokal karena isinya informasi statis yang tidak dimodelkan di database sama sekali. Harga tiket & parkir di sini adalah **konten brosur**, bukan sistem penjualan tiket — sistem tiket masuk sungguhannya (`ADMIN_PORTAL`) adalah scope Versi 2. Beberapa foto atraksi masih memakai stok/placeholder karena foto asli dari klien belum tersedia.
+Halaman ini sepenuhnya self-contained dari data lokal karena isinya informasi statis yang tidak dimodelkan di database sama sekali. Harga tiket & parkir di sini adalah **konten brosur**, bukan sistem penjualan tiket — sistem tiket masuk sungguhan belum ada. Beberapa foto atraksi masih memakai stok/placeholder karena foto asli dari klien belum tersedia.
 
 ## Terhubung ke
 - `lib/data/content.ts` (`getAttractions`, `getGalleryItems`, `getTicketPackages`, `getParkingFees`)

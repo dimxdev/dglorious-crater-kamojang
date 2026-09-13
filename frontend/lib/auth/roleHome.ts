@@ -15,10 +15,6 @@ export function roleHomePath(role: RoleName): string {
       return '/owner';
     case 'ADMIN_PENGINAPAN':
       return '/admin/penginapan';
-    // Fase berikutnya — belum ada dashboard sendiri, jangan sampai 404.
-    case 'ADMIN_PORTAL':
-    case 'ADMIN_CAFFE':
-      return '/login';
     default:
       return '/login';
   }

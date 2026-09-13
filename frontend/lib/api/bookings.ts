@@ -9,14 +9,7 @@ export type CreateBookingItemInput = {
   extraBedType?: 'WITH_BED' | 'WITHOUT_BED';
 };
 
-export type PaymentMethodInput =
-  | 'CASH'
-  | 'QRIS'
-  | 'BANK_TRANSFER'
-  | 'VIRTUAL_ACCOUNT'
-  | 'EWALLET'
-  | 'CREDIT_CARD'
-  | 'OTHER';
+export type PaymentMethodInput = 'CASH' | 'QRIS' | 'BANK_TRANSFER';
 
 export type CreateBookingInput = {
   guestName: string;
