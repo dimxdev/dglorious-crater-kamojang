@@ -1,7 +1,7 @@
 # Homepage
 
 **Route:** `/`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/app/page.tsx` → `frontend/components/public/HomePage.tsx`
 
 ## Ringkasan

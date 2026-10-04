@@ -22,7 +22,6 @@ import type { AuthUser } from '../../auth/types/jwt-payload';
 import { RoleName } from '../../generated/prisma/enums';
 import { AvailabilityQueryDto } from './dto/availability-query.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
-import { CreateRoomUnitDto } from './dto/room-unit.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import {
   ROOM_IMAGE_UPLOAD_DIR,
@@ -75,15 +74,12 @@ export class RoomTypesAdminController {
   ) {
     const checkIn = new Date(query.checkIn);
     const checkOut = new Date(query.checkOut);
-    return this.roomTypesService.checkAvailability(id, checkIn, checkOut, query.excludeBookingId);
-  }
-
-  @Post(':id/units')
-  addUnit(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateRoomUnitDto,
-  ) {
-    return this.roomTypesService.addUnit(id, dto);
+    return this.roomTypesService.checkAvailability(
+      id,
+      checkIn,
+      checkOut,
+      query.excludeBookingId,
+    );
   }
 
   @Post(':id/images')

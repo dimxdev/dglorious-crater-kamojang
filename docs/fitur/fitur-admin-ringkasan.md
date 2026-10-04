@@ -1,7 +1,7 @@
 # Ringkasan Admin Penginapan
 
 **Route:** `/admin/penginapan`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/components/admin/penginapan/OverviewPage.tsx`
 
 ## Ringkasan
@@ -10,7 +10,7 @@ Dashboard operasional harian untuk admin penginapan — menjawab "apa yang perlu
 ## Cara Kerja
 Saat dibuka, halaman fetch `GET /admin/bookings` dan `GET /admin/room-types` sekaligus (`Promise.all`), dengan state loading/error + tombol retry. Semua bagian halaman berputar di sekitar satu state **tanggal aktif** — ini penting: klik tanggal di kalender maupun pilih tanggal lewat input date sama-sama mengubah tanggal aktif ini, dan seluruh halaman (stat card, tab operasional, tabel transaksi, panel ketersediaan) ikut bergerak mengikutinya. Ini disengaja supaya kalender terasa "hidup" — bukan sekadar mengganti satu kotak kecil di bawahnya.
 
-Data booking dari API dipetakan lewat adapter `toAdminBookingMock()` ke bentuk `AdminBooking`, supaya fungsi-fungsi util lama (`occupiedQtyOnDate`, `effectiveStatus`, dll di `lib/data/admin.ts`) bisa dipakai apa adanya. Status booking yang ditampilkan dihitung ulang di client lewat `effectiveStatus()` — yang otomatis mengubah CHECKED_IN jadi COMPLETED begitu tanggal checkout lewat, dan DP/LUNAS jadi HANGUS/NO_SHOW sesuai kondisi — jadi badge selalu mencerminkan realita tanggal tanpa admin perlu klik apa pun.
+Data booking dari API dipetakan lewat adapter `toAdminBooking()` ke bentuk `AdminBooking`, supaya fungsi-fungsi util lama (`occupiedQtyOnDate`, `effectiveStatus`, dll di `lib/data/admin.ts`) bisa dipakai apa adanya. Status booking yang ditampilkan dihitung ulang di client lewat `effectiveStatus()` — yang otomatis mengubah CHECKED_IN jadi COMPLETED begitu tanggal checkout lewat, dan DP/LUNAS jadi HANGUS/NO_SHOW sesuai kondisi — jadi badge selalu mencerminkan realita tanggal tanpa admin perlu klik apa pun.
 
 ## Sub-fitur
 - **4 stat card** — Booking Hari Ini (jumlah check-in), Transaksi Hari Ini (booking yang dibuat hari itu), Pendapatan Hari Ini, dan Pendapatan Bulan Ini. Dua angka pendapatan dihitung dari tanggal transaksi sungguhan (`Payment.paidAt`), bukan dari nilai kontrak booking (`priceSnapshot`) — jadi mencerminkan uang yang benar-benar masuk pada periode itu, seperti buku kas.

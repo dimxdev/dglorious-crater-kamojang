@@ -1,7 +1,7 @@
 # Modul Settings
 
 **Route API:** `GET /settings` (publik, tanpa login)
-**Status:** 🚧 Sebagian — read-only saja (CRUD admin = Versi 2)
+**Status:** ✅ Selesai — read-only; nilai diubah lewat database
 **File utama:** `backend/src/settings/` (`settings-public.controller.ts`, `settings.service.ts`)
 
 ## Ringkasan
@@ -12,7 +12,7 @@ Ada satu endpoint, `GET /settings`, tanpa autentikasi (tamu memang tidak pernah 
 
 ## Sub-fitur
 - **`GET /settings`** — endpoint publik read-only, balikan objek flat `{key: value}`.
-- **Key yang di-seed:** `check_in_time` (14:00), `check_out_time` (12:00), `whatsapp_number`, `contact_email`, `instagram_url`, `bank_account` (BSI ...), serta `terms_conditions_id`/`terms_conditions_en` (12 poin S&K, disimpan 2 key terpisah karena `Setting.value` bukan per-bahasa).
+- **Key yang di-seed:** `check_in_time` (14:00), `check_out_time` (12:00), `whatsapp_number`, `contact_email`, `instagram_url`, `tiktok_url`, `facebook_url`, `whatsapp_number_2`, serta `terms_conditions_id`/`terms_conditions_en` (12 poin S&K, disimpan 2 key terpisah karena `Setting.value` bukan per-bahasa).
 - **`usePublicSettings()`** (frontend) — hook cache, dipakai `FloatingWhatsApp`, `Navbar`, `Footer`, `DetailPage`, `ListingPage`; `TermsPage` fetch terpisah karena butuh varian per-bahasa.
 
 ## Keputusan Desain Penting
@@ -20,7 +20,7 @@ Modul ini berada di root `src/settings/` (bukan di dalam salah satu unit bisnis 
 
 Teks S&K disimpan sebagai dua key terpisah (`terms_conditions_id`/`terms_conditions_en`) alih-alih satu tabel translasi relasional, karena tabel `settings` memang key-value flat dan `Setting.value` cuma satu string. Ini pendekatan pragmatis untuk kasus key-value, berbeda dari `room_type_translations` yang memang tabel relasional multi-bahasa.
 
-Belum ada CRUD admin — form edit settings adalah scope Versi 2. Skema tabel `Setting` (`id`, `key` unik, `value`, `updatedAt`, `updatedById`) sudah menyediakan tempat untuk mencatat siapa yang mengubah, tinggal endpoint tulis + form-nya yang belum dibangun.
+Tidak ada CRUD admin untuk settings: nilai konfigurasi ini jarang berubah, jadi cukup diubah langsung lewat database. Tabel `Setting` hanya berisi `id`, `key` unik, `value`, dan `updatedAt`.
 
 ## Terhubung ke
 - Prisma model `Setting` (tabel `settings`)

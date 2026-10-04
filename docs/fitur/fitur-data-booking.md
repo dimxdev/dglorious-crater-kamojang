@@ -1,7 +1,7 @@
 # Data Booking
 
 **Route:** `/admin/penginapan/booking`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/components/admin/penginapan/BookingsPage.tsx`, `BookingDetailModal.tsx`, `EditBookingPage.tsx`
 
 ## Ringkasan
@@ -24,7 +24,7 @@ Klik satu baris membuka `BookingDetailModal` — dikelompokkan per section (Data
 ## Keputusan Desain Penting
 **Tombol "Tandai Hangus" manual sengaja tidak ada.** Status HANGUS murni turunan otomatis — dihitung dari tanggal checkout yang lewat tanpa pelunasan/check-in, bukan aksi yang diklik admin. Menyediakan tombolnya hanya akan membuka celah inkonsistensi antara status manual dan status turunan.
 
-Perubahan status memakai **guard tombol**, bukan pencarian kode: tombol "Tandai Check-in" hanya muncul saat status masih LUNAS, dan hilang begitu jadi CHECKED_IN. Karena di Versi 1 tidak ada tamu yang mengakses sistem sendiri, tidak ada yang perlu "diverifikasi" lewat kode — admin cukup mengklik baris booking yang sudah terlihat.
+Perubahan status memakai **guard tombol**, bukan pencarian kode: tombol "Tandai Check-in" hanya muncul saat status masih LUNAS, dan hilang begitu jadi CHECKED_IN. Karena tidak ada tamu yang mengakses sistem sendiri, tidak ada yang perlu "diverifikasi" lewat kode — admin cukup mengklik baris booking yang sudah terlihat.
 
 **Perhatikan (gotcha untuk pembaca kode):** endpoint & halaman Edit Booking penuh (`PATCH /admin/bookings/:code`, `EditBookingPage.tsx`, tabel `bookingEditLog`) sudah terbangun lengkap — jangan tertipu catatan lama di TASK.md yang sempat menyebutnya "ditunda". Yang benar-benar belum ada: validasi aturan S&K "reschedule maksimal H-7 sebelum check-in" — endpoint edit tidak menegakkannya.
 

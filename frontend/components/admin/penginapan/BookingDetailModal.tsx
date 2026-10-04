@@ -12,9 +12,11 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
+import { fetchAdminRoomTypes } from '@/lib/api/roomTypes';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { type AdminBookingDetail } from '@/lib/api/bookings';
 import { cn } from '@/lib/cn';
 import { roomItemLabel, type BookingChannel, type BookingRoomItem, type BookingStatus } from '@/lib/data/admin';
@@ -24,7 +26,7 @@ import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 import { SourceBadge, StatusBadge } from './StatusBadge';
 
 /**
- * Bentuk tampilan dipetakan dari `AdminBookingDetail` (API, FASE 7/8) — field
+ * Bentuk tampilan dipetakan dari `AdminBookingDetail` (API) — field
  * lama (`kode`/`guest`/`wa`/dst) dipertahankan biar fungsi yang sudah ada di
  * `lib/data/admin.ts` (`roomsSummary` dkk) & `lib/data/owner.ts`
  * (`bookingsInRange`) tetap kepakai apa adanya, cuma sumber datanya diganti.
@@ -50,7 +52,12 @@ export function toDisplay(b: AdminBookingDetail): DisplayBooking {
     kode: b.bookingCode,
     guest: b.guestName,
     wa: b.guestPhone,
-    rooms: b.items.map((i) => ({ slug: i.roomTypeSlug, qty: 1 })),
+    rooms: b.items.map((i) => ({
+      slug: i.roomTypeSlug,
+      qty: 1,
+      name: i.roomTypeName,
+      category: i.roomTypeCategory,
+    })),
     // API balikin ISO datetime penuh ("...T00:00:00.000Z") — dipotong ke
     // YYYY-MM-DD biar cocok sama `bookingsInRange`/filter tanggal yang
     // membandingkan string apa adanya (bukan objek Date).
@@ -63,7 +70,7 @@ export function toDisplay(b: AdminBookingDetail): DisplayBooking {
   };
 }
 
-/** Status tampilan — langsung dari API (`computeEffectiveStatus()`, FASE 7), bukan dihitung ulang di sini. */
+/** Status tampilan — langsung dari API (`computeEffectiveStatus()`), bukan dihitung ulang di sini. */
 export function displayStatus(b: DisplayBooking): BookingStatus {
   return b.raw.effectiveStatus as BookingStatus;
 }
@@ -87,10 +94,22 @@ export function BookingDetailModal({
 }) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { token } = useAuth();
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [roomNames, setRoomNames] = useState<Record<string, string>>({});
 
   useBodyScrollLock(true);
+
+  const hasEditLogs = booking.raw.editLogs.length > 0;
+  useEffect(() => {
+    if (!token || !hasEditLogs) return;
+    fetchAdminRoomTypes(token)
+      .then((list) => setRoomNames(Object.fromEntries(list.map((r) => [r.slug, `${r.name} — ${r.category}`]))))
+      .catch(() => {
+        // Label jatuh ke slug kalau daftar tipe gagal dimuat.
+      });
+  }, [token, hasEditLogs]);
 
   const status = displayStatus(booking);
   const { raw } = booking;
@@ -199,7 +218,7 @@ export function BookingDetailModal({
                     className="border-border rounded-[10px] border px-3.5 py-2.5"
                   >
                     <div className="text-[13.5px] font-semibold">
-                      {roomItemLabel({ slug: item.roomTypeSlug, qty: 1 })}
+                      {roomItemLabel({ slug: item.roomTypeSlug, name: item.roomTypeName, category: item.roomTypeCategory, qty: 1 })}
                     </div>
                     <div className="text-muted mt-0.5 text-[12.5px]">
                       {item.adults} {t('admin.adultsShort')} · {item.children}{' '}
@@ -377,7 +396,7 @@ export function BookingDetailModal({
                             {editFieldLabel(field)}
                           </span>
                           <span className="text-stone-400 line-through">
-                            {editFieldValue(field, from)}
+                            {editFieldValue(field, from, roomNames)}
                           </span>
                           <ArrowRight
                             size={11}
@@ -386,7 +405,7 @@ export function BookingDetailModal({
                             className="shrink-0 text-stone-400"
                           />
                           <span className="font-semibold text-stone-700">
-                            {editFieldValue(field, to)}
+                            {editFieldValue(field, to, roomNames)}
                           </span>
                         </div>
                       ))}
@@ -499,7 +518,7 @@ function editFieldLabel(field: string): string {
   return EDIT_FIELD_LABELS[field] ?? field;
 }
 
-function editFieldValue(field: string, value: unknown): string {
+function editFieldValue(field: string, value: unknown, roomNames: Record<string, string>): string {
   if (field === 'priceSnapshot' || field === 'discount' || field === 'autoCalculatedTotal') {
     return formatIDR(Number(value));
   }
@@ -512,7 +531,7 @@ function editFieldValue(field: string, value: unknown): string {
   if (field === 'rooms') {
     return String(value)
       .split(',')
-      .map((slug) => roomItemLabel({ slug: slug.trim(), qty: 1 }))
+      .map((slug) => roomNames[slug.trim()] ?? slug.trim())
       .join(', ');
   }
   return String(value);

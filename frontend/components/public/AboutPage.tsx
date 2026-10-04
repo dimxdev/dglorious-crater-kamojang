@@ -143,10 +143,9 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* FASILITAS KAWASAN — dulu enam ikon generik dari data mock. Sekarang
-          20 fasilitas asli yang tercetak di spanduk resmi di lokasi, dengan
-          anchor #fasilitas yang sama karena halaman detail unit menautkannya
-          ke sini. */}
+      {/* FASILITAS KAWASAN — 20 fasilitas asli yang tercetak di spanduk resmi
+          di lokasi. Anchor #fasilitas dipakai halaman detail unit sebagai
+          tautan ke sini. */}
       <KawasanIndex />
 
       {/* TIKET & PARKIR */}

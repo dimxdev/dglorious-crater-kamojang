@@ -1,7 +1,7 @@
 # Katalog Penginapan
 
 **Route:** `/penginapan`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/app/penginapan/page.tsx` → `frontend/components/public/ListingPage.tsx`
 
 ## Ringkasan

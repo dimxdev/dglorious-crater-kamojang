@@ -1,14 +1,14 @@
 # Dashboard Owner — Penginapan
 
 **Route:** `/owner/penginapan`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/components/owner/OwnerPenginapanPage.tsx`
 
 ## Ringkasan
 Deep-dive performa bisnis penginapan per tipe tenda, dari sudut pandang pemilik. Fokusnya angka bisnis (booking, pendapatan, kontribusi), bukan operasional harian — pengelolaan konten & booking tetap di menu Admin, halaman ini cukup menautkan ke sana.
 
 ## Cara Kerja
-Sama seperti Ringkasan Owner, halaman fetch `GET /admin/bookings` + `GET /admin/room-types`, memetakan lewat `toAdminBookingMock()`, lalu mengoper ke fungsi analitik `lib/data/owner.ts` yang khusus penginapan (`calcRoomTypePerformance`, `calcBookingByType`, `calcBySource`, `calcPenginapanStats`). Semua metrik dihitung untuk periode yang dipilih via `RangeFilter`.
+Sama seperti Ringkasan Owner, halaman fetch `GET /admin/bookings` + `GET /admin/room-types`, memetakan lewat `toAdminBooking()`, lalu mengoper ke fungsi analitik `lib/data/owner.ts` yang khusus penginapan (`calcRoomTypePerformance`, `calcBookingByType`, `calcBySource`, `calcPenginapanStats`). Semua metrik dihitung untuk periode yang dipilih via `RangeFilter`.
 
 ## Sub-fitur
 - **Filter Periode** (`RangeFilter`).

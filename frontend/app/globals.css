@@ -174,78 +174,10 @@ h3,
   }
 }
 
-/* Eyebrow/label seksi (uppercase kecil, aksen biru) */
-@utility eyebrow {
-  font-size: 0.78rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--color-accent);
-}
-
 /*
-  Kabut — transisi fungsional dari foto/seksi gelap ke latar halaman.
-  Ramp-nya bertahap (bukan linear dua-stop) supaya terbaca seperti kabut yang
-  menebal, bukan pita gradien. Selalu warna latar, tidak pernah warna aksen —
-  ini scrim fungsional, bukan gradien dekoratif.
-*/
-@utility mist-edge {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 9rem;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in oklab, var(--color-background) 0%, transparent) 0%,
-    color-mix(in oklab, var(--color-background) 10%, transparent) 40%,
-    color-mix(in oklab, var(--color-background) 38%, transparent) 65%,
-    color-mix(in oklab, var(--color-background) 74%, transparent) 85%,
-    var(--color-background) 100%
-  );
-}
-
-@utility mist-edge-top {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  height: 7rem;
-  pointer-events: none;
-  background: linear-gradient(
-    to top,
-    color-mix(in oklab, var(--color-background) 0%, transparent) 0%,
-    color-mix(in oklab, var(--color-background) 10%, transparent) 40%,
-    color-mix(in oklab, var(--color-background) 38%, transparent) 65%,
-    color-mix(in oklab, var(--color-background) 74%, transparent) 85%,
-    var(--color-background) 100%
-  );
-}
-
-/*
-  Reveal saat scroll. Seluruh aturannya ada di dalam media query
-  `no-preference`, jadi saat pengguna minta reduced-motion elemen langsung
-  tampil tanpa animasi — tanpa percabangan JSX yang bisa bikin SSR dan klien
-  tidak sinkron. JS-nya cuma membalik atribut `data-reveal`.
-*/
-@media (prefers-reduced-motion: no-preference) {
-  [data-reveal] {
-    opacity: 0;
-    transform: translateY(10px);
-    transition:
-      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-      transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  [data-reveal='shown'] {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/*
-  Animasi masuk grafik dashboard Owner. Sama polanya dengan reveal di atas:
-  semuanya dikurung di `no-preference`, jadi kalau pengguna minta
-  reduced-motion grafiknya langsung tampil utuh — tanpa cabang JSX, tanpa
+  Animasi masuk grafik dashboard Owner. Semuanya dikurung di
+  `no-preference`, jadi kalau pengguna minta reduced-motion grafiknya
+  langsung tampil utuh — tanpa cabang JSX, tanpa
   risiko SSR/klien beda. Semua pakai `transform` (bukan width/height) supaya
   animasinya jalan di compositor, tidak memicu layout ulang tiap frame.
 */
@@ -263,22 +195,6 @@ h3,
     }
     to {
       transform: scaleX(1);
-    }
-  }
-
-  /* Batang naik dari dasar; tiap batang dikasih delay via --bar-delay. */
-  [data-chart-bar] {
-    transform-origin: bottom;
-    animation: owner-chart-bar 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: var(--bar-delay, 0ms);
-  }
-
-  @keyframes owner-chart-bar {
-    from {
-      transform: scaleY(0);
-    }
-    to {
-      transform: scaleY(1);
     }
   }
 
@@ -380,9 +296,7 @@ h3,
 
   Latar halaman publik adalah `ash-100`, sedangkan `body` tetap memakai
   `--color-background` lama supaya dashboard tidak ikut berubah. Karena itu
-  kabut publik butuh versi sendiri yang meleburnya ke `ash-100` — kalau
-  memakai `mist-edge` lama, ujung fotonya akan melebur ke warna yang beda
-  tipis dari latar di bawahnya dan menyisakan pita abu-abu yang terlihat.
+  kabut publik meleburnya ke `ash-100`.
 */
 @utility haze-bottom {
   position: absolute;
@@ -414,16 +328,6 @@ h3,
     color-mix(in oklab, var(--color-ash-100) 74%, transparent) 85%,
     var(--color-ash-100) 100%
   );
-}
-
-/* Eyebrow versi publik — biru mineral dari logo, bukan --color-accent lama. */
-@utility eyebrow-brand {
-  display: block;
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--color-mineral-600);
 }
 
 /*
@@ -462,10 +366,8 @@ h3,
 /*
   Satu momen gerak yang diniatkan: rangkaian masuk hero beranda.
 
-  Sebelumnya tiap seksi di beranda dan /tentang memakai reveal-saat-scroll yang
-  identik — entrance yang sama diulang enam kali bukan koreografi, itu cuma
-  tic. Diganti satu rangkaian di tempat yang memang menyambut pengunjung,
-  sisanya tampil tenang tanpa animasi.
+  Hanya hero beranda yang beranimasi masuk; seksi lain tampil tenang tanpa
+  animasi.
 
   Seluruh aturannya dikurung di `no-preference`, jadi saat pengguna minta
   reduced-motion elemennya langsung tampil utuh — tanpa percabangan JSX yang

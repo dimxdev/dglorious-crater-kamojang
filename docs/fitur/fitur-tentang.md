@@ -1,7 +1,7 @@
 # Tentang (Company Profile)
 
 **Route:** `/tentang`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/app/tentang/page.tsx` → `frontend/components/public/AboutPage.tsx`
 
 ## Ringkasan
@@ -19,7 +19,7 @@ Seluruh isi halaman diambil dari data lokal (`lib/data/content.ts`, `lib/data/ka
 - **Tiket & Parkir** (`id="tiket"`) — 4 kartu perbandingan paket tiket masuk (harga siang/malam) plus tabel tarif parkir.
 
 ## Keputusan Desain Penting
-Halaman ini sepenuhnya self-contained dari data lokal karena isinya informasi statis yang tidak dimodelkan di database sama sekali. Harga tiket & parkir di sini adalah **konten brosur**, bukan sistem penjualan tiket — sistem tiket masuk sungguhan belum ada. Beberapa foto atraksi masih memakai stok/placeholder karena foto asli dari klien belum tersedia.
+Halaman ini sepenuhnya self-contained dari data lokal karena isinya informasi statis yang tidak dimodelkan di database sama sekali. Harga tiket & parkir di sini adalah **konten brosur**, bukan sistem penjualan tiket — sistem ini tidak menjual tiket. Foto di halaman ini (dan di beranda) adalah ilustrasi buatan AI (Google Gemini), bukan foto asli lokasi — dicatat di `lib/data/images.ts` supaya mudah diganti foto asli.
 
 ## Terhubung ke
 - `lib/data/content.ts` (`getAttractions`, `getGalleryItems`, `getTicketPackages`, `getParkingFees`)

@@ -1,6 +1,6 @@
 # Export PDF Laporan
 
-**Status:** ✅ Selesai (Versi 1) — cross-cutting, dipakai Admin & Owner
+**Status:** ✅ Selesai — cross-cutting, dipakai Admin & Owner
 **File utama:** `frontend/lib/pdf/report.ts` (`exportReportPdf`)
 
 ## Ringkasan

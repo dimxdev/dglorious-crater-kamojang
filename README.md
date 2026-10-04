@@ -3,8 +3,9 @@
 Sistem informasi & reservasi untuk destinasi wisata **D'Glorious Crater Kamojang**
 (kawah geothermal, pemandian air panas, glamping) di perbatasan Bandung–Garut, Jawa Barat.
 
-Proyek Kerja Praktik — lihat [PROJECT.md](PROJECT.md) untuk konteks & aturan arsitektur,
-dan [TASK.md](TASK.md) untuk checklist pengerjaan.
+Proyek Kerja Praktik — lihat [docs/PROJECT.md](docs/PROJECT.md) untuk konteks & aturan arsitektur,
+[docs/TASK.md](docs/TASK.md) untuk checklist pengerjaan, dan [docs/fitur/](docs/fitur/) untuk
+dokumentasi tiap fitur.
 
 ## Tech Stack
 
@@ -21,8 +22,7 @@ dan [TASK.md](TASK.md) untuk checklist pengerjaan.
 dglorious/
 ├── backend/     # NestJS — sumber kebenaran, semua logika bisnis
 ├── frontend/    # Next.js — presentasi, fetch ke API backend
-├── PROJECT.md   # konteks & aturan
-└── TASK.md      # checklist pengerjaan
+└── docs/        # PROJECT.md, TASK.md, dan fitur/ (dokumentasi per fitur)
 ```
 
 ## Prasyarat
@@ -41,8 +41,8 @@ cd ../frontend && npm install
 cp backend/.env.example backend/.env       # isi DATABASE_URL sesuai PostgreSQL lokal
 cp frontend/.env.example frontend/.env.local
 
-# 3. (FASE 1) generate Prisma client & migrasi database
-cd backend && npx prisma generate && npx prisma migrate dev
+# 3. Generate Prisma client, migrasi, dan isi data awal (akun, tenda, pengaturan)
+cd backend && npx prisma generate && npx prisma migrate dev && npx prisma db seed
 ```
 
 ## Menjalankan (development)

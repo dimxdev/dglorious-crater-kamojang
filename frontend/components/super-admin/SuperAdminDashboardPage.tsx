@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BedDouble, Ticket, UtensilsCrossed } from 'lucide-react';
+import { ArrowRight, BedDouble } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
@@ -14,15 +14,14 @@ type SectionCard = {
   desc: string;
   tint: string;
   iconColor: string;
-  soon?: boolean;
 };
 
 /**
  * Hub navigasi Super Admin — bukan dashboard analitik (itu peran Owner, dan
  * Owner-nya eksklusif, lihat `OwnerLayout.tsx`). Isinya cuma kartu-kartu
- * besar yang mengarahkan ke tiap dashboard admin unit bisnis (§5 PROJECT.md,
- * revisi 2026-08-21: SUPER_ADMIN akses semua dashboard ADMIN, tapi TIDAK ke
- * dashboard Owner) — cukup pantau & pindah-pindah dari sini.
+ * besar yang mengarahkan ke dashboard admin (§5 PROJECT.md, revisi
+ * 2026-08-21: SUPER_ADMIN akses dashboard ADMIN, tapi TIDAK ke dashboard
+ * Owner).
  */
 export function SuperAdminDashboardPage() {
   const { t } = useTranslation();
@@ -36,24 +35,6 @@ export function SuperAdminDashboardPage() {
       desc: t('superAdmin.cardPenginapanDesc'),
       tint: 'bg-green-50',
       iconColor: 'text-green-700',
-    },
-    {
-      href: '#',
-      icon: Ticket,
-      title: t('superAdmin.cardTiketTitle'),
-      desc: t('superAdmin.cardTiketDesc'),
-      tint: 'bg-amber-50',
-      iconColor: 'text-amber-600',
-      soon: true,
-    },
-    {
-      href: '#',
-      icon: UtensilsCrossed,
-      title: t('superAdmin.cardCafeTitle'),
-      desc: t('superAdmin.cardCafeDesc'),
-      tint: 'bg-rose-50',
-      iconColor: 'text-rose-600',
-      soon: true,
     },
   ];
 
@@ -74,39 +55,20 @@ export function SuperAdminDashboardPage() {
                 <span className={cn('flex h-11 w-11 items-center justify-center rounded-xl', s.tint)}>
                   <s.icon size={20} strokeWidth={1.75} className={s.iconColor} aria-hidden />
                 </span>
-                {s.soon ? (
-                  <span className="rounded-[5px] bg-[#f6ecd8] px-1.5 py-0.5 text-[9px] font-bold text-[#9a7420]">
-                    {t('superAdmin.soon')}
-                  </span>
-                ) : (
-                  <ArrowRight
-                    size={18}
-                    strokeWidth={2}
-                    className="text-muted transition-transform group-hover:translate-x-0.5"
-                    aria-hidden
-                  />
-                )}
+                <ArrowRight
+                  size={18}
+                  strokeWidth={2}
+                  className="text-muted transition-transform group-hover:translate-x-0.5"
+                  aria-hidden
+                />
               </div>
               <div className="text-forest-800 mt-4 font-serif text-[17px] font-bold">{s.title}</div>
               <p className="text-muted mt-1.5 text-[13px] leading-snug">{s.desc}</p>
-              {!s.soon && (
-                <div className="text-forest-700 mt-4 text-[12.5px] font-semibold">
-                  {t('superAdmin.openDashboard')} →
-                </div>
-              )}
+              <div className="text-forest-700 mt-4 text-[12.5px] font-semibold">
+                {t('superAdmin.openDashboard')} →
+              </div>
             </>
           );
-
-          if (s.soon) {
-            return (
-              <div
-                key={s.title}
-                className="cursor-not-allowed rounded-2xl border border-[#ece6d8] bg-white/60 p-5.5 opacity-70"
-              >
-                {CardInner}
-              </div>
-            );
-          }
 
           return (
             <Link

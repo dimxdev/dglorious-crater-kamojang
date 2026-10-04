@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
 
 /**
@@ -20,8 +21,8 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Belum ada layanan pelaporan galat di fase 1; konsol dulu supaya
-    // jejaknya tidak hilang begitu saja saat dites manual.
+    // Tidak ada layanan pelaporan galat; dicatat ke konsol supaya jejaknya
+    // tidak hilang begitu saja saat dites manual.
     console.error(error);
   }, [error]);
 
@@ -56,12 +57,12 @@ export default function Error({
           >
             Muat ulang halaman
           </button>
-          <a
+          <Link
             href="/"
             className="border-ash-300 text-ash-800 hover:bg-ash-200/70 focus-visible:ring-mineral-500 inline-flex min-h-11 items-center justify-center rounded-full border px-6 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             Kembali ke beranda
-          </a>
+          </Link>
         </div>
       </div>
     </div>

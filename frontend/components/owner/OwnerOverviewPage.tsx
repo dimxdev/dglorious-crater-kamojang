@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { StatusBadge } from '@/components/admin/penginapan/StatusBadge';
 import { ApiError } from '@/lib/api/client';
-import { fetchAdminBookings, toAdminBookingMock } from '@/lib/api/bookings';
+import { fetchAdminBookings, toAdminBooking } from '@/lib/api/bookings';
 import { fetchAdminRoomTypes } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { effectiveStatus, roomsSummary, statusLabelId, type AdminBooking } from '@/lib/data/admin';
@@ -13,10 +13,8 @@ import {
   bookingsInRange,
   calcOwnerStats,
   calcRecentTransactions,
-  calcRevenueByUnit,
   calcRevenueTrend,
   calcStatSparklines,
-  calcUnitRevenue,
   periodRangeLabel,
   totalCapacity,
   type CustomRange,
@@ -27,7 +25,7 @@ import {
 import { formatDate, formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { exportReportPdf, OWNER_REPORT_THEME } from '@/lib/pdf/report';
-import { DonutChart, RevenueLineChart, UnitBarChart } from './Charts';
+import { RevenueLineChart } from './Charts';
 import { OwnerLayout, Panel } from './OwnerLayout';
 import { HeroRevenueCard, OccupancyCard, StatCard } from './OwnerStats';
 import { RangeFilter } from '@/components/ui';
@@ -58,7 +56,7 @@ export function OwnerOverviewPage() {
         fetchAdminBookings(token),
         fetchAdminRoomTypes(token),
       ]);
-      setBookings(bookingList.map(toAdminBookingMock));
+      setBookings(bookingList.map(toAdminBooking));
       setRooms(roomTypes.filter((r) => r.isActive));
     } catch (e) {
       setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
@@ -101,8 +99,6 @@ export function OwnerOverviewPage() {
   const ownerStats = calcOwnerStats(bookingsData, rooms, range, ref);
   const sparklines = calcStatSparklines(bookings, rooms, range, ref);
   const revenueTrend = calcRevenueTrend(bookings);
-  const unitRevenue = calcUnitRevenue(bookings, range, ref);
-  const revenueByUnit = calcRevenueByUnit(bookings, range, ref);
   const recentBookings = calcRecentTransactions(bookings, 8);
   const periodLabel = periodRangeLabel(range, ref);
   const compareLabel = t(`owner.${COMPARE_LABEL_KEY[range]}`);
@@ -116,7 +112,6 @@ export function OwnerOverviewPage() {
   >;
 
   function handleExport() {
-    const unitTotal = revenueByUnit.reduce((sum, u) => sum + u.value, 0);
     const filteredBookings = [...bookingsInRange(bookingsData, range, ref)].sort((a, b) =>
       b.checkIn.localeCompare(a.checkIn),
     );
@@ -131,17 +126,7 @@ export function OwnerOverviewPage() {
           : `${s.up ? '▲' : '▼'} ${s.delta} ${t(`owner.${COMPARE_LABEL_KEY[range]}`)}`,
         deltaTone: s.isNew ? 'neutral' : s.up ? 'up' : 'down',
       })),
-      breakdowns: [
-        {
-          title: t('owner.revenueByUnit'),
-          rows: revenueByUnit.map((u) => ({
-            label: u.label,
-            pct: unitTotal > 0 ? Math.round((u.value / unitTotal) * 100) : 0,
-            valueText: formatIDR(u.revenue ?? 0),
-            colorHex: u.color,
-          })),
-        },
-      ],
+      breakdowns: [],
       table: {
         sectionTitle: t('owner.reportBookingSection'),
         headers: [
@@ -254,23 +239,6 @@ export function OwnerOverviewPage() {
           newLabel={newLabel}
           capacityNote={t('owner.occupancyOf', { units: totalCapacity(rooms) })}
         />
-      </div>
-
-      {/* Donut + bar — breakdown per tipe tenda & sumber booking sekarang ada di
-          halaman Penginapan (deep-dive khusus unit itu), donut Ringkasan cukup
-          kontribusi lintas 3 unit bisnis (Penginapan/Tiket/Cafe). */}
-      <div className="mt-4.5 grid gap-4.5 lg:grid-cols-2">
-        <Panel>
-          <div className="text-[15px] font-bold">{t('owner.revenuePerUnit')}</div>
-          <UnitBarChart bars={unitRevenue} />
-          <div className="mt-2 text-center text-[11.5px] text-[#a09a8c]">
-            {t('owner.notActiveYet')}
-          </div>
-        </Panel>
-        <Panel>
-          <div className="text-[15px] font-bold">{t('owner.revenueByUnit')}</div>
-          <DonutChart segments={revenueByUnit} centerLabel={t('owner.donutCenterTotal')} />
-        </Panel>
       </div>
 
       {/* Tabel dikasih baris sendiri selebar halaman — waktu dia diapit dua

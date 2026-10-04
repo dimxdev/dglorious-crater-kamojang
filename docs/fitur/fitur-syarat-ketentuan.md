@@ -1,7 +1,7 @@
 # Syarat & Ketentuan
 
 **Route:** `/syarat-ketentuan`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/app/syarat-ketentuan/page.tsx` → `frontend/components/public/TermsPage.tsx`
 
 ## Ringkasan

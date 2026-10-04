@@ -337,7 +337,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* FAQ — fase 1 belum punya booking online, jadi tiap reservasi lewat
+      {/* FAQ — situs tidak punya booking online, jadi tiap reservasi lewat
           percakapan WhatsApp. Pertanyaan yang sudah terjawab di sini adalah
           satu bolak-balik chat yang tidak perlu terjadi. Semua jawabannya
           diturunkan dari 12 poin S&K resmi klien (lihat lib/data/visit.ts). */}

@@ -19,7 +19,7 @@ import { getIcon, type IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 
-// Fase 1: belum ada booking online, jadi CTA mengarah ke WhatsApp reservasi
+// Situs tidak punya booking online, jadi CTA mengarah ke WhatsApp reservasi
 // (bukan form booking). Nomor & jam check-in/out dari `GET /settings`
 // (§8.3 PROJECT.md) — config global, bukan bagian dari room-types.
 

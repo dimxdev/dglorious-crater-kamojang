@@ -17,13 +17,11 @@ type NavItem = {
   icon: string;
   label: string;
   exact?: boolean;
-  soon?: boolean;
 };
 
 /**
  * Shell dashboard Super Admin: sidebar + header, pola sama seperti
- * `OwnerLayout`/`DashboardLayout` — dipakai bareng biar gampang nambah
- * halaman baru (mis. "Kelola Akun") tanpa bangun ulang shell dari nol.
+ * `OwnerLayout`/`DashboardLayout`.
  * Warna slate (bukan coklat Owner / hijau Admin) biar identitasnya beda.
  * Eksklusif SUPER_ADMIN — role lain gak pernah "rumahnya" di sini
  * (`roleHome.ts`).
@@ -38,7 +36,6 @@ export function SuperAdminLayout({ title, children }: { title: string; children:
 
   const navItems: NavItem[] = [
     { href: '/super-admin', icon: '▦', label: t('superAdmin.navHub'), exact: true },
-    { href: '/super-admin/akun', icon: '👤', label: t('superAdmin.navAkun'), soon: true },
   ];
 
   function handleLogout() {
@@ -67,20 +64,6 @@ export function SuperAdminLayout({ title, children }: { title: string; children:
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
           {navItems.map((item) => {
-            if (item.soon) {
-              return (
-                <div
-                  key={item.href}
-                  className="flex cursor-not-allowed items-center gap-3 rounded-[10px] border-l-[3px] border-transparent px-3.5 py-3 text-sm font-medium text-[#5b6779]"
-                >
-                  <span className="w-4.5 text-center">{item.icon}</span>
-                  <span className="flex-1">{item.label}</span>
-                  <span className="rounded-[5px] bg-sky-400/15 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">
-                    SOON
-                  </span>
-                </div>
-              );
-            }
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             return (
               <Link
@@ -187,17 +170,6 @@ export function SuperAdminLayout({ title, children }: { title: string; children:
         style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
       >
         {navItems.map((item) => {
-          if (item.soon) {
-            return (
-              <div
-                key={item.href}
-                className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[#c9c2b4]"
-              >
-                <span className="text-[19px] leading-none">{item.icon}</span>
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </div>
-            );
-          }
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link

@@ -6,26 +6,18 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 > **⚠️ Dokumentasi per fitur (`docs/fitur/`) — lihat PROJECT.md §14.** Selesai membangun/mengedit signifikan sebuah fitur → buat/update juga `docs/fitur/fitur-<nama>.md`-nya (snapshot kondisi fitur SEKARANG, bukan histori revisi — histori tetap di sini).
 
-> **⚠️ Penamaan versi.** "FASE" = urutan kerja di dalam satu versi (FASE 0, 1, 2, ... tetap dipakai
-> apa adanya). "VERSI" = pembungkus scope rilis di atasnya — **VERSI 1** (dikerjakan sekarang, FASE
-> 0–12 di bawah) vs **VERSI 2** (rencana selanjutnya, belum dikerjakan). Dua istilah beda level,
-> jangan disamakan.
+> **⚠️ Penamaan.** "FASE" = urutan kerja pengembangan (FASE 0 sampai FASE 12). Fase 0–11 sudah selesai; FASE 12 (deployment) menunggu.
 
-> **⚠️ Scope Versi 1.** Company profile/katalog publik + **pencatatan booking internal oleh admin**
+> **⚠️ Ruang lingkup.** Company profile/katalog publik + **pencatatan booking internal oleh admin**
 > (admin hanya input booking yang **sudah fix**; nego & pembayaran terjadi di WhatsApp/luar sistem).
-> **Booking online (Midtrans, guest checkout, email, tiket PDF/QR, auto-expire) + Mandarin
-> digeser ke VERSI 2** (lihat bagian paling bawah file ini) — belum ada kepastian proyek lanjut
-> ke Versi 2, jadi placeholder skema/kode untuk ini sudah **dihapus** dari DB/backend/frontend
-> (2026-09-13, lihat audit di bagian VERSI 2 paling bawah). Kalau lanjut, ditulis ulang dari nol.
+> Sistem tidak menyediakan booking online, payment gateway, email otomatis, tiket PDF/QR, sistem tiket
+> masuk, maupun sistem cafe. Semua sisa kode/skema yang pernah disiapkan untuk itu sudah dihapus
+> (lihat FASE 13).
 > Istilah unit di UI: **"Tenda" / "Villa"** (entity DB tetap `room_types`).
 
 ---
 
-# VERSI 1 — Sekarang (s.d. Deploy)
-
 ## Peta Halaman
-
-### FASE 1 (sekarang)
 
 #### Publik — katalog / brosur digital (TANPA booking online)
 - [x] `/` — **Homepage**: hero, daya tarik, preview tenda, info praktis, CTA
@@ -46,9 +38,9 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] `/admin/penginapan/kelola` — Kelola/CMS (drawer tab bahasa + galeri)
 
 #### Owner
-- [x] `/owner` — Ringkasan, `/owner/penginapan` — Performa per tipe tenda (real, lihat FASE 10), `/owner/laporan` — placeholder. **Update 2026-07-26:** dipecah jadi route asli per menu (`OwnerLayout.tsx` + `page.tsx` masing-masing), bukan tab-switch di satu komponen `OwnerDashboard.tsx` (dihapus) — biar bisa di-bookmark/share & konsisten sama pola Admin.
+- [x] `/owner` — Ringkasan, `/owner/penginapan` — Performa per tipe tenda (lihat FASE 10). **Update 2026-07-26:** dipecah jadi route asli per menu (`OwnerLayout.tsx` + `page.tsx` masing-masing), bukan tab-switch di satu komponen `OwnerDashboard.tsx` (dihapus) — biar bisa di-bookmark/share & konsisten sama pola Admin.
 
-> Semua halaman = **UI, data masih mock**. Penyambungan ke API + proteksi route (RBAC) di fase backend masing-masing.
+> Semua halaman sudah tersambung ke API backend dan diproteksi RBAC (frontend `useRequireRole` + backend `RolesGuard`).
 
 ---
 
@@ -93,10 +85,10 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] ⏳ **Migrasi diterapkan (2026-08-01)** — `npx prisma migrate dev --name sync_schema_with_frontend_decisions`, database di-reset & seed berhasil: 6 room type asli, 2 contoh booking (WhatsApp DP + Walk-in Checked-in), translations lengkap. Diverifikasi langsung lewat query, bukan cuma baca log migrasi.
 - [x] Tabel baru **`booking_items`** (booking ↔ beberapa tenda: room_type_id, room_unit_id nullable, qty, subtotal_snapshot)
 - [x] Tabel baru **`settings`** (key-value konfigurasi global)
-- [x] `BookingSource`: **`MANUAL`** (fase 1) + `ONLINE` (fase berikutnya) *(nilai `ONLINE` dihapus dari enum 2026-09-13 — gapernah kepake, lihat audit §10 PROJECT.md)*
-- [x] Tandai `WAITING_PAYMENT`/`PAID`/`EXPIRED`/`REJECTED` + `expired_at` sebagai **fase berikutnya** (tetap ada di enum/skema, belum dipakai). **Tidak ada auto-expire di fase 1.** *(nilai-nilai ini + kolom `expired_at` dihapus dari skema 2026-09-13, lihat audit §10 PROJECT.md)*
+- [x] `BookingSource`: `MANUAL`
+- [x] Tidak ada status/kolom untuk alur online (menunggu pembayaran, kedaluwarsa, dst). **Tidak ada auto-expire.** *(nilai-nilai ini + kolom `expired_at` dihapus dari skema 2026-09-13, lihat audit §10 PROJECT.md)*
 - [x] Migrasi baru (squash jadi satu `init` bersih — data lama cuma dummy) + update seeder (harga weekday/weekend dummy, source `MANUAL`, status `CONFIRMED`, seed `settings`: jam 14.00/12.00, no. WA, rekening BSI, teks S&K 12 poin, + 1 contoh booking multi-tenda)
-- [x] `zh.json` & translations 中文 dikosongkan dulu — struktur tetap multi-bahasa (translations sudah ID+EN sejak awal)
+- [x] Struktur multi-bahasa: translations ID + EN
 
 ---
 
@@ -126,14 +118,14 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] Font via `next/font`
 - [x] Komponen dasar: Button, Card, Input, Select, Badge, Modal, Table, DatePicker
 - [x] Layout: PublicLayout, DashboardLayout
-- [x] i18n: `id.json`, `en.json` + switcher (fallback ID). `zh.json` disiapkan (fase berikutnya)
+- [x] i18n: `id.json`, `en.json` + switcher (fallback ID)
 
 ---
 
 ## FASE 4 — Modul Settings (Global)
 
 - [x] Tabel `settings` + seeder nilai awal (§8.3 PROJECT.md) — selesai lewat FASE 1 (tabel + seed jam/WA/rekening/S&K) & FASE 6 (`GET /settings` read-only publik, `backend/src/settings/`)
-- [x] Konsumsi setting: no. WA di CTA publik & teks S&K di `/syarat-ketentuan` sudah pakai `GET /settings` — kontennya untuk sekarang cuma bisa diubah lewat edit database, bukan lewat UI admin (lihat Versi 2)
+- [x] Konsumsi setting: no. WA di CTA publik & teks S&K di `/syarat-ketentuan` sudah pakai `GET /settings` — kontennya diubah lewat edit database (tidak ada UI admin untuk settings)
 
 ---
 
@@ -141,7 +133,7 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ### Backend ✅ (2026-08-01)
 - [x] CRUD `room_types` (+ translations satu transaksi) — `price_weekday`, `price_weekend` — modul `backend/src/penginapan/room-types/` (`RoomTypesService` + `RoomTypesAdminController` di `admin/room-types`, guard `SUPER_ADMIN`/`OWNER`/`ADMIN_PENGINAPAN`). Slug immutable setelah dibuat (`UpdateRoomTypeDto` meng-omit `slug`, bukan cuma optional). ⏳ **Update 2026-08-01 (sama hari):** dipindah dari `backend/src/room-types/` (flat) ke `backend/src/penginapan/room-types/` — keputusan struktur folder backend per **unit bisnis** (Penginapan/Portal/Cafe), bukan per role; lihat PROJECT.md §13
-- [x] CRUD `room_units` — `RoomUnitsAdminController` (`admin/room-units/:id`), tapi **bukan sumber angka ketersediaan** (lihat catatan di bawah) — murni bookkeeping fisik opsional (mis. tandai unit tertentu maintenance), karena form CMS admin cuma edit satu angka `totalUnits`, bukan daftar kode unit
+- [x] CRUD `room_units` — `RoomUnitsAdminController` (`admin/room-units/:id`), tapi **bukan sumber angka ketersediaan** (lihat catatan di bawah) — murni bookkeeping fisik opsional (mis. tandai unit tertentu maintenance), karena form CMS admin cuma edit satu angka `totalUnits`, bukan daftar kode unit *(→ dihapus di FASE 13: tidak pernah dipakai UI maupun logika ketersediaan)*
 - [x] Upload gambar + galeri (`is_cover`, `sort_order`) — `RoomImagesAdminController`, disk lokal (`multer`, `backend/uploads/room-types/`, di-serve statis via `app.useStaticAssets` di `main.ts`, cocok skema 1-VPS §12). Upload pertama otomatis jadi cover; hapus cover → cover pindah otomatis ke gambar berikutnya
 - [x] Endpoint publik: list & detail (fallback bahasa ID) — `GET /room-types`, `GET /room-types/:slug` (`?lang=ID|EN`), cuma munculkan `isActive && !deletedAt`
 - [x] **Fungsi cek ketersediaan** — `RoomTypesService.checkAvailability()`, reusable & sudah di-`export` dari module buat dipakai `BookingsModule` (FASE 7). **Keputusan desain:** dihitung dari `totalUnits - Σqty booking_items yang tanggalnya overlap & status ≠ HANGUS` — BUKAN dari hitung baris `room_units`, karena `roomUnitId` di `booking_items` baru diisi saat check-in (§7 PROJECT.md), jadi saat booking pertama dibuat belum ada unit spesifik untuk dicek; levelnya per-tipe (qty), bukan per-unit-fisik
@@ -183,12 +175,12 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - `next.config.ts` — ditambah `images.remotePatterns` (localhost:3001/uploads + picsum.photos) — wajib, tanpa ini `next/image` error total begitu ada `src` ke host eksternal
 - `RoomCard.tsx` — diadaptasi terima `coverImageUrl: string | null` langsung (bukan `HomeImageKey` + `getImage()` lookup), fallback `ImagePlaceholder`
 - `lib/data/settings.ts` (mock) — **dihapus** setelah dikonfirmasi zero-import (3 pemakainya sudah pindah ke API)
-- `lib/data/rooms.ts` — **sengaja TIDAK dihapus**, masih dipakai 3 komponen admin booking form (`WalkinBookingPage`, `BookingWhatsappPage`, `BookingsPage`) buat dropdown pilih tenda — itu scope FASE 7 yang belum dikerjakan
+- `lib/data/rooms.ts` — **sengaja TIDAK dihapus**, masih dipakai 3 komponen admin booking form (`WalkinBookingPage`, `BookingWhatsappPage`, `BookingsPage`) buat dropdown pilih tenda — itu scope FASE 7 yang belum dikerjakan *(→ akhirnya dihapus di FASE 13, form booking pindah ke data API)*
 - Diverifikasi end-to-end di browser sungguhan: home/katalog/detail render data asli + gambar (lewat `remotePatterns`), ganti bahasa ID↔EN memicu refetch & konten berubah (termasuk S&K), slug tidak ada → state "tidak ditemukan" tanpa crash, CTA WhatsApp pakai nomor asli
 
 ---
 
-## FASE 7 — Menu Booking WhatsApp & Tamu Langsung (Pencatatan Internal) — *fitur inti fase 1*
+## FASE 7 — Menu Booking WhatsApp & Tamu Langsung (Pencatatan Internal) — *fitur inti*
 
 > **Update 2026-07-26:** dipecah jadi 2 menu (§6.1 & §8.1 PROJECT.md) — **Booking WhatsApp** (booking sudah dealing di WA, tamu belum tiba, mulai status `DP`) dan **Tamu Langsung** (tamu sudah di lokasi, bayar di tempat, langsung `CHECKED_IN`, skip `DP`/`LUNAS`). Field form sama persis (ikut form reservasi WA resmi klien); yang beda cuma status awal saat disimpan. **Update lanjutan (sama hari):** status booking & status pembayaran digabung jadi satu progres `DP → LUNAS → CHECKED_IN → COMPLETED` (+ cabang `HANGUS`). **Update lanjutan lagi (sama hari):** `CANCELLED` dihapus (digabung ke `HANGUS` — batal manual & tidak pernah datang sama-sama berarti uang hangus), ditambah `NO_SHOW` ("Tidak Datang") khusus untuk booking yang sudah `LUNAS` tapi tidak pernah check-in sampai tanggal checkout — lihat §6.2 PROJECT.md.
 >
@@ -271,14 +263,13 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 - [x] Filter rentang tanggal (hari ini / minggu ini / bulan ini / **custom**) — **beneran nge-filter** sekarang, bukan cuma UI. **Update 2026-07-26:** "Custom" sekarang beneran bisa pilih tanggal dari–sampai sendiri (`RangeFilter.tsx`, dipakai bareng di Ringkasan & Penginapan) — kalau belum diisi, sementara jatuh ke default "Bulan Ini"
 - [x] 4 stat card + indikator naik/turun **vs periode sebelumnya yang sesuai** (kemarin/minggu lalu/bulan lalu, bukan selalu "vs bulan lalu")
 - [x] Grafik garis: tren pendapatan 6 bulan (real, dari `adminBookings`) — skala Y sekarang dinamis mengikuti data asli (bukan hardcode 140–340 yang cuma cocok buat angka dummy lama)
-- [x] Grafik batang: pendapatan per unit bisnis (Penginapan real, Tiket & Cafe → "Belum aktif") — skala juga dinamis
 - [x] Donut: proporsi booking per tipe tenda — 6 unit asli, bukan nama fiktif lama
-- [x] Donut: sumber booking → **WhatsApp vs Walk-in** (bukan "Online vs Walk-in" — booking online belum ada di Fase 1)
+- [x] Donut: sumber booking → **WhatsApp vs Walk-in** (bukan "Online vs Walk-in" — tidak ada booking online)
 - [x] Tabel booking terbaru — sekarang cuma booking penginapan asli (dulu campur transaksi "Tiket Masuk" fiktif padahal sistemnya belum ada), kolom "Metode" diganti "Status" (DP/Lunas/Check-in/dst, sesuai model status yang sudah ada)
 - [x] ⏳ **Export laporan PDF (update 2026-07-26):** tombol "Export Laporan" di Ringkasan sekarang beneran jalan — generate PDF terprogram via `jsPDF` + `jspdf-autotable` (`lib/pdf/ownerReport.ts`), **bukan screenshot halaman** (html2canvas dsb.) biar teksnya tajam & gampang dibaca, bukan raster buram. Isinya sesuai filter rentang yang lagi aktif (`range`/`customRange` saat tombol diklik): header brand (dark+gold, sama kayak tema Owner), 4 stat card, kontribusi 3 unit bisnis, tabel detail booking (bukan cuma 8 terbaru — semua booking dalam rentang, auto-pagination lewat `autoTable` kalau panjang), footer nomor halaman di tiap halaman. Label tombol diubah jadi "Export Laporan (PDF)" (drop "/ Excel" — belum diimplementasi, jangan janji fitur yang belum ada).
   - Export Excel masih belum ada — nanti nyusul kalau dibutuhkan.
 - [x] ⏳ **Export PDF juga di `/owner/penginapan` (update 2026-07-26):** tombol "Export Laporan" baru ditambahin di halaman ini (sebelumnya cuma ada di Ringkasan), pola visual disamain persis (header dark+gold, stat card, dst) via `lib/pdf/ownerReport.ts` yang digeneralisasi supaya reusable dua halaman — parameter `units`/`bookings` yang tadinya spesifik-Ringkasan diganti jadi `breakdowns` (list section legenda donut, bisa lebih dari satu — di sini "Booking per Tipe" + "WhatsApp vs Walk-in") & `table` generik (di sini "Performa per Tipe Tenda", bukan daftar booking). Isinya juga ngikutin filter rentang aktif di halaman ini.
-- [x] Menu sidebar "Tiket Masuk" & "Cafe" badge **Coming Soon** — sudah ada badge SOON, disabled (render `<div>`, bukan `<Link>`, jadi memang gak bisa diklik)
+- [x] Menu sidebar "Tiket Masuk" & "Cafe" badge **Coming Soon** — sudah ada badge SOON, disabled (render `<div>`, bukan `<Link>`, jadi memang gak bisa diklik) *(→ dihapus di FASE 13)*
 - [x] ⏳ **Route asli per menu (update 2026-07-26):** `OwnerDashboard.tsx` (tab-switch di 1 komponen) **dihapus**, diganti `OwnerLayout.tsx` (shell sidebar+header, dipakai bareng) + `OwnerOverviewPage.tsx`/`OwnerPenginapanPage.tsx`/`OwnerLaporanPage.tsx` masing-masing punya route sendiri (`/owner`, `/owner/penginapan`, `/owner/laporan`) — konsisten sama pola Admin
 - [x] **`/owner/penginapan` diisi konten real** (`calcRoomTypePerformance` di `lib/data/owner.ts`): tabel performa per 6 tipe tenda (booking, pendapatan, okupansi rata-rata) + link "Kelola detail di menu Admin →". ⚠️ Pendapatan booking yang mencakup >1 tipe tenda **diaproksimasi proporsional per qty** (`AdminBooking.total` cuma satu angka gabungan, belum ada subtotal per tipe yang tersimpan) — sudah dikasih catatan di UI, bukan pemisahan harga presisi
 - [x] **Bar chart "Pendapatan per Tipe Tenda"** (update 2026-07-26) — dipasang cuma di halaman Penginapan, sengaja **tidak** dipasang di semua halaman (lihat diskusi: Ringkasan udah ada chart, Laporan gak butuh chart karena fungsinya export bukan analitik, halaman operasional Admin tetap tabel/form polos)
@@ -319,57 +310,14 @@ Baca `PROJECT.md` dulu sebelum mulai. Centang `[x]` setiap task yang selesai.
 
 ---
 
-# VERSI 2 — Rencana Selanjutnya (Belum Dikerjakan)
+## FASE 13 — Finalisasi & Pembersihan (2026-09-13 s.d. 2026-10-04)
 
-> **Audit 2026-09-13:** belum ada kepastian dari pihak klien apakah proyek lanjut ke Versi 2.
-> Supaya tidak ada kode/skema nganggur yang membingungkan, semua placeholder yang "sudah
-> disiapkan tapi belum dipakai" berikut ini **sudah dihapus**: enum `RoleName.ADMIN_PORTAL` /
-> `ADMIN_CAFFE`, enum `BookingStatus.PENDING/WAITING_PAYMENT/PAID/EXPIRED/REJECTED`,
-> `Booking.expiredAt`, `Payment.midtransOrderId`, model `Ticket` (`qrUrl`/`pdfUrl`), enum
-> `LanguageCode.ZH` + file `frontend/lib/i18n/locales/zh.json`. Daftar di bawah ini tetap
-> jadi catatan scope kalau Versi 2 jadi dikerjakan, tapi ditulis ulang dari nol — jangan
-> dikira strukturnya masih ada di database.
+Tahap akhir sebelum penyusunan laporan: memastikan yang ada di repo hanya yang benar-benar jadi dan dipakai.
 
-Rencana implementasi Versi 2 (skema akan ditulis ulang dari nol saat dikerjakan):
+- [x] **Pembersihan skema database** (migrasi `remove_unused_schema_placeholders`, `prune_unused_enum_values`, `remove_unused_room_unit_and_columns`): dihapus model `tickets` dan `room_units`; kolom `bookings.expired_at`, `bookings.guest_email`, `payments.midtrans_order_id`, `payments.proof_url`, `roles.permissions`, `settings.updated_by`, `room_type_translations.facilities_text`, `booking_items.room_unit_id`; serta nilai enum yang tidak pernah dipakai (`RoleName.ADMIN_PORTAL/ADMIN_CAFFE`, `BookingStatus.PENDING/WAITING_PAYMENT/PAID/EXPIRED/REJECTED`, `BookingSource.ONLINE`, `PaymentMethod` selain CASH/QRIS/BANK_TRANSFER, `PaymentStatus` selain PENDING/PAID, `LanguageCode.ZH`).
+- [x] **Pembersihan kode & aset**: menu/kartu placeholder Tiket Masuk & Cafe (Owner dan Super Admin), menu "Kelola Akun", panel "Pendapatan/Kontribusi per Unit Bisnis", endpoint `room-units`, file `zh.json`, komponen/utility/CSS/ekspor yang tidak terpakai, kunci terjemahan yang tidak terpakai, variabel lingkungan Midtrans/SMTP, setelan `bank_account`.
+- [x] **Form booking memakai data API**: dropdown tenda, tarif, dan label tipe unit kini dari database (`GET /admin/room-types`; nama tipe ikut di item booking), bukan data statis `rooms.ts` (dihapus). Mock booking `adminBookings` juga dihapus.
+- [x] **Aset visual**: 9 gambar beranda/tentang dan 12 foto 6 tipe unit dibuat dengan Google Gemini (ilustrasi AI, bukan foto asli unit); foto unit di-seed lewat `backend/prisma/seed-assets/`.
+- [x] **Verifikasi**: `tsc --noEmit` backend & frontend, `next build`, unit test backend (7 lulus), uji manual semua halaman publik/admin/owner/super-admin.
 
-**Halaman:**
-- `/admin/settings` — konfigurasi global (jam, WA, rekening, S&K) *(digeser dari Versi 1, dianggap belum cukup penting utk MVP KP)*
-- `/booking` (form + modal pembayaran), `/cek-booking`, `/booking/[kode]` adaptif — UI lama sempat dibangun lalu **dihapus** (bukan diparkir, update 2026-07-26): isinya simulasi Midtrans/QRIS/VA + auto-expire, kontradiktif dengan scope Versi 1 (manual only, tanpa payment gateway). Saat benar-benar dikerjakan, tulis ulang dari awal mengikuti skema final, jangan pakai ulang sisa UI lama.
-
-**Modul Settings (backend):**
-- Backend CRUD settings (hanya `SUPER_ADMIN`/`OWNER`) — sekarang baru read-only (`GET /settings`)
-- Helper baca setting yang di-cache (dipakai banyak modul)
-- Keputusan jam check-in/out per-tipe-unit vs seragam semua unit (`RoomSource.checkInTime/checkOutTime` masih per-room, belum dialihkan ke `settings` global)
-
-**Booking WhatsApp/Walk-in — penyempurnaan:**
-- Validasi kapasitas & anak otomatis di backend (§8.2 PROJECT.md) — Versi 1 sengaja cuma catatan UI (`childrenRuleHint`), belum ada validasi blocking
-- Validasi "reschedule maks H-7 sebelum check-in" (S&K) — endpoint edit sendiri sudah ada (lihat FASE 8, audit 2026-08-21), tapi belum ada aturan H-7 ini secara spesifik
-
-**Dashboard Owner:**
-- Gateway navigasi Owner ↔ Admin (link "Buka Dashboard Admin →" / "← Kembali ke Owner")
-- Menu "Kelola Akun" (CRUD akun admin + reset password/nonaktifkan, taruh di dashboard Owner)
-
-**QA lanjutan (dari FASE 11):**
-- Uji fallback bahasa (kosongkan EN → tampil ID)
-- Uji responsif mobile & desktop (terutama halaman login yang baru di-redesign)
-- Loading state & error handling di semua form
-- SEO dasar publik: meta tag, Open Graph, sitemap
-- Uji validasi kapasitas/anak & uji settings (ubah jam/WA/rekening/S&K → berubah di UI) — nunggu 2 fitur di atas selesai dibangun dulu
-
-**Digeser dari fase 1 (perubahan scope):**
-- **Booking online mandiri oleh tamu** — guest checkout (`/booking`), **Midtrans Snap**, webhook + **verifikasi signature**
-- **Kode booking yang diakses tamu** + `/cek-booking` + `/booking/[kode]` adaptif *(UI lama sudah dihapus 2026-07-26 karena kontradiktif dengan scope Fase 1 — tulis ulang dari nol saat fase ini benar-benar dikerjakan)*
-- **Email otomatis** (kode, tiket, reminder) — Nodemailer/SMTP + queue
-- **Auto-expire 1×24 jam** (cron job) → status `EXPIRED` (enum dihapus 2026-09-13, tulis ulang saat dikerjakan), lepas kunci tanggal — *dipakai saat booking online (admin fase 1 hanya input booking yang sudah fix, jadi tak ada booking menggantung)*
-- **DP + upload bukti transfer** (fase 1 cukup penanda Belum Lunas/Lunas)
-- **Generate tiket PDF + QR** untuk tamu (model `Ticket` dihapus 2026-09-13, tulis ulang saat dikerjakan)
-- Status alur online: `WAITING_PAYMENT`, `PAID` (enum dihapus 2026-09-13, tulis ulang saat dikerjakan)
-- **Bahasa Mandarin (中文)** — `zh.json` & enum `LanguageCode.ZH` dihapus 2026-09-13 (belum ada data terjemahan), tulis ulang saat dikerjakan
-
-**Modul & hal lain (fase selanjutnya):**
-- Sistem tiket masuk / portal (`ADMIN_PORTAL`)
-- Sistem transaksi & stok cafe (`ADMIN_CAFFE`)
-- Scanner QR untuk check-in (fase 1 pakai input kode manual)
-- Midtrans **production** (butuh dokumen usaha klien)
-- WhatsApp API otomatis (fase 1 pakai link `wa.me` manual)
-- Akun/membership untuk tamu
+> FASE 12 (Deployment) belum dikerjakan — menunggu serah terima VPS/domain.

@@ -8,7 +8,6 @@ import {
   LoaderCircle,
   Lock,
   Mail,
-  Mountain,
   TriangleAlert,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -22,30 +21,6 @@ import { roleHomePath } from '@/lib/auth/roleHome';
 import { cn } from '@/lib/cn';
 import { getImage } from '@/lib/data/images';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
-
-/** Wordmark dipakai di panel foto (varian terang) & header mobile (varian gelap). */
-function Wordmark({ tone }: { tone: 'light' | 'dark' }) {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span
-        className={cn(
-          'flex h-9 w-9 items-center justify-center rounded-xl',
-          tone === 'light' ? 'bg-ash-50/12 text-sulfur-300 backdrop-blur-[2px]' : 'bg-moss-900 text-sulfur-300',
-        )}
-      >
-        <Mountain size={18} strokeWidth={1.6} aria-hidden />
-      </span>
-      <span
-        className={cn(
-          'font-serif text-[17px] leading-tight font-bold',
-          tone === 'light' ? 'text-ash-50' : 'text-moss-900',
-        )}
-      >
-        D&apos;Glorious <span className="text-sulfur-500">Crater</span>
-      </span>
-    </span>
-  );
-}
 
 /** Field terkontrol dengan ikon depan + slot aksi (mis. tombol lihat sandi). */
 function Field({

@@ -39,7 +39,7 @@ import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 import { FacilityListEditor, type FacilityRow } from './FacilityListEditor';
 
-// Fase 1 cuma ID (wajib) + EN (opsional) — 中文 belum ada tempat penyimpanannya
+// Bahasa konten: ID (wajib) + EN (opsional).
 // di backend (`RoomTypeTranslationsDto` cuma `id`/`en`), jangan bikin tab palsu.
 const LANGS = ['ID', 'EN'] as const;
 type Lang = (typeof LANGS)[number];
@@ -271,7 +271,9 @@ export function KelolaPage() {
       if (drawer.form.id == null) {
         detail = await createRoomType(token, input);
       } else {
-        const { slug: _slug, ...updateInput } = input; // slug immutable, backend rejects the key entirely
+        // slug immutable, backend menolak key ini sama sekali
+        const updateInput: Partial<typeof input> = { ...input };
+        delete updateInput.slug;
         detail = await updateRoomType(token, drawer.form.id, updateInput);
       }
       setDrawer({

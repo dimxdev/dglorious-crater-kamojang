@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui';
 import { statusLabelId, type BookingChannel, type BookingStatus } from '@/lib/data/admin';
 
-// Tone status booking Fase 1: DP kuning, Lunas biru, Check-in hijau, dst.
+// Tone status booking: DP kuning, Lunas biru, Check-in hijau, dst.
 const adminTone: Record<BookingStatus, React.ComponentProps<typeof Badge>['tone']> = {
   DP: 'warning',
   LUNAS: 'info',

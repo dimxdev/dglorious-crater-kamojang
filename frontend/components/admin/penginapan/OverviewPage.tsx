@@ -20,7 +20,7 @@ import { Card, CardContent, TBody, Td, Th, THead, Table, Tr } from '@/components
 import { ApiError } from '@/lib/api/client';
 import {
   fetchAdminBookings,
-  toAdminBookingMock,
+  toAdminBooking,
   updateBookingStatus,
   type AdminBookingDetail,
   type BookingStatusUpdate,
@@ -100,7 +100,7 @@ export function OverviewPage() {
         fetchAdminBookings(token),
         fetchAdminRoomTypes(token),
       ]);
-      setBookings(bookingList.map(toAdminBookingMock));
+      setBookings(bookingList.map(toAdminBooking));
       setRawBookings(bookingList);
       setActiveRoomTypes(roomTypes.filter((r) => r.isActive));
     } catch (e) {

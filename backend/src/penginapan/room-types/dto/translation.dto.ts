@@ -35,10 +35,6 @@ export class TranslationDto {
 
   @IsOptional()
   @IsString()
-  facilitiesText?: string;
-
-  @IsOptional()
-  @IsString()
   rules?: string;
 }
 

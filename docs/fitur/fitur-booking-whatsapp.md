@@ -1,7 +1,7 @@
 # Booking WhatsApp
 
 **Route:** `/admin/penginapan/booking-whatsapp`
-**Status:** ✅ Selesai (Versi 1) — fitur inti Versi 1
+**Status:** ✅ Selesai — fitur inti
 **File utama:** `frontend/components/admin/penginapan/BookingWhatsappPage.tsx` (wrapper atas `BookingFormPage`, `channel="WHATSAPP"`)
 
 ## Ringkasan
@@ -24,7 +24,7 @@ Form ini dan menu Walk-in berbagi satu komponen inti `BookingFormPage` — field
 
 Form tidak menyimpan Foto KTP sama sekali. Admin sudah menerima foto KTP secara manual lewat chat WhatsApp saat nego (S&K poin 10 tetap berlaku, prosesnya di luar sistem) — menyimpannya lagi di sistem hanya menambah kerumitan tanpa kebutuhan bisnis nyata.
 
-Karena `RoomGroupEditor` memakai slug tenda di dropdown sementara backend butuh `roomTypeId` numerik, form sekali di awal fetch `GET /admin/room-types` untuk membangun pemetaan slug→id.
+Dropdown tenda dan harga tidak ditulis statis di frontend: form sekali di awal fetch `GET /admin/room-types` (hanya tipe aktif) untuk mengisi pilihan tenda, tarif weekday/weekend, dan tarif tambah orang. Dengan begitu perubahan tarif di menu Kelola langsung berlaku di form, dan pemetaan slug→`roomTypeId` (yang dibutuhkan backend) ikut dibangun dari daftar yang sama.
 
 ## Terhubung ke
 - `POST /admin/bookings` (`createBooking` — `bookingChannel: 'WHATSAPP'`, `initialStatus`, `paidAmount` bila DP)

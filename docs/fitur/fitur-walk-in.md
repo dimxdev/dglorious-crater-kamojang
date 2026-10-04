@@ -1,7 +1,7 @@
 # Tamu Langsung (Walk-in)
 
 **Route:** `/admin/penginapan/walk-in`
-**Status:** ✅ Selesai (Versi 1) — fitur inti Versi 1
+**Status:** ✅ Selesai — fitur inti
 **File utama:** `frontend/components/admin/penginapan/WalkinBookingPage.tsx` (wrapper atas `BookingFormPage`, `channel="WALK_IN"`)
 
 ## Ringkasan

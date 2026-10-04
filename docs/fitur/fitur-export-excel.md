@@ -1,6 +1,6 @@
 # Export Excel (Data Booking)
 
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/lib/excel/bookingReport.ts` (`exportBookingExcel`)
 
 ## Ringkasan

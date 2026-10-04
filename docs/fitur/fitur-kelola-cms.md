@@ -1,7 +1,7 @@
 # Kelola Penginapan (CMS)
 
 **Route:** `/admin/penginapan/kelola`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/components/admin/penginapan/KelolaPage.tsx` (+ `CmsDrawer`, `FacilityListEditor.tsx`), `backend/src/penginapan/room-types/`
 
 ## Ringkasan
@@ -15,18 +15,17 @@ Galeri foto sedikit khusus: upload butuh `roomTypeId` yang sudah ada, jadi saat 
 ## Sub-fitur
 - **CRUD Tipe Tenda** — `GET/POST/PATCH/DELETE /admin/room-types`. Delete = soft delete.
 - **Slug immutable** — dikunci sejak dibuat. `UpdateRoomTypeDto` meng-omit field `slug` sepenuhnya (bukan sekadar optional), jadi backend menolaknya, dan frontend juga membuang slug dari payload update serta menampilkannya disabled saat Edit.
-- **Tab Bahasa ID/EN** — nama, kategori, tagline, deskripsi, info kasur, info kamar mandi, aturan. ID wajib; EN opsional dengan aturan "tidak ditimpa jika kosong". Tidak ada tab 中文 karena backend hanya menyimpan `id`/`en`.
+- **Tab Bahasa ID/EN** — nama, kategori, tagline, deskripsi, info kasur, info kamar mandi, aturan. ID wajib; EN opsional dengan aturan "tidak ditimpa jika kosong".
 - **Harga & Tarif** — `priceWeekday`/`priceWeekend`, kapasitas, jumlah unit, dan 3 opsi tarif tambah orang: dengan ekstra bed, tanpa ekstra bed, dan flat per-orang (flat dipakai unit non-berkasur seperti Glorious Campervan).
 - **Fasilitas** (`FacilityListEditor`) — array `{icon, label: {id, en}}`, label per-bahasa inline di tiap item.
 - **Upload Galeri** — `POST /admin/room-types/:id/images` (multipart, disimpan di disk lokal). Upload pertama otomatis jadi cover. Set cover lewat `PATCH /admin/room-images/:id/cover` (transaksional: unset cover lain dulu). Hapus foto cover → cover otomatis pindah ke foto berikutnya berdasarkan `sortOrder`.
-- **Room Units** (opsional) — `POST/PATCH/DELETE /admin/room-units`, bookkeeping fisik murni (mis. tandai unit maintenance).
 
 ## Keputusan Desain Penting
-Angka ketersediaan **tidak** dihitung dari jumlah baris `room_units`, melainkan dari `totalUnits` dikurangi qty booking yang overlap (lihat `fitur-cek-ketersediaan.md`). Karena itu Room Units di sini bersifat bookkeeping opsional, bukan sumber kebenaran kapasitas — form CMS pun hanya meminta satu angka `totalUnits`, bukan daftar kode unit.
+Kapasitas satu tipe disimpan sebagai satu angka `totalUnits`, bukan daftar unit fisik satu-satu. Angka ketersediaan dihitung dari `totalUnits` dikurangi qty booking yang overlap (lihat `fitur-cek-ketersediaan.md`).
 
 Logika "kalau cover dihapus, promosikan foto berikutnya" diterapkan di dua tempat (frontend untuk umpan balik UI instan, backend untuk kebenaran data yang tersimpan). Ini pengulangan yang disengaja, bukan kelalaian — masing-masing melayani kebutuhan berbeda (respons cepat vs. sumber kebenaran).
 
 ## Terhubung ke
-- `backend/src/penginapan/room-types/` (`RoomTypesAdminController`, `RoomImagesAdminController`, `RoomUnitsAdminController`, `RoomTypesService`)
+- `backend/src/penginapan/room-types/` (`RoomTypesAdminController`, `RoomImagesAdminController`, `RoomTypesService`)
 - Katalog publik & Detail Unit — konsumen data yang sama
-- Form Booking WhatsApp/Walk-in — dropdown pilih tenda
+- Form Booking WhatsApp/Walk-in & Edit Booking — dropdown pilih tenda dan harga diambil dari `GET /admin/room-types`, jadi ikut berubah saat tarif diedit di sini

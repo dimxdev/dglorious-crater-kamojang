@@ -127,6 +127,7 @@ function IconPickerButton({
                   setOpen(false);
                 }}
                 title={name}
+                role="option"
                 aria-selected={selected}
                 className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',

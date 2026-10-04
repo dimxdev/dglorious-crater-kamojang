@@ -32,7 +32,6 @@ import {
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
 import {
-  roomsSummary,
   roomsSummaryShort,
   roomsSummaryTruncated,
   statusLabelId,

@@ -15,7 +15,7 @@ import type { Locale } from '@/lib/i18n/config';
 // Nomor poin sumbernya ditulis di komentar tiap entri supaya gampang diaudit
 // ulang kalau S&K-nya berubah.
 //
-// Alasan halaman ini ada: fase 1 tidak punya booking online, jadi SETIAP
+// Alasan halaman ini ada: situs tidak punya booking online, jadi SETIAP
 // reservasi lewat percakapan WhatsApp dengan admin. Tiap pertanyaan yang
 // sudah terjawab di situs adalah satu bolak-balik chat yang tidak perlu
 // terjadi — dan satu alasan lebih sedikit bagi calon tamu untuk menunda.

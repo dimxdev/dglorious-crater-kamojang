@@ -7,7 +7,6 @@ import { Prisma } from '../../generated/prisma/client';
 import { BookingStatus, LanguageCode } from '../../generated/prisma/enums';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
-import { CreateRoomUnitDto, UpdateRoomUnitDto } from './dto/room-unit.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { calcStayPrice } from './pricing.util';
 
@@ -152,7 +151,6 @@ export class RoomTypesService {
       include: {
         translations: true,
         images: { orderBy: { sortOrder: 'asc' } },
-        units: { orderBy: { unitCode: 'asc' } },
       },
     });
     if (!roomType) {
@@ -181,55 +179,6 @@ export class RoomTypesService {
       throw new NotFoundException(`Tenda/villa "${slug}" tidak ditemukan`);
     }
     return this.toPublicDetail(roomType, lang);
-  }
-
-  // ── Room units (bookkeeping fisik — lihat catatan di checkAvailability) ──
-
-  async addUnit(roomTypeId: number, dto: CreateRoomUnitDto) {
-    await this.findOneAdminOrThrow(roomTypeId);
-    try {
-      return await this.prisma.roomUnit.create({
-        data: { roomTypeId, unitCode: dto.unitCode, status: dto.status },
-      });
-    } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          `Kode unit "${dto.unitCode}" sudah dipakai di tipe ini`,
-        );
-      }
-      throw e;
-    }
-  }
-
-  async updateUnit(unitId: number, dto: UpdateRoomUnitDto) {
-    const unit = await this.prisma.roomUnit.findUnique({
-      where: { id: unitId },
-    });
-    if (!unit) throw new NotFoundException('Unit tidak ditemukan');
-    return this.prisma.roomUnit.update({ where: { id: unitId }, data: dto });
-  }
-
-  async removeUnit(unitId: number): Promise<void> {
-    const unit = await this.prisma.roomUnit.findUnique({
-      where: { id: unitId },
-    });
-    if (!unit) throw new NotFoundException('Unit tidak ditemukan');
-    try {
-      await this.prisma.roomUnit.delete({ where: { id: unitId } });
-    } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2003'
-      ) {
-        throw new ConflictException(
-          'Unit ini masih dipakai di data booking, tidak bisa dihapus',
-        );
-      }
-      throw e;
-    }
   }
 
   // ── Images ──
@@ -290,15 +239,10 @@ export class RoomTypesService {
   // ── Ketersediaan (§4.8 PROJECT.md — satu fungsi reusable, dipakai FASE 7) ──
 
   /**
-   * `totalUnits` (bukan hitung baris `room_units`) dipakai sebagai kapasitas
-   * acuan — form CMS admin cuma edit satu angka jumlah unit, bukan daftar
-   * kode unit satu-satu, jadi `room_units` di fase 1 murni bookkeeping
-   * opsional (mis. tandai unit tertentu maintenance), tidak menggerakkan
-   * angka ketersediaan.
-   *
-   * `roomUnitId` di `booking_items` baru diisi saat check-in (§7 PROJECT.md)
-   * — jadi pada saat booking DIBUAT belum ada unit spesifik untuk dicek,
-   * makanya perbandingannya di level qty per tipe, bukan per unit fisik.
+   * `totalUnits` dipakai sebagai kapasitas acuan — form CMS admin cuma edit
+   * satu angka jumlah unit, bukan daftar kode unit satu-satu. Booking tidak
+   * menunjuk unit fisik tertentu, jadi perbandingannya di level qty per
+   * tipe.
    */
   async checkAvailability(
     roomTypeId: number,
@@ -391,6 +335,12 @@ export class RoomTypesService {
       priceWeekend: Number(rt.priceWeekend),
       capacity: rt.capacity,
       totalUnits: rt.totalUnits,
+      extraBedPrice:
+        rt.extraBedPrice !== null ? Number(rt.extraBedPrice) : null,
+      extraNoBedPrice:
+        rt.extraNoBedPrice !== null ? Number(rt.extraNoBedPrice) : null,
+      extraFlatPrice:
+        rt.extraFlatPrice !== null ? Number(rt.extraFlatPrice) : null,
       isActive: rt.isActive,
       coverImageUrl: cover?.imageUrl ?? null,
     };

@@ -14,15 +14,16 @@ import {
 import {
   checkRoomTypeAvailability,
   fetchAdminRoomTypes,
+  toBookableRoom,
 } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
-import { localizeRooms } from '@/lib/data/rooms';
 import { formatDate, formatIDR } from '@/lib/format';
 import {
   calcGroupSubtotal,
   calcGroupsTotal,
   calcNightsBreakdown,
+  type BookableRoom,
 } from '@/lib/pricing';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import {
@@ -64,14 +65,16 @@ export type BookingFormChannel = 'WHATSAPP' | 'WALK_IN';
  * perbaikan (validasi, ringkasan harga, dll) otomatis kena dua-duanya.
  */
 export function BookingFormPage({ channel }: { channel: BookingFormChannel }) {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const { token } = useAuth();
   const router = useRouter();
-  const rooms = localizeRooms(locale);
+  const [rooms, setRooms] = useState<BookableRoom[]>([]);
   const isWalkIn = channel === 'WALK_IN';
 
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const [{ today, tomorrow }] = useState(() => ({
+    today: new Date().toISOString().slice(0, 10),
+    tomorrow: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+  }));
 
   const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([
     { ...INITIAL_GROUP, slug: rooms[0]?.slug ?? '' },
@@ -99,14 +102,19 @@ export function BookingFormPage({ channel }: { channel: BookingFormChannel }) {
   const [error, setError] = useState<string | null>(null);
   const [savedCode, setSavedCode] = useState<string | null>(null);
 
-  // Mock rooms.ts dipakai buat dropdown/harga (slug-nya sama persis dengan
-  // data asli), tapi backend butuh roomTypeId numerik — ambil pemetaannya
-  // sekali dari API admin.
+  // Dropdown & harga diambil dari API admin (bukan data statis), jadi ikut
+  // berubah kalau tipe/tarif diedit di menu Kelola. Backend butuh roomTypeId
+  // numerik, pemetaannya dibentuk dari daftar yang sama.
   useEffect(() => {
     if (!token) return;
     fetchAdminRoomTypes(token)
       .then((list) => {
-        setRoomTypeIdBySlug(Object.fromEntries(list.map((r) => [r.slug, r.id])));
+        const active = list.filter((r) => r.isActive);
+        setRooms(active.map(toBookableRoom));
+        setRoomTypeIdBySlug(Object.fromEntries(active.map((r) => [r.slug, r.id])));
+        setRoomGroups((groups) =>
+          groups.map((g) => (g.slug ? g : { ...g, slug: active[0]?.slug ?? '' })),
+        );
       })
       .catch(() => {
         // Diam-diam gagal — error baru muncul kalau admin coba Simpan.

@@ -33,7 +33,7 @@ export function scalePoints(
 ): Pt[] {
   const { width, height, padTop = 0, padBottom = 0 } = opts;
   const inner = height - padTop - padBottom;
-  // Semua nilai 0 (mis. unit bisnis yang belum aktif) → garis rata di dasar,
+  // Semua nilai 0 (mis. periode tanpa pendapatan) → garis rata di dasar,
   // bukan NaN karena dibagi nol.
   const max = Math.max(...values, 0) || 1;
   const step = values.length > 1 ? width / (values.length - 1) : 0;

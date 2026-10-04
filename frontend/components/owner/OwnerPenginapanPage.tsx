@@ -4,7 +4,7 @@ import { Download } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ApiError } from '@/lib/api/client';
-import { fetchAdminBookings, toAdminBookingMock } from '@/lib/api/bookings';
+import { fetchAdminBookings, toAdminBooking } from '@/lib/api/bookings';
 import { fetchAdminRoomTypes } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import type { AdminBooking } from '@/lib/data/admin';
@@ -58,7 +58,7 @@ export function OwnerPenginapanPage() {
         fetchAdminBookings(token),
         fetchAdminRoomTypes(token),
       ]);
-      setBookings(bookingList.map(toAdminBookingMock));
+      setBookings(bookingList.map(toAdminBooking));
       setRooms(roomTypes.filter((r) => r.isActive));
     } catch (e) {
       setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));

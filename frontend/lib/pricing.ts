@@ -1,4 +1,16 @@
-import type { RoomType } from '@/lib/data/rooms';
+/** Tipe unit yang bisa dipilih di form booking — dibentuk dari API admin (harga dari database, bukan data statis). */
+export type BookableRoom = {
+  id: number;
+  slug: string;
+  name: string;
+  category: string;
+  priceWeekday: number;
+  priceWeekend: number;
+  capacity: number;
+  extraBedPrice?: number;
+  extraNoBedPrice?: number;
+  extraFlatPrice?: number;
+};
 
 export type ExtraBedType = 'with' | 'without';
 
@@ -37,7 +49,7 @@ export function calcNightsBreakdown(
 
 /** Total harga sewa (bukan extra bed) untuk seluruh malam menginap, per tanggal weekday/weekend. */
 export function calcStayPrice(
-  room: Pick<RoomType, 'priceWeekday' | 'priceWeekend'>,
+  room: Pick<BookableRoom, 'priceWeekday' | 'priceWeekend'>,
   checkIn: string,
   checkOut: string,
 ): number {
@@ -58,7 +70,7 @@ export function calcStayPrice(
  * `extraBedPrice`/`extraNoBedPrice` sesuai jenisnya.
  */
 export function extraBedRate(
-  room: Pick<RoomType, 'extraBedPrice' | 'extraNoBedPrice' | 'extraFlatPrice'>,
+  room: Pick<BookableRoom, 'extraBedPrice' | 'extraNoBedPrice' | 'extraFlatPrice'>,
   type: ExtraBedType,
 ): number {
   return room.extraFlatPrice ?? (type === 'with' ? room.extraBedPrice : room.extraNoBedPrice) ?? 0;
@@ -77,7 +89,7 @@ export type PricedRoomGroup = {
  * karena kebutuhan tiap unit (dewasa/anak/extra bed) bisa berbeda.
  */
 export function calcGroupSubtotal(
-  room: RoomType | undefined,
+  room: BookableRoom | undefined,
   group: PricedRoomGroup,
   checkIn: string,
   checkOut: string,
@@ -91,7 +103,7 @@ export function calcGroupSubtotal(
 
 /** Total harga seluruh grup tenda dalam satu booking. */
 export function calcGroupsTotal(
-  rooms: RoomType[],
+  rooms: BookableRoom[],
   groups: PricedRoomGroup[],
   checkIn: string,
   checkOut: string,

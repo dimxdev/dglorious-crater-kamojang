@@ -1,9 +1,9 @@
 // Analitik dashboard Owner — dihitung dari booking & tipe tenda ASLI (API),
 // dikirim eksplisit sebagai parameter oleh pemanggil (OwnerOverviewPage,
-// OwnerPenginapanPage) lewat adapter `toAdminBookingMock()` (lib/api/bookings.ts),
-// pola yang sama dengan Dashboard Admin (FASE 9). Tidak ada lagi fallback diam-diam
-// ke data mock `adminBookings` — kalau pemanggil lupa kirim data, TypeScript akan
-// menolak compile (parameter wajib), bukan diam-diam nampilin angka dummy.
+// OwnerPenginapanPage) lewat adapter `toAdminBooking()` (lib/api/bookings.ts),
+// pola yang sama dengan Dashboard Admin. Tidak ada fallback diam-diam ke data
+// contoh — kalau pemanggil lupa kirim data, TypeScript akan menolak compile
+// (parameter wajib), bukan diam-diam nampilin angka dummy.
 import { occupiedQtyOnDate, type AdminBooking } from './admin';
 import { formatIDR } from '../format';
 
@@ -90,8 +90,7 @@ export function periodRangeLabel(range: DateRange, ref: PeriodRef = DEFAULT_REF)
 /**
  * Booking yang tanggal check-in-nya masuk dalam rentang. Generik atas `T`
  * (cuma butuh `checkIn`, format `YYYY-MM-DD`) — dipakai Owner dashboard maupun
- * `BookingsPage.tsx` (data API asli, FASE 8/9). `bookings` WAJIB dikirim
- * pemanggil (tidak ada lagi fallback ke mock).
+ * `BookingsPage.tsx` (data API). `bookings` WAJIB dikirim pemanggil.
  */
 export function bookingsInRange<T extends { checkIn: string } = AdminBooking>(
   bookings: T[],
@@ -288,34 +287,6 @@ export function calcRevenueTrend(
   }));
 }
 
-/**
- * Pendapatan per unit bisnis (rupiah penuh) — Tiket Masuk & Cafe belum aktif
- * (fase berikutnya, lihat PROJECT.md §1).
- */
-export function calcUnitRevenue(bookings: AdminBooking[], range: DateRange, ref: PeriodRef = DEFAULT_REF) {
-  const revenue = bookingsInRange(bookings, range, ref).reduce((s, b) => s + b.total, 0);
-  return [
-    { label: 'Penginapan', value: revenue, active: true },
-    { label: 'Tiket Masuk', value: 0, active: false },
-    { label: 'Cafe', value: 0, active: false },
-  ];
-}
-
-/**
- * Kontribusi 3 unit bisnis (Penginapan/Tiket Masuk/Cafe) buat donut Ringkasan.
- * Tiket & Cafe belum ada sistemnya (lihat PROJECT.md §1) jadi otomatis 0% —
- * Penginapan wajar tampil 100% sampai 2 unit lain aktif, bukan bug.
- */
-export function calcRevenueByUnit(bookings: AdminBooking[], range: DateRange, ref: PeriodRef = DEFAULT_REF) {
-  const inRange = bookingsInRange(bookings, range, ref);
-  const revenue = inRange.reduce((s, b) => s + b.total, 0);
-  return [
-    { label: 'Penginapan', value: revenue, count: inRange.length, revenue, color: '#1B4332' },
-    { label: 'Tiket Masuk', value: 0, count: 0, revenue: 0, color: '#D4A04A' },
-    { label: 'Cafe', value: 0, count: 0, revenue: 0, color: '#6b4f3f' },
-  ];
-}
-
 const DONUT_PALETTE = ['#1B4332', '#C1663F', '#8CA98F', '#2c5a8a', '#D4A04A', '#6b4f3f'];
 
 /**
@@ -351,7 +322,7 @@ export function calcBookingByType(
   }));
 }
 
-/** WhatsApp vs Walk-in — ganti "Online vs Walk-in" lama (booking online belum ada di Fase 1). */
+/** Sebaran booking per kanal: WhatsApp vs Walk-in. */
 export function calcBySource(bookings: AdminBooking[], range: DateRange, ref: PeriodRef = DEFAULT_REF) {
   const inRange = bookingsInRange(bookings, range, ref);
   const bySource = (source: AdminBooking['source']) => inRange.filter((b) => b.source === source);
@@ -373,7 +344,7 @@ export function calcBySource(bookings: AdminBooking[], range: DateRange, ref: Pe
   ];
 }
 
-/** Booking terbaru (bukan lagi campur transaksi Tiket Masuk fiktif — sistemnya belum ada, lihat PROJECT.md §1). */
+/** Booking terbaru berdasarkan tanggal check-in. */
 export function calcRecentTransactions(bookings: AdminBooking[], count = 8): AdminBooking[] {
   return [...bookings].sort((a, b) => b.checkIn.localeCompare(a.checkIn)).slice(0, count);
 }

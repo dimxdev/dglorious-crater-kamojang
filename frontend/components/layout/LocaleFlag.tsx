@@ -10,9 +10,8 @@ import type { Locale } from '@/lib/i18n/config';
  * dirender sebagai dua huruf kode wilayah ("ID", "GB"), bukan gambar. SVG
  * tampil sama di semua platform.
  *
- * Catatan buat penambahan bahasa berikutnya (中文, §9 PROJECT.md): bendera
- * mewakili NEGARA, bukan bahasa — pemilihannya untuk bahasa yang dipakai di
- * banyak negara perlu dipikir dulu, bukan sekadar ambil satu.
+ * Bendera mewakili NEGARA, bukan bahasa — kalau suatu saat ada bahasa yang
+ * dipakai di banyak negara, pemilihannya perlu dipikir dulu.
  */
 export function LocaleFlag({ locale, className }: { locale: Locale; className?: string }) {
   // `useId` bikin id clipPath unik per instance — kalau di-hardcode, bendera

@@ -2,7 +2,7 @@
 
 import { Copy, Plus, X } from 'lucide-react';
 import { Input, Select } from '@/components/ui';
-import type { RoomType } from '@/lib/data/rooms';
+import type { BookableRoom } from '@/lib/pricing';
 import { formatIDR } from '@/lib/format';
 import {
   calcGroupSubtotal,
@@ -37,7 +37,7 @@ type Labels = {
 type RoomGroupEditorProps = {
   value: RoomGroup[];
   onChange: (groups: RoomGroup[]) => void;
-  rooms: RoomType[];
+  rooms: BookableRoom[];
   checkIn: string;
   checkOut: string;
   labels: Labels;

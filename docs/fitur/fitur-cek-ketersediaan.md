@@ -1,6 +1,6 @@
 # Cek Ketersediaan (Anti Double-Booking)
 
-**Status:** ✅ Selesai (Versi 1) — cross-cutting
+**Status:** ✅ Selesai — cross-cutting
 **File utama:** `backend/src/penginapan/room-types/room-types.service.ts` (`checkAvailability`)
 
 ## Ringkasan
@@ -15,7 +15,7 @@ Satu fungsi ketersediaan yang dipakai bersama oleh semua jalur pembuatan/edit bo
 - **Abaikan HANGUS** — booking yang batal (uang hangus) tidak menghitung sebagai pemakai unit.
 
 ## Keputusan Desain Penting
-Ketersediaan dihitung di **level qty per-tipe** (jumlah unit), **bukan** dengan mengunci unit fisik spesifik dari tabel `room_units`. Alasannya: `roomUnitId` di `booking_items` baru diisi saat check-in, jadi saat booking pertama dibuat belum ada unit spesifik untuk dicek — yang relevan hanyalah "apakah masih ada sisa unit dari total tipe ini". Pendekatan qty ini yang membuat fungsi bisa dipakai konsisten di semua jalur.
+Ketersediaan dihitung di **level qty per-tipe** (jumlah unit), **bukan** dengan mengunci unit fisik spesifik. Alasannya: booking tidak menunjuk unit fisik tertentu — yang relevan hanyalah "apakah masih ada sisa unit dari total tipe ini". Pendekatan qty ini yang membuat fungsi bisa dipakai konsisten di semua jalur.
 
 Fungsi ini dipakai di **tiga tempat** dari satu sumber yang sama: saat create booking (`POST /admin/bookings`), saat edit/reschedule (`PATCH /admin/bookings/:code`, dengan exclude diri sendiri), dan lewat endpoint `GET /admin/room-types/:id/availability` yang dipanggil frontend real-time (debounced) saat admin mengisi form. Satu implementasi, tiga pemanggil — tidak ada logic ketersediaan paralel yang berpotensi drift dan membuka celah double-booking.
 

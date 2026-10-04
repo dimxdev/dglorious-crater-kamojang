@@ -1,18 +1,18 @@
 # Hub Super Admin
 
 **Route:** `/super-admin`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/app/super-admin/page.tsx` → `SuperAdminDashboardPage.tsx`, `SuperAdminLayout.tsx`
 
 ## Ringkasan
-Beranda role Super Admin — sebuah **hub navigasi**, bukan dashboard analitik. Fungsinya cuma jadi pintu masuk ke semua dashboard admin (Penginapan/Tiket/Cafe); Super Admin tidak melihat ringkasan grafik seperti Owner.
+Beranda role Super Admin — sebuah **hub navigasi**, bukan dashboard analitik. Fungsinya jadi pintu masuk ke dashboard admin Penginapan; Super Admin tidak melihat ringkasan grafik seperti Owner.
 
 ## Cara Kerja
-Halaman dibungkus `SuperAdminLayout` (shell sidebar desktop + header + bottom nav mobile, pola sama dengan layout dashboard lain) dan dijaga `useRequireRole(['SUPER_ADMIN'])`. Isinya `SuperAdminDashboardPage` — sekumpulan kartu link besar ke tiap dashboard unit bisnis. Kartu unit yang sudah aktif adalah `Link` sungguhan dengan efek hover; kartu unit yang belum ada (Tiket, Cafe) di-render sebagai elemen disabled dengan badge "SOON", bukan link, jadi tidak bisa diklik.
+Halaman dibungkus `SuperAdminLayout` (shell sidebar desktop + header + bottom nav mobile, pola sama dengan layout dashboard lain) dan dijaga `useRequireRole(['SUPER_ADMIN'])`. Isinya `SuperAdminDashboardPage` — kartu link besar ke dashboard admin, berupa `Link` sungguhan dengan efek hover.
 
 ## Sub-fitur
-- **Layout & Nav** (`SuperAdminLayout`) — nav "Hub" (`/super-admin`) + "Akun" (`/super-admin/akun`, badge SOON — belum jadi halaman).
-- **3 Kartu Section** — Penginapan (link aktif ke `/admin/penginapan`), Tiket Masuk (SOON), Cafe/Restoran (SOON).
+- **Layout & Nav** (`SuperAdminLayout`) — nav "Beranda" (`/super-admin`).
+- **Kartu Section** — Penginapan (link ke `/admin/penginapan`).
 - **Tema warna khas** — slate/navy gelap (`bg-[#0f172a]`, aksen `sky-400`), berbeda dari Owner (coklat/emas) dan Admin (hijau/terracotta).
 
 ## Keputusan Desain Penting

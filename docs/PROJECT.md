@@ -2,18 +2,14 @@
 
 Konteks proyek untuk Claude Code. Baca file ini sebelum mengerjakan task apa pun.
 
-> **⚠️ Penamaan versi.** "FASE" (FASE 0, 1, 2, ... di TASK.md) = urutan kerja **di dalam** satu versi.
-> "VERSI" = pembungkus scope rilis di atasnya — **Versi 1** (sekarang, s.d. deploy) vs **Versi 2**
-> (rencana selanjutnya, belum dikerjakan). Dua istilah beda level, jangan disamakan.
+> **⚠️ Penamaan.** "FASE" (FASE 0, 1, 2, ... di TASK.md) = urutan kerja pengembangan.
 
-> **⚠️ Scope Versi 1 (hasil data gathering + form booking asli klien).**
-> Versi 1 = **company profile / katalog publik + pencatatan booking internal oleh admin**.
+> **⚠️ Ruang lingkup sistem (hasil data gathering + form booking asli klien).**
+> Sistem = **company profile / katalog publik + pencatatan booking internal oleh admin**.
 > Admin **hanya menginput booking yang SUDAH FIX** (negosiasi harga & aturan DP/pelunasan
-> terjadi di WhatsApp, **di luar sistem**). **Booking online mandiri (Midtrans, guest
-> checkout, email, tiket PDF/QR, auto-expire) + bahasa Mandarin digeser ke Versi 2** —
-> belum ada kepastian lanjut, jadi placeholder skema untuk fitur ini sudah **dihapus**
-> dari database/backend/frontend (2026-09-13); jika Versi 2 jadi dikerjakan, struktur
-> ini ditulis ulang dari nol, bukan diaktifkan dari sisa lama.
+> terjadi di WhatsApp, **di luar sistem**). Sistem **tidak** menyediakan booking online
+> mandiri, payment gateway, email otomatis, tiket PDF/QR, sistem tiket masuk, maupun
+> sistem cafe.
 
 ---
 
@@ -21,16 +17,11 @@ Konteks proyek untuk Claude Code. Baca file ini sebelum mengerjakan task apa pun
 
 Sistem informasi & reservasi untuk destinasi wisata **D'Glorious Crater Kamojang** (kawah geothermal, pemandian air panas, glamping) di perbatasan Kabupaten Bandung–Garut, Jawa Barat.
 
-**Versi 1 (fokus saat ini):**
+**Cakupan:**
 - **Katalog/company profile publik** — brosur digital: etalase tiap unit (foto, kapasitas, harga) + info + Syarat & Ketentuan. **Tanpa booking online**; CTA cukup **"Hubungi Reservasi via WhatsApp"**.
 - **Pencatatan booking internal oleh admin** — tamu menghubungi admin lewat WhatsApp, deal disepakati di sana, lalu **admin menginput booking yang sudah fix** di dashboard.
-- **Dashboard admin penginapan** (data booking, tambah booking, check-in, CMS unit).
-- **Dashboard owner** (statistik & rekap).
-
-**Versi 2 (belum dikerjakan, belum ada kepastian lanjut — lihat catatan di atas):**
-- **Booking online mandiri** — Midtrans Snap, guest checkout, kode booking yang diakses tamu, email otomatis, tiket PDF+QR, **auto-expire 1×24 jam**, halaman `/cek-booking` & `/booking/[kode]`.
-- **Bahasa Mandarin (中文)** — struktur i18n multi-bahasa masih ada di frontend (`locales`/`Locale`), datanya belum diisi.
-- **Sistem tiket masuk (portal)** dan **sistem transaksi cafe**.
+- **Dashboard admin penginapan** (data booking, tambah booking, edit booking, check-in, CMS unit).
+- **Dashboard owner** (statistik & rekap) dan **hub Super Admin**.
 
 **Konteks:** proyek Kerja Praktik, 2 orang (Dimas & Ihsan), 5 minggu (20 Juli – 23 Agustus 2026).
 
@@ -49,9 +40,8 @@ Sistem informasi & reservasi untuk destinasi wisata **D'Glorious Crater Kamojang
 | ORM | Prisma |
 | Database | PostgreSQL |
 | Auth | JWT + RBAC (guards & decorator NestJS) |
-| i18n | **Fase 1: Indonesia (ID) + Inggris (EN).** Mandarin (中文) = fase berikutnya. Struktur tetap multi-bahasa sejak awal. |
-| Payment | *(fase berikutnya)* Midtrans Snap (**sandbox** selama KP). Fase 1: pembayaran di luar sistem (transfer/tunai), admin hanya menandai lunas/belum. |
-| Email | *(fase berikutnya)* Nodemailer (SMTP), queue/async |
+| i18n | Indonesia (ID) + Inggris (EN). Struktur multi-bahasa sejak awal (UI via file JSON, konten tenda via tabel translations). |
+| Pembayaran | Di luar sistem (transfer/tunai/QRIS); admin hanya mencatat DP/lunas. |
 | Deployment | 1 VPS (FE + BE + PostgreSQL), Nginx reverse proxy, SSL Let's Encrypt, docker-compose |
 
 ---
@@ -76,38 +66,32 @@ dglorious/
 1. **Backend adalah satu-satunya sumber kebenaran.** Frontend murni fetch ke API NestJS; jangan taruh logika bisnis di Next.js API routes.
 2. **Validasi role WAJIB di backend.** Menyembunyikan menu di frontend hanya untuk UX. Setiap endpoint terproteksi wajib guard + decorator role.
 3. **Satu sistem login untuk semua role.** Pembedaan akses lewat RBAC.
-4. **Tamu TIDAK punya akun.** Tidak ada register/login pengunjung. Di **fase 1 tamu tidak bertransaksi mandiri** — semua booking diinput admin. *(Guest checkout mandiri = fase berikutnya.)*
+4. **Tamu TIDAK punya akun.** Tidak ada register/login pengunjung. Tamu tidak bertransaksi mandiri — semua booking diinput admin.
 5. **Harga di-snapshot ke booking** (`price_snapshot`). Perubahan/variasi tarif di master tidak boleh mengubah booking lama. Makin penting karena tarif **beda weekday/weekend** dan bisa **di-override manual** admin (nego).
-6. **Semua konfigurasi yang bisa berubah disimpan di tabel `settings`, JANGAN hardcode** (jam check-in/out, no. WhatsApp reservasi, rekening, teks S&K).
+6. **Semua konfigurasi yang bisa berubah disimpan di tabel `settings`, JANGAN hardcode** (jam check-in/out, no. WhatsApp reservasi, kontak & sosial media, teks S&K).
 7. **Semua data harus analytics-ready:** timestamp lengkap di setiap transisi status, enum konsisten, soft delete, `created_by` untuk jejak audit.
-8. **Cek ketersediaan harus satu fungsi yang dipakai bersama** oleh semua jalur pembuatan booking (sekarang: input admin; nanti: online), agar tidak ada celah double-booking.
-9. **Environment variable untuk kredensial & endpoint** (URL API, DB — nanti key Midtrans, SMTP). *(Konfigurasi bisnis yang admin ubah → tabel `settings`, lihat poin 6.)*
-
-> **Disiapkan untuk fase berikutnya (struktur, belum diimplementasi):**
-> - Status pembayaran online hanya boleh diubah **webhook Midtrans yang signature-nya terverifikasi**.
-> - **Generate tiket di-trigger perubahan status ke `CONFIRMED`** (bukan tombol), agar jalur online & manual sama-sama otomatis.
+8. **Cek ketersediaan harus satu fungsi yang dipakai bersama** oleh semua jalur pembuatan booking (Booking WhatsApp, Walk-in, dan Edit Booking), agar tidak ada celah double-booking.
+9. **Environment variable untuk kredensial & endpoint** (URL API, DB, JWT secret). *(Konfigurasi bisnis yang admin ubah → tabel `settings`, lihat poin 6.)*
 
 ---
 
-## 5. Role & Hak Akses (RBAC) — *tetap berlaku penuh di Versi 1*
+## 5. Role & Hak Akses (RBAC)
 
-> **Revisi 2026-08-21:** Sebelumnya `SUPER_ADMIN` juga diizinkan masuk ke dashboard Owner (dan guard-nya lolos semua `@Roles` tanpa syarat). Diperketat: `SUPER_ADMIN` sekarang punya hub navigasi sendiri (`/super-admin`, lihat `SuperAdminLayout.tsx`) ke semua dashboard **ADMIN**, tapi dashboard **Owner** jadi eksklusif `OWNER` — bukan lagi "yang di atas otomatis boleh". Ditegakkan di 2 lapis: frontend `useRequireRole()` (gak ada bypass blanket lagi, tiap layout wajib sebut role yang diizinkan eksplisit) dan backend `RolesGuard` (gak ada bypass `SUPER_ADMIN` implisit — harus disebut eksplisit di tiap `@Roles(...)`, walau di semua endpoint yang sudah ada saat ini memang selalu disertakan).
+> **Revisi 2026-08-21:** Sebelumnya `SUPER_ADMIN` juga diizinkan masuk ke dashboard Owner (dan guard-nya lolos semua `@Roles` tanpa syarat). Diperketat: `SUPER_ADMIN` sekarang punya hub navigasi sendiri (`/super-admin`, lihat `SuperAdminLayout.tsx`) ke dashboard **ADMIN**, tapi dashboard **Owner** jadi eksklusif `OWNER` — bukan lagi "yang di atas otomatis boleh". Ditegakkan di 2 lapis: frontend `useRequireRole()` (gak ada bypass blanket lagi, tiap layout wajib sebut role yang diizinkan eksplisit) dan backend `RolesGuard` (gak ada bypass `SUPER_ADMIN` implisit — harus disebut eksplisit di tiap `@Roles(...)`, walau di semua endpoint yang sudah ada saat ini memang selalu disertakan).
 
 | Role | Akses |
 |---|---|
-| `SUPER_ADMIN` | Hub navigasi (`/super-admin`) + semua dashboard **admin** (Penginapan/Tiket/Cafe), CRUD penuh, + kelola akun & setting sistem. **Bukan** dashboard Owner. |
-| `OWNER` | Dashboard owner (eksklusif — satu-satunya role yang boleh masuk) + semua dashboard admin, CRUD penuh |
+| `SUPER_ADMIN` | Hub navigasi (`/super-admin`) + dashboard **admin** Penginapan, CRUD penuh. **Bukan** dashboard Owner. |
+| `OWNER` | Dashboard owner (eksklusif — satu-satunya role yang boleh masuk) + dashboard admin, CRUD penuh |
 | `ADMIN_PENGINAPAN` | Hanya dashboard penginapan, CRUD penuh di area tersebut |
-| `ADMIN_PORTAL` | *(fase berikutnya)* Hanya dashboard tiket masuk |
-| `ADMIN_CAFFE` | *(fase berikutnya)* Hanya dashboard cafe |
 
-**Aturan arah akses:** Owner bisa masuk "ke bawah" (semua dashboard admin). Super Admin juga bisa masuk ke semua dashboard admin, tapi **tidak** ke dashboard Owner — itu privat buat Owner sendiri. Admin **tidak bisa** naik ke dashboard manapun di atasnya (Owner maupun Super Admin).
+**Aturan arah akses:** Owner bisa masuk "ke bawah" (dashboard admin). Super Admin juga bisa masuk ke dashboard admin, tapi **tidak** ke dashboard Owner — itu privat buat Owner sendiri. Admin **tidak bisa** naik ke dashboard manapun di atasnya (Owner maupun Super Admin).
 
 ---
 
 ## 6. Alur Booking
 
-### 6.1 Fase 1 — Pencatatan Internal oleh Admin
+### 6.1 Pencatatan Internal oleh Admin
 
 **Update 2026-07-26 (dari form reservasi WhatsApp resmi klien):** ada **dua jalur** pencatatan berbeda, dipisah jadi **dua menu sendiri** karena kondisi tamunya beda (belum tiba vs. sudah di lokasi):
 
@@ -119,7 +103,7 @@ Tamu menghubungi admin via WhatsApp (dari CTA di katalog publik)
      tanggal check-in/out, Dewasa, Anak-anak, Note/Request) + brosur & S&K
   → nego, DP 50% maks 1×24 jam setelah dealing → DISEPAKATI DI WHATSAPP (di luar sistem)
      (lewat 1×24 jam tanpa DP = booking rilis otomatis ke tamu lain — ini terjadi
-     di WHATSAPP/kepala admin, BUKAN di sistem; sistem belum tahu apa-apa di fase ini)
+     di WHATSAPP/kepala admin, BUKAN di sistem; sistem belum tahu apa-apa pada tahap ini)
   → admin buka menu "Booking WhatsApp", input booking yang SUDAH FIX
      (data tamu, tanggal, satu/lebih tenda, dewasa/anak, extra bed, catatan)
   → sistem cek ketersediaan (fungsi reusable) + auto-hitung total
@@ -140,10 +124,10 @@ Tamu datang ke lokasi tanpa reservasi WhatsApp sebelumnya
 ```
 
 - `booking_source = MANUAL` untuk kedua jalur, `created_by = admin yang input`.
-- Karena admin hanya menginput booking yang sudah fix, **sistem tidak pernah memegang booking menggantung** → **tidak ada auto-expire di fase 1** (masa tunggu DP 1×24 jam sepenuhnya terjadi di WhatsApp, sebelum data masuk sistem).
-- **Reschedule (fase 1 sederhana):** admin boleh mengubah tanggal booking manual. Per S&K, reschedule paling lambat **H-7** sebelum check-in — validasi "maks H-7" dicatat sebagai peningkatan opsional, belum wajib.
+- Karena admin hanya menginput booking yang sudah fix, **sistem tidak pernah memegang booking menggantung** → **tidak ada auto-expire** (masa tunggu DP 1×24 jam sepenuhnya terjadi di WhatsApp, sebelum data masuk sistem).
+- **Reschedule:** admin boleh mengubah tanggal booking lewat menu Edit Booking (setiap perubahan tercatat di riwayat edit beserta alasannya). Per S&K, reschedule paling lambat **H-7** sebelum check-in — aturan H-7 ini ditegakkan secara prosedural oleh admin, bukan validasi di sistem.
 
-### 6.2 Status Booking (Fase 1)
+### 6.2 Status Booking
 
 **Revisi 2026-07-26** — status pembayaran & status booking **digabung jadi satu progres tunggal**, bukan 2 field terpisah seperti draf sebelumnya (lebih cocok sama cara admin mikirin & mengedit statusnya langsung dari menu Data Booking):
 
@@ -155,25 +139,16 @@ DP → LUNAS → CHECKED_IN → COMPLETED
 
 **Revisi lanjutan lagi (sama hari)** — satu tenggat yang **sama** dipakai untuk ketiga status turunan: **tanggal check-out**, bukan check-in. Baik `DP` maupun `LUNAS` dikasih toleransi penuh selama rentang menginapnya (siapa tahu tamu masih datang kapan pun sebelum checkout) — cuma beda label akhirnya tergantung sudah lunas atau belum saat checkout lewat.
 
-Cabang & status turunan (dihitung ulang tiap kali data booking dibuka, **bukan cron job** — Fase 1 tidak butuh proses background — bandingkan tanggal hari ini vs `check_out`):
+Cabang & status turunan (dihitung ulang tiap kali data booking dibuka, **bukan cron job** — sistem tidak butuh proses background — bandingkan tanggal hari ini vs `check_out`):
 - `HANGUS` — **bisa disimpan manual** (admin batalkan booking kapan saja sebelum check-in) **ATAU dihitung otomatis**: booking masih `DP` (belum lunas) dan tanggal **check-out** sudah lewat tanpa pernah check-in — dianggap batal, uang hangus.
 - `NO_SHOW` — **status turunan murni, tidak pernah disimpan manual**: booking sudah `LUNAS` (bayar penuh) tapi tanggal **check-out** sudah lewat tanpa pernah check-in — uangnya aman, cuma tamunya yang tidak muncul.
 - `COMPLETED` — **status turunan**: booking `CHECKED_IN` dan tanggal `check_out` **sudah lewat** — dihitung dengan cara yang sama, bukan diset manual admin.
 
-Jadi hanya **4 status yang benar-benar diubah admin secara manual**: `DP`, `LUNAS`, `CHECKED_IN`, `HANGUS` — 2 lainnya (`COMPLETED`, `NO_SHOW`) murni tampilan yang dihitung dari tanggal. **Walk-in mulai langsung dari `CHECKED_IN`** (skip `DP`/`LUNAS` — sudah bayar penuh & sudah di lokasi saat dicatat, lihat §6.1 jalur B).
+Alur utama yang diubah admin: `DP` → `LUNAS` → `CHECKED_IN`, dengan cabang `HANGUS`. `COMPLETED` dan `NO_SHOW` umumnya muncul otomatis dari tanggal check-out, tapi admin juga boleh menandainya langsung dari detail booking. **Walk-in mulai langsung dari `CHECKED_IN`** (skip `DP`/`LUNAS` — sudah bayar penuh & sudah di lokasi saat dicatat, lihat §6.1 jalur B).
 
-**Semua perubahan status dilakukan langsung dari menu Data Booking** (klik baris → detail → tombol "Tandai Lunas" / "Tandai Check-in" / "Tandai Hangus" / "Edit Tanggal") — **bukan menu Check-in terpisah**. Menu Check-in (ketik kode → verifikasi) **dihapus**: fungsinya jadi duplikat begitu status bisa diubah langsung dari baris booking yang sudah kelihatan di tabel — Fase 1 tidak ada tamu yang mengakses sistem sendiri, jadi tidak ada yang perlu "diverifikasi" pakai kode.
+**Semua perubahan status dilakukan langsung dari menu Data Booking** (klik baris → detail → tombol "Tandai Lunas" / "Tandai Check-in" / "Tandai Hangus" / "Edit Tanggal") — **bukan menu Check-in terpisah**. Menu Check-in (ketik kode → verifikasi) **dihapus**: fungsinya jadi duplikat begitu status bisa diubah langsung dari baris booking yang sudah kelihatan di tabel — tidak ada tamu yang mengakses sistem sendiri, jadi tidak ada yang perlu "diverifikasi" pakai kode.
 
-**⚠️ Dampak ke skema database (§10) — BELUM diterapkan ke Prisma:** rencana lama punya `status` (enum booking) + `payment_status` (enum bayar) sebagai 2 kolom terpisah. Revisi ini menyatukannya jadi **satu enum** `DP | LUNAS | CHECKED_IN | HANGUS` (4 nilai yang disimpan) — `COMPLETED`/`NO_SHOW` dihitung di layer API saat baca data, bukan kolom tersendiri. Nilai enum lama terkait alur online — `WAITING_PAYMENT`, `PAID`, `EXPIRED` — **tetap ada di enum** tetapi ditandai *"fase berikutnya"*. **Auto-expire beneran (cron) TIDAK dipakai di fase 1** — `NO_SHOW`/`HANGUS` turunan cuma dihitung on-read, bukan proses yang benar-benar mengubah data booking secara otomatis.
-
-### 6.3 Fase berikutnya — Booking Online (via Midtrans) *(disiapkan, belum dikerjakan)*
-
-```
-Guest checkout → SIMPAN (PENDING, generate booking_code, kunci tanggal) → email #1
-  → Midtrans Snap → bayar → webhook (verifikasi signature) → PAID → CONFIRMED
-  → tiket PDF+QR auto-generate → email #2
-  → AUTO-EXPIRE: belum lunas dalam 1×24 jam sejak created_at → EXPIRED, lepas kunci tanggal
-```
+**Dampak ke skema database (§10):** status pembayaran & status booking disatukan jadi **satu enum** `BookingStatus` = `DP | LUNAS | CHECKED_IN | HANGUS | COMPLETED | NO_SHOW` (tanpa kolom `payment_status` terpisah). Tidak ada proses yang mengubah data secara otomatis di latar belakang — status turunan hanya dihitung saat data dibaca.
 
 ---
 
@@ -181,14 +156,12 @@ Guest checkout → SIMPAN (PENDING, generate booking_code, kunci tanggal) → em
 
 - **Satu kode per booking** (`booking_code`), acak & sulit ditebak (contoh: `DGC-A7F3K2`). Jangan nomor urut.
 - **Kode tidak pernah kadaluarsa** — yang berubah adalah *status* booking.
-- Fase 1: `booking_code` = **referensi internal saja** (identifikasi baris di Data Booking, dicantumkan di WA konfirmasi). **Bukan tiket yang diverifikasi tamu sendiri** — tidak ada menu "ketik kode" terpisah (dihapus 2026-07-26, lihat §6.2): admin sudah melihat & mengklik langsung baris booking yang bersangkutan di menu Data Booking untuk ubah status ke `CHECKED_IN`.
+- `booking_code` = **referensi internal saja** (identifikasi baris di Data Booking, dicantumkan di WA konfirmasi). **Bukan tiket yang diverifikasi tamu sendiri** — tidak ada menu "ketik kode" terpisah (dihapus 2026-07-26, lihat §6.2): admin sudah melihat & mengklik langsung baris booking yang bersangkutan di menu Data Booking untuk ubah status ke `CHECKED_IN`.
 - **Pencegahan status berubah dua kali cukup lewat guard tombol di UI** (tombol "Tandai Check-in" cuma tampil kalau status masih `LUNAS`; begitu jadi `CHECKED_IN` tombolnya hilang) — bukan lewat pencarian kode seperti rencana lama.
-
-> **Fase berikutnya:** akses halaman booking oleh tamu = **kode + no. WhatsApp**, halaman `/cek-booking` & `/booking/[kode]` adaptif, tiket **PDF + QR**. Kolom `qr_url`/`pdf_url` sudah disiapkan di tabel `tickets`.
 
 ---
 
-## 8. Halaman yang Dibutuhkan (Versi 1)
+## 8. Halaman yang Dibutuhkan
 
 ### Publik — Katalog / Company Profile (etalase, TANPA booking online)
 - `/` — Homepage (hero, daya tarik, preview tenda, info praktis)
@@ -197,20 +170,18 @@ Guest checkout → SIMPAN (PENDING, generate booking_code, kunci tanggal) → em
 - `/penginapan/[slug]` — Detail unit. **CTA = "Hubungi Reservasi via WhatsApp"** (bukan booking online)
 - `/syarat-ketentuan` — Halaman Syarat & Ketentuan (12 poin, teks dari `settings`)
 
-### Admin & Owner (Versi 1)
+### Admin, Owner & Super Admin
 - `/login` — **satu halaman login** untuk semua role
 - `/admin/penginapan` — Ringkasan (stat, booking terbaru, kalender okupansi)
 - `/admin/penginapan/booking` — Tabel data booking (filter status, sumber; search nama/kode/WA) — **juga tempat ubah status** (Tandai Lunas/Check-in/Batalkan/Edit Tanggal langsung dari detail baris, lihat §6.2). Menu Check-in terpisah **dihapus 2026-07-26**, fungsinya dilebur ke sini.
-- `/admin/penginapan/booking-whatsapp` — **Menu inti fase 1, jalur A** (lihat §8.1) — booking sudah dealing di WhatsApp, tamu belum tiba, mulai dari status `DP`
-- `/admin/penginapan/walk-in` — **Menu inti fase 1, jalur B** (lihat §8.1) — tamu datang & pesan langsung di lokasi, bayar saat itu juga (langsung `CHECKED_IN`, skip `DP`/`LUNAS`)
+- `/admin/penginapan/booking-whatsapp` — **Menu inti, jalur A** (lihat §8.1) — booking sudah dealing di WhatsApp, tamu belum tiba, mulai dari status `DP`
+- `/admin/penginapan/walk-in` — **Menu inti, jalur B** (lihat §8.1) — tamu datang & pesan langsung di lokasi, bayar saat itu juga (langsung `CHECKED_IN`, skip `DP`/`LUNAS`)
 - `/admin/penginapan/kelola` — CMS tenda (CRUD + tab bahasa + galeri)
-- `/owner` — Dashboard owner (stat + grafik + rekap + export) — **eksklusif `OWNER`** (§5, revisi 2026-08-21), data sudah dari API asli sejak 2026-08-21 (sebelumnya sempat hitung dari mock, lihat TASK.md FASE 10)
+- `/owner` — Dashboard owner (stat + grafik + rekap + export) — **eksklusif `OWNER`** (§5, revisi 2026-08-21), data dari API booking & tipe unit
+- `/owner/penginapan` — Analitik khusus penginapan (performa per tipe, sebaran sumber booking)
+- `/super-admin` — Hub navigasi Super Admin ke dashboard admin
 
-> **Versi 2 — belum dikerjakan:**
-> - `/admin/settings` — konfigurasi global *(digeser dari Versi 1, 2026-07-26 — dianggap belum cukup penting utk MVP KP, lihat TASK.md FASE 4)*
-> - Halaman publik tamu: `/booking` (guest checkout + Midtrans), `/cek-booking`, `/booking/[kode]` adaptif
-
-### 8.1 Form "Booking WhatsApp" & "Tamu Langsung" (fitur inti fase 1)
+### 8.1 Form "Booking WhatsApp" & "Tamu Langsung" (fitur inti)
 
 Field sama untuk kedua menu (mengikuti form reservasi WhatsApp resmi klien), bedanya cuma default status pembayaran & status check-in saat disimpan (lihat §6.1):
 
@@ -241,54 +212,44 @@ Menegakkan S&K poin 7 & 8:
 - Anak umur **< 5 tahun** **tidak dihitung**.
 - **Orang efektif** = jumlah dewasa + jumlah anak ≥ 6; bandingkan dengan kapasitas tenda.
 - Jika **melebihi kapasitas** → tampilkan peringatan: perlu **extra bed / charge person / ganti tipe tenda lebih besar**.
-- Fase 1 cukup sediakan field **"Anak-anak"** + tampilkan **catatan aturan ini di UI**. **Jangan over-engineer** penghitungan umur otomatis kecuali mudah (klien tidak memisahkan usia 5 vs 6 secara rinci di form).
+- Sistem cukup menyediakan field **"Anak-anak"** + tampilkan **catatan aturan ini di UI**. **Jangan over-engineer** penghitungan umur otomatis kecuali mudah (klien tidak memisahkan usia 5 vs 6 secara rinci di form).
 
-### 8.3 Setting Global (tabel `settings`, bisa diubah admin — JANGAN hardcode)
+### 8.3 Setting Global (tabel `settings`, JANGAN hardcode)
 
-- **Jam check-in `14.00` & check-out `12.00`** — tampil di detail tenda, form, & konfirmasi
-- **Nomor WhatsApp reservasi** — dipakai CTA publik & tombol mengambang
-- **Rekening pembayaran** — `BSI 7262292465 a/n KOPERASI ALAM LESTARI`
-- **Teks Syarat & Ketentuan (12 poin)** — tampil di halaman publik
+- **Jam check-in `14.00` & check-out `12.00`** — tampil di detail tenda
+- **Nomor WhatsApp reservasi (2 nomor)** — dipakai CTA publik, tombol mengambang, dan footer
+- **Email kontak & tautan sosial media** (Instagram, TikTok, Facebook) — tampil di footer
+- **Teks Syarat & Ketentuan (12 poin, ID & EN)** — tampil di halaman publik
+
+Nilai ini dibaca lewat `GET /settings`; perubahan dilakukan langsung di database (tidak ada UI edit).
 
 ---
 
 ## 9. Multi-bahasa (i18n)
 
 **Dua lapis:**
-1. **Teks UI** → file JSON per bahasa (`id.json`, `en.json`; `zh.json` disiapkan fase berikutnya).
+1. **Teks UI** → file JSON per bahasa (`id.json`, `en.json`).
 2. **Konten dinamis** (nama & deskripsi tenda) → tabel `room_type_translations`, diisi admin lewat **tab bahasa** di CMS.
 
 **Aturan:**
-- **Fase 1 mengisi 2 bahasa: ID + EN.** Mandarin (中文) menyusul — **cukup menambah data**.
-- Tab **ID wajib**. EN opsional (中文 nanti). **Fallback ke Indonesia** jika terjemahan kosong.
-- **JANGAN** kolom `name_id/name_en/name_zh`, **jangan hardcode**, **jangan jadi 2 kolom** — tetap pakai tabel translations.
+- Sistem mendukung **2 bahasa: ID + EN**.
+- Tab **ID wajib**. EN opsional. **Fallback ke Indonesia** jika terjemahan kosong.
+- **JANGAN** kolom `name_id/name_en`, **jangan hardcode**, **jangan jadi 2 kolom** — tetap pakai tabel translations.
 
 ---
 
-## 10. Skema Database (Versi 1)
-
-> **Audit 2026-09-13:** seksi ini sempat menyebut beberapa kolom/tabel/nilai enum yang
-> ternyata tidak pernah dipakai kode manapun (sisa rencana Versi 2 yang belum pasti
-> dilanjutkan). Semuanya sudah **dihapus** dari skema per migrasi
-> `remove_versi2_unused_fields` + `prune_unused_enum_values` (2026-09-13): model
-> `tickets`, kolom `bookings.expired_at`, `payments.midtrans_order_id`,
-> `roles.permissions`, serta nilai enum `BookingStatus.PENDING/WAITING_PAYMENT/PAID/EXPIRED/REJECTED`,
-> `BookingSource.ONLINE`, `PaymentMethod.VIRTUAL_ACCOUNT/EWALLET/CREDIT_CARD/OTHER`,
-> `PaymentStatus.FAILED/EXPIRED/CANCELLED/REFUNDED`, `RoomUnitStatus.MAINTENANCE/INACTIVE`,
-> `RoleName.ADMIN_PORTAL/ADMIN_CAFFE`, `LanguageCode.ZH`. Daftar di bawah ini sudah
-> disesuaikan dengan skema yang benar-benar berjalan sekarang.
+## 10. Skema Database
 
 - **`roles`** — id, name, created_at
 - **`users`** — id, role_id, name, email, password, created_at
-- **`settings`** — id, key, value (teks/JSON), updated_at, updated_by *(konfigurasi global §8.3)*
+- **`settings`** — id, key, value (teks), updated_at *(konfigurasi global §8.3)*
 - **`room_types`** — id, slug, **`price_weekday`**, **`price_weekend`**, capacity, total_units, facilities (JSON), is_active, created_by, created_at, deleted_at
   - Harga **TIDAK flat**: minimal 2 tarif (weekday & weekend); sistem memilih tarif per tanggal menginap. Jam check-in/out **bukan** di sini — ambil dari `settings`. *(Tarif high-season = perlu konfirmasi klien, §11.)*
-- **`room_type_translations`** — id, room_type_id, language_code (`ID`/`EN`), name, description, facilities_text, rules
+- **`room_type_translations`** — id, room_type_id, language_code (`ID`/`EN`), name, category, tagline, description, bed_info, bathroom_info, rules
 - **`room_images`** — id, room_type_id, image_url, is_cover, sort_order
-- **`room_units`** — id, room_type_id, unit_code, status (`AVAILABLE`)
-- **`bookings`** — id, booking_code (unik, acak), guest_name, guest_phone, guest_email (nullable), check_in, check_out, **`price_snapshot`** (total dibekukan — **WAJIB**), **`is_price_override`** (bool), **`status`** (enum — `DP`/`LUNAS`/`CHECKED_IN`/`HANGUS` disimpan; `COMPLETED`/`NO_SHOW` dihitung di API dari tanggal, **bukan kolom**, lihat §6.2), booking_source (`MANUAL`), booking_channel (`WHATSAPP`/`WALK_IN`), notes (nullable), created_by, created_at, lunas_at, checked_in_at, hangus_at
-- **`booking_items`** — id, booking_id, room_type_id, room_unit_id (nullable), qty, subtotal_snapshot, **`adults`**, **`children`**, **`extra_bed_qty`** (default 0), **`extra_bed_type`** (nullable), **`extra_bed_price`** *(satu booking bisa mencakup beberapa tenda — dewasa/anak/extra-bed disimpan PER TENDA di sini, bukan di `bookings`, karena tiap tenda dalam satu booking bisa beda komposisi tamu. Keputusan 2026-08-04, FASE 7 — sebelumnya field-field ini ada di level `bookings`.)* — `ktp_photo_url` **dihapus total** dari skema (2026-08-04, bukan lagi disimpan sistem, lihat §8.1)
-- **`payments`** — id, booking_id, method (`CASH`/`QRIS`/`BANK_TRANSFER`), amount, proof_url (nullable), status (`PENDING`/`PAID`), paid_at, verified_by (nullable)
+- **`bookings`** — id, booking_code (unik, acak), guest_name, guest_phone, check_in, check_out, **`price_snapshot`** (total dibekukan — **WAJIB**), **`is_price_override`** (bool), **`status`** (enum — `DP`/`LUNAS`/`CHECKED_IN`/`HANGUS`/`COMPLETED`/`NO_SHOW`; `COMPLETED`/`NO_SHOW`/`HANGUS` juga bisa dihitung otomatis dari tanggal saat data dibaca, lihat §6.2), booking_source (`MANUAL`), booking_channel (`WHATSAPP`/`WALK_IN`), notes (nullable), created_by, created_at, lunas_at, checked_in_at, hangus_at
+- **`booking_items`** — id, booking_id, room_type_id, qty, subtotal_snapshot, **`adults`**, **`children`**, **`extra_bed_qty`** (default 0), **`extra_bed_type`** (nullable), **`extra_bed_price`** *(satu booking bisa mencakup beberapa tenda — dewasa/anak/extra-bed disimpan PER TENDA di sini, bukan di `bookings`, karena tiap tenda dalam satu booking bisa beda komposisi tamu. Keputusan 2026-08-04, FASE 7 — sebelumnya field-field ini ada di level `bookings`.)* — `ktp_photo_url` **dihapus total** dari skema (2026-08-04, bukan lagi disimpan sistem, lihat §8.1)
+- **`payments`** — id, booking_id, method (`CASH`/`QRIS`/`BANK_TRANSFER`), amount, status (`PENDING`/`PAID`), paid_at, verified_by (nullable)
 
 **Catatan:** `booking_code` yang dipakai sebagai referensi **wajib acak**.
 
@@ -296,20 +257,20 @@ Menegakkan S&K poin 7 & 8:
 
 ## 11. Hal yang Masih Perlu Dikonfirmasi ke Klien
 
-- [x] **Nama & jumlah tipe tenda/villa + harga weekday/weekend-nya** — **SUDAH didapat** dari "Pricelist Penginapan DGCK" (PDF resmi). Diinput ke `lib/data/rooms.ts` (6 unit real: Eagle Hill, Royal Kahuripan, Camp Jamuju, Camp Rasamala, Camp Cakrawala, Glorious Campervan — lengkap harga weekday/weekend, kapasitas, bed/bathroom info, tarif tambah orang dgn/tanpa ekstra bed). Lihat detail lengkap di bawah.
-- [x] **Form reservasi WhatsApp resmi & 12 poin S&K — SUDAH didapat** (2026-07-26) dari klien, **menggantikan draft internal** sebelumnya. Field form: Nama Lengkap, Nomor Telepon, Tipe & Jumlah Tenda, Tanggal Check-in, Tanggal Check-out, Dewasa, Anak-anak, Note/Request — dipakai jadi field menu "Booking WhatsApp" (§8.1). 12 poin S&K resmi diinput ke `lib/data/settings.ts` (`termsAndConditions`), tampil di `/syarat-ketentuan`. **Temuan penting:** poin 1–2 mengungkap alur DP 50% maks 1×24 jam + auto-release ke tamu lain kalau lewat — tapi ini terjadi **sepenuhnya di WhatsApp/kepala admin**, sebelum booking dicatat ke sistem (lihat §6.1), jadi **tidak mengubah** keputusan "tidak ada auto-expire di fase 1".
+- [x] **Nama & jumlah tipe tenda/villa + harga weekday/weekend-nya** — **SUDAH didapat** dari "Pricelist Penginapan DGCK" (PDF resmi). Diinput ke seed database `backend/prisma/seed.ts` (6 unit real: Eagle Hill, Royal Kahuripan, Camp Jamuju, Camp Rasamala, Camp Cakrawala, Glorious Campervan — lengkap harga weekday/weekend, kapasitas, bed/bathroom info, tarif tambah orang dgn/tanpa ekstra bed). Lihat detail lengkap di bawah.
+- [x] **Form reservasi WhatsApp resmi & 12 poin S&K — SUDAH didapat** (2026-07-26) dari klien, **menggantikan draft internal** sebelumnya. Field form: Nama Lengkap, Nomor Telepon, Tipe & Jumlah Tenda, Tanggal Check-in, Tanggal Check-out, Dewasa, Anak-anak, Note/Request — dipakai jadi field menu "Booking WhatsApp" (§8.1). 12 poin S&K resmi disimpan di tabel `settings` (key `terms_conditions_id`/`terms_conditions_en`, di-seed lewat `backend/prisma/seed.ts`), tampil di `/syarat-ketentuan`. **Temuan penting:** poin 1–2 mengungkap alur DP 50% maks 1×24 jam + auto-release ke tamu lain kalau lewat — tapi ini terjadi **sepenuhnya di WhatsApp/kepala admin**, sebelum booking dicatat ke sistem (lihat §6.1), jadi **tidak mengubah** keputusan "tidak ada auto-expire".
 - [ ] **Definisi weekend** — Sabtu–Minggu saja, atau termasuk Jumat? *(Price list cuma bilang "Weekday"/"Weekend", belum eksplisit definisinya. Dipakai di `lib/pricing.ts` — asumsi sementara Sabtu–Minggu.)*
 - [ ] **Tarif extra bed: per malam atau sekali bayar?** — price list cuma kasih satu angka per opsi (dgn/tanpa kasur), tidak jelas berlaku sekali untuk seluruh masa inap atau dikali jumlah malam. `lib/pricing.ts` (`extraBedRate`) **asumsi sementara: per malam**, disamakan dengan tarif sewa dasar yang jelas per malam.
 - [ ] **Tarif high-season / libur nasional** (tarif ketiga) — price list cuma bilang *"Harga dapat berubah saat di High Season"*, belum ada angka pastinya.
-- [ ] **Jumlah unit per tipe** — price list tidak mencantumkan jumlah unit fisik tiap tipe. Angka di `totalUnits` (`rooms.ts`) masih **ESTIMASI**, perlu dikonfirmasi.
-- [ ] **Foto asli tiap unit** — price list ada fotonya (interior, kolam, dll) tapi belum bisa diekstrak jadi file gambar dari PDF; semua unit masih **pinjam foto generik** sementara.
+- [ ] **Jumlah unit per tipe** — price list tidak mencantumkan jumlah unit fisik tiap tipe. Angka di `totalUnits` (seed) masih **ESTIMASI**, perlu dikonfirmasi.
+- [ ] **Foto asli tiap unit** — price list ada fotonya (interior, kolam, dll) tapi belum bisa diekstrak jadi file gambar dari PDF; foto tiap unit saat ini berupa **ilustrasi buatan AI** (Google Gemini) sebagai pengganti sementara.
 - [ ] Jam operasional layanan reservasi (WhatsApp)
 - [ ] **⚠️ Jam operasional wisata — DUA sumber klien saling beda, perlu klarifikasi final:**
   - Sumber A (screenshot info singkat): Senin–Jumat 08.00–22.00 WIB, Sabtu–Minggu 07.00–22.00 WIB.
   - Sumber B (grafis "Operational Hour"): Weekday 07.00–22.00 WIB, **Weekend 24 Jam**, **Libur Nasional 24 Jam**.
   - **Keputusan interim yang dipakai di situs sekarang** (arahan user, belum final dari klien): Senin–Jumat 08.00–22.00 WIB, **Sabtu–Minggu 24 Jam** — kombinasi jam dari Sumber A + status 24-jam dari Sumber B. Cek `lib/data/content.ts` (`infoSources` → "Jam Buka").
 
-*(Sudah terjawab: **DP 50% maks 1×24 jam / pelunasan manual di luar sistem** (bukan lunas di muka — lihat poin form WA di atas); **jam check-in 14.00 & check-out 12.00**; **rekening BSI 7262292465 a/n KOPERASI ALAM LESTARI**; **harga beda weekday/weekend**. Foto KTP sempat direncanakan opsional, tapi **dihapus total dari sistem 2026-08-04** — lihat §8.1.)*
+*(Sudah terjawab: **DP 50% maks 1×24 jam / pelunasan manual di luar sistem** (bukan lunas di muka — lihat poin form WA di atas); **jam check-in 14.00 & check-out 12.00**; **harga beda weekday/weekend**. Foto KTP sempat direncanakan opsional, tapi **dihapus total dari sistem 2026-08-04** — lihat §8.1.)*
 
 **Data tiket masuk & atraksi — SUDAH didapat** dari price list resmi (Koperasi Alam Lestari), diinput ke `lib/data/content.ts` (`getTicketPackages`, `getParkingFees`) dan ditampilkan di halaman Tentang (§"Harga Tiket Masuk" & "Tarif Parkir"):
 - Paket Basic (Diamond) Rp40.000/Rp25.000 (siang/malam) — asuransi, akses wisata, akses kolam berendam (Kawah Hujan).
@@ -318,7 +279,7 @@ Menegakkan S&K poin 7 & 8:
 - Anak 5–10 tahun (Silver) Rp30.000/Rp20.000.
 - Parkir: Bus Rp60.000, Mobil Rp15.000, Motor Rp5.000, Sepeda Rp2.000.
 - **Nirwana Pool** & **Kolam Berendam (Kawah Hujan)** dikonfirmasi sebagai nama fasilitas asli (sudah dipakai di §Daya Tarik Wisata). "Sky Bridge" & "Jalur Trekking" masih dugaan nama, belum dikonfirmasi.
-- Catatan: harga tiket masuk ini murni **konten informasi** di halaman publik (brosur), BUKAN sistem booking tiket — sistem tiket masuk sungguhan (`ADMIN_PORTAL`) tetap fase berikutnya sesuai §1.
+- Catatan: harga tiket masuk ini murni **konten informasi** di halaman publik (brosur), BUKAN sistem booking tiket — sistem tiket masuk sungguhan tidak ada (lihat ruang lingkup di atas).
 
 **Data penginapan (lodging) — SUDAH didapat** dari "Pricelist Penginapan DGCK" (PDF resmi). 6 tipe unit real:
 
@@ -336,9 +297,9 @@ Menegakkan S&K poin 7 & 8:
 - **Tanpa Ekstra Bed** (nambah kapasitas tanpa kasur tambahan) — mis. Eagle Hill Rp200.000, Camp Jamuju Rp175.000
 - **Glorious Campervan beda lagi:** flat Rp55.000/orang tambahan (tanpa opsi dgn/tanpa kasur, karena bukan unit berkasur).
 
-**Dampak ke skema database (§10) — BELUM diterapkan ke Prisma, baru di data mock frontend:** kolom `bookings.extra_bed_price` (skema lama, satu harga) perlu direvisi jadi menampung 2 opsi (dgn/tanpa kasur) atau referensi ke tarif per `room_types`. Ini perlu dikerjakan saat FASE 6/7 (implementasi booking backend), bukan sekarang.
+Struktur tarif tambah orang ini disimpan di `room_types` (`extra_bed_price`, `extra_no_bed_price`, `extra_flat_price`) dan dibekukan per tenda ke `booking_items.extra_bed_price` saat booking dibuat.
 
-**Fasilitas umum yang SAMA di semua unit** (dari price list, bukan asumsi): Tiket DGCK, Keamanan 24 Jam, Resepsionis, Playground, **Cratera Resto**, **Nirwana Pool & Resto**, Room Service. Sudah dipakai di halaman Tentang §"Fasilitas Umum".
+**Fasilitas umum yang SAMA di semua unit** (dari price list, bukan asumsi): Tiket DGCK, Keamanan 24 Jam, Resepsionis, Playground, **Cratera Resto**, **Nirwana Pool & Resto**, Room Service. Sudah dipakai di halaman Tentang (bagian Fasilitas Kawasan).
 
 ---
 
@@ -349,7 +310,6 @@ Menegakkan S&K poin 7 & 8:
 - **Docker/docker-compose menjelang deploy**, bukan saat mengembangkan fitur.
 - Domain & VPS **atas nama pihak D'Glorious**.
 - **Wajib sebelum go-live:** backup database otomatis + hardening dasar server (firewall, non-root user, update rutin).
-- *(Fase berikutnya)* Akun Midtrans **production** butuh dokumen usaha klien — selama KP **sandbox**.
 
 ---
 
@@ -361,12 +321,11 @@ Menegakkan S&K poin 7 & 8:
 - DTO + `class-validator` untuk semua input di NestJS.
 - Commit message: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`.
 - **Struktur folder `backend/src/` — per UNIT BISNIS, bukan per role (keputusan 2026-08-01).** Modul dikelompokkan berdasarkan area dashboard admin (cocok dengan RBAC §5 & route frontend `/admin/*`), bukan folder per role:
-  - `penginapan/` — semua modul milik dashboard Penginapan (`room-types/`, nanti `bookings/`, dll). Endpoint publik (katalog tanpa login) **tetap di dalam** folder ini sebagai controller terpisah tanpa guard (mis. `room-types-public.controller.ts`) — datanya tetap milik domain Penginapan, cuma beda syarat akses.
-  - `portal/`, `cafe/` — *(fase berikutnya)* pola yang sama untuk `ADMIN_PORTAL`/`ADMIN_CAFFE`.
-  - Lintas-unit-bisnis dapat folder sendiri di root `src/`, bukan masuk ke salah satu unit: `auth/`, `settings/` (dipakai semua unit), dan nanti `owner/` khusus endpoint agregat (mis. total pendapatan gabungan 3 unit bisnis) yang tidak dimiliki satu unit saja.
+  - `penginapan/` — semua modul milik dashboard Penginapan (`room-types/`, `bookings/`). Endpoint publik (katalog tanpa login) **tetap di dalam** folder ini sebagai controller terpisah tanpa guard (mis. `room-types-public.controller.ts`) — datanya tetap milik domain Penginapan, cuma beda syarat akses.
+  - Lintas-unit-bisnis dapat folder sendiri di root `src/`, bukan masuk ke salah satu unit: `auth/`, `settings/` (dipakai semua unit). Agregasi untuk dashboard Owner dihitung di frontend dari data booking, bukan endpoint khusus.
   - **Alasan bukan folder-per-role:** satu resource (mis. `room-types`) di-CRUD banyak role sekaligus (`SUPER_ADMIN`, `OWNER`, `ADMIN_PENGINAPAN` — lihat tabel §5). Folder per role akan memaksa duplikasi service atau balik lagi butuh satu sumber logic bersama. Role tetap ditegakkan lewat `@Roles(...)` di tiap controller (§4.2) — bukan lewat lokasi file.
-- **Struktur folder `frontend/components/admin/` — ikut pola yang sama (keputusan 2026-08-02).** `components/admin/penginapan/` menampung semua komponen dashboard Penginapan (`KelolaPage`, `BookingsPage`, dst), mirror `app/admin/penginapan/*` & konvensi backend di atas. `portal/`/`cafe/` **belum dibuat** — nunggu ada kode sungguhan buat diisi (folder kosong gak ada gunanya, git juga gak nge-track direktori kosong), bukan scaffolding di depan. `components/ui/`, `components/layout/`, `components/public/`, `components/owner/` **tidak** ikut pola ini — masing-masing sudah punya pengelompokan sendiri yang jelas (generik lintas-halaman / shell layout / katalog publik / dashboard Owner), bukan area yang bakal pecah jadi banyak unit bisnis.
-- **`frontend/lib/api/` sengaja TETAP flat, satu file per resource backend** (`roomTypes.ts`, nanti `bookings.ts`, `settings.ts`) — beda dari alasan controller backend dipecah (ada pemaksa teknis: guard/`@Roles` beda per controller), di frontend gak ada pemaksa serupa, cuma kumpulan fungsi fetch biasa. Ini juga konsisten sama pola `lib/data/` yang sudah lebih dulu ada (`rooms.ts`, `admin.ts`, `owner.ts`, `settings.ts` — flat, gak ada subfolder).
+- **Struktur folder `frontend/components/admin/` — ikut pola yang sama (keputusan 2026-08-02).** `components/admin/penginapan/` menampung semua komponen dashboard Penginapan (`KelolaPage`, `BookingsPage`, dst), mirror `app/admin/penginapan/*` & konvensi backend di atas. `components/ui/`, `components/layout/`, `components/public/`, `components/owner/` **tidak** ikut pola ini — masing-masing sudah punya pengelompokan sendiri yang jelas (generik lintas-halaman / shell layout / katalog publik / dashboard Owner), bukan area yang bakal pecah jadi banyak unit bisnis.
+- **`frontend/lib/api/` sengaja TETAP flat, satu file per resource backend** (`roomTypes.ts`, `bookings.ts`, `settings.ts`) — beda dari alasan controller backend dipecah (ada pemaksa teknis: guard/`@Roles` beda per controller), di frontend gak ada pemaksa serupa, cuma kumpulan fungsi fetch biasa. Ini juga konsisten sama pola `lib/data/` yang sudah lebih dulu ada (`admin.ts`, `owner.ts`, `content.ts` — flat, gak ada subfolder).
 
 ---
 
@@ -390,7 +349,7 @@ Menegakkan S&K poin 7 & 8:
 # <Nama Fitur>
 
 **Route:** `/path/terkait` (kalau ada)
-**Status:** ✅ Selesai (Versi 1) / 🚧 Sebagian / dll
+**Status:** ✅ Selesai / 🚧 Sebagian / dll
 **File utama:** path file kode paling relevan
 
 ## Ringkasan

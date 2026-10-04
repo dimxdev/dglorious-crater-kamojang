@@ -34,6 +34,8 @@ export type CreateBookingInput = {
 export type AdminBookingItem = {
   roomTypeId: number;
   roomTypeSlug: string;
+  roomTypeName: string;
+  roomTypeCategory: string;
   adults: number;
   children: number;
   extraBedQty: number;
@@ -131,20 +133,23 @@ export function editBooking(token: string, code: string, dto: EditBookingInput) 
 }
 
 /**
- * Bentuk `AdminBooking` (mock) dipetakan dari `AdminBookingDetail` (API) —
- * biar fungsi analitik yang sudah ada (`occupiedQtyOnDate`, `effectiveStatus`,
- * `lib/data/owner.ts`) tetap kepakai apa adanya tanpa ubah bentuknya sama
- * sekali. Dipakai bersama oleh Admin Overview (FASE 9) & Dashboard Owner
- * (FASE 10, 2026-08-21) — dulu ada 2 salinan nyaris identik, sekarang satu
- * sumber. `adults`/`children`/`extraBedQty` cuma dijumlah kasar (dashboard
- * ringkasan gak pernah menampilkan rincian per-item booking).
+ * Memetakan `AdminBookingDetail` (respons API) ke bentuk `AdminBooking` yang
+ * dipakai fungsi analitik (`occupiedQtyOnDate`, `effectiveStatus`,
+ * `lib/data/owner.ts`). Dipakai bersama oleh Ringkasan Admin & Dashboard
+ * Owner. `adults`/`children`/`extraBedQty` cuma dijumlah kasar karena
+ * dashboard ringkasan tidak menampilkan rincian per-item booking.
  */
-export function toAdminBookingMock(b: AdminBookingDetail): AdminBooking {
+export function toAdminBooking(b: AdminBookingDetail): AdminBooking {
   return {
     kode: b.bookingCode,
     guest: b.guestName,
     wa: b.guestPhone,
-    rooms: b.items.map((i) => ({ slug: i.roomTypeSlug, qty: 1 })),
+    rooms: b.items.map((i) => ({
+      slug: i.roomTypeSlug,
+      qty: 1,
+      name: i.roomTypeName,
+      category: i.roomTypeCategory,
+    })),
     createdAt: b.createdAt.slice(0, 10),
     checkIn: b.checkIn.slice(0, 10),
     checkOut: b.checkOut.slice(0, 10),
@@ -154,6 +159,5 @@ export function toAdminBookingMock(b: AdminBookingDetail): AdminBooking {
     adults: b.items.reduce((s, i) => s + i.adults, 0),
     children: b.items.reduce((s, i) => s + i.children, 0),
     extraBedQty: b.items.reduce((s, i) => s + i.extraBedQty, 0),
-    hasKtpPhoto: false,
   };
 }

@@ -1,4 +1,5 @@
 import type { Locale } from '@/lib/i18n/config';
+import type { BookableRoom } from '@/lib/pricing';
 import { apiFetch } from './client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -45,6 +46,9 @@ export type AdminRoomTypeListItem = {
   priceWeekend: number;
   capacity: number;
   totalUnits: number;
+  extraBedPrice: number | null;
+  extraNoBedPrice: number | null;
+  extraFlatPrice: number | null;
   isActive: boolean;
   coverImageUrl: string | null;
 };
@@ -61,7 +65,6 @@ export type AdminTranslation = {
 };
 
 export type AdminRoomImage = { id: number; imageUrl: string; isCover: boolean; sortOrder: number };
-export type AdminRoomUnit = { id: number; unitCode: string; status: 'AVAILABLE' };
 
 export type AdminRoomTypeDetail = {
   id: number;
@@ -78,11 +81,26 @@ export type AdminRoomTypeDetail = {
   facilities: FacilityApi[];
   translations: AdminTranslation[];
   images: AdminRoomImage[];
-  units: AdminRoomUnit[];
 };
 
 export function fetchAdminRoomTypes(token: string) {
   return apiFetch<AdminRoomTypeListItem[]>('/admin/room-types', { token });
+}
+
+/** Bentuk yang dipakai form booking: harga & nama dari database, jadi ikut berubah kalau diedit di Kelola. */
+export function toBookableRoom(r: AdminRoomTypeListItem): BookableRoom {
+  return {
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    category: r.category,
+    priceWeekday: r.priceWeekday,
+    priceWeekend: r.priceWeekend,
+    capacity: r.capacity,
+    extraBedPrice: r.extraBedPrice ?? undefined,
+    extraNoBedPrice: r.extraNoBedPrice ?? undefined,
+    extraFlatPrice: r.extraFlatPrice ?? undefined,
+  };
 }
 
 export function fetchAdminRoomType(token: string, id: number) {

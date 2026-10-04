@@ -1,7 +1,7 @@
 # Detail Unit Penginapan
 
 **Route:** `/penginapan/[slug]`
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/app/penginapan/[slug]/page.tsx` → `frontend/components/public/DetailPage.tsx`
 
 ## Ringkasan
@@ -20,7 +20,7 @@ Halaman ini gabungan server + client component. Bagian server (`page.tsx`) memba
 - **Kartu Harga (sticky sidebar)** — harga weekday/weekend + CTA WhatsApp.
 
 ## Keputusan Desain Penting
-Halaman ini **tidak** punya `generateStaticParams` — katalog bersifat dinamis dari API, daftar slug tidak bisa dienumerasi saat build. Konsekuensinya halaman ini render-on-demand (`ƒ Dynamic`), bukan SSG. Semua tombol aksi mengarah ke WhatsApp deep link, tanpa form booking, karena booking online mandiri adalah scope Versi 2. Foto di-resolve lewat `resolveImageUrl()` yang menambahkan prefix origin API (`NEXT_PUBLIC_API_URL`) untuk URL relatif backend seperti `/uploads/...`.
+Halaman ini **tidak** punya `generateStaticParams` — katalog bersifat dinamis dari API, daftar slug tidak bisa dienumerasi saat build. Konsekuensinya halaman ini render-on-demand (`ƒ Dynamic`), bukan SSG. Semua tombol aksi mengarah ke WhatsApp deep link, tanpa form booking, karena situs ini sengaja tidak menyediakan booking online — reservasi dinegosiasikan lewat WhatsApp. Foto di-resolve lewat `resolveImageUrl()` yang menambahkan prefix origin API (`NEXT_PUBLIC_API_URL`) untuk URL relatif backend seperti `/uploads/...`.
 
 ## Terhubung ke
 - `GET /room-types/:slug?lang=...` (`fetchPublicRoomTypeBySlug`)

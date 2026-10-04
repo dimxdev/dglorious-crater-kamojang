@@ -1,6 +1,5 @@
-// Konten statis homepage & tentang (MOCK). Teks disimpan per-bahasa
-// (LocalizedText) lalu di-resolve lewat getter `get*(locale)`. Nanti sebagian
-// bisa dari CMS.
+// Konten statis homepage & tentang. Teks disimpan per-bahasa (LocalizedText)
+// lalu di-resolve lewat getter `get*(locale)`.
 
 import type { HomeImageKey } from '@/lib/data/images';
 import { type LocalizedText, pick } from '@/lib/data/localized';
@@ -19,9 +18,8 @@ import type { Locale } from '@/lib/i18n/config';
 // (foto, 2026-08-18) — sebelumnya dua nama itu masih tebakan ("Sky Bridge",
 // "Jalur Trekking").
 //
-// TODO yang tersisa: FOTO. Semuanya masih meminjam foto stok, bukan foto
-// tempat aslinya. Ganti begitu klien mengirim foto asli — daftar lengkap
-// fasilitas kawasan ada di lib/data/kawasan.ts.
+// Fotonya ilustrasi (lihat lib/data/images.ts); daftar lengkap fasilitas
+// kawasan ada di lib/data/kawasan.ts.
 type AttractionSource = {
   icon: IconName;
   photo: HomeImageKey;
@@ -305,40 +303,6 @@ const parkingFeeSources: ParkingFeeSource[] = [
 
 export function getParkingFees(locale: Locale): ParkingFee[] {
   return parkingFeeSources.map((p) => ({ vehicle: pick(p.vehicle, locale), price: p.price }));
-}
-
-// ── Fasilitas umum (halaman Tentang) ──────────────────────────
-// Amenitas pendukung — beda dari "Daya Tarik Wisata" di atas (yang memang
-// spot/pengalaman, bukan sekadar fasilitas). Air Panas & Jalur Trekking
-// dipindah ke situ karena keduanya pengalaman/spot, bukan amenitas.
-//
-// Tiket DGCK, Keamanan 24 Jam, Resepsionis, Playground, Cratera Resto,
-// Nirwana Pool & Resto, Room Service SUDAH dikonfirmasi — sama persis di
-// setiap halaman "FASILITAS UMUM" pada price list penginapan resmi klien
-// (berlaku untuk semua tamu, bukan cuma yang menginap). Sisanya (Wifi,
-// Parkir, Api Unggun, Toilet, Musala, Spot Foto, P3K) masih asumsi umum.
-type FacilitySource = { icon: IconName; label: LocalizedText };
-export type Facility = { icon: IconName; label: string };
-
-const facilitySources: FacilitySource[] = [
-  { icon: 'Ticket', label: { id: 'Tiket DGCK', en: 'DGCK Ticket' } },
-  { icon: 'ShieldCheck', label: { id: 'Keamanan 24 Jam', en: '24-Hour Security' } },
-  { icon: 'ConciergeBell', label: { id: 'Resepsionis 24 Jam', en: '24-Hour Reception' } },
-  { icon: 'Gamepad2', label: { id: 'Playground', en: 'Playground' } },
-  { icon: 'UtensilsCrossed', label: { id: 'Cratera Resto', en: 'Cratera Resto' } },
-  { icon: 'WavesLadder', label: { id: 'Nirwana Pool & Resto', en: 'Nirwana Pool & Resto' } },
-  { icon: 'BellRing', label: { id: 'Room Service', en: 'Room Service' } },
-  { icon: 'Wifi', label: { id: 'Wi-Fi', en: 'Wi-Fi' } },
-  { icon: 'CircleParking', label: { id: 'Parkir Luas', en: 'Ample Parking' } },
-  { icon: 'Flame', label: { id: 'Api Unggun', en: 'Campfire' } },
-  { icon: 'Toilet', label: { id: 'Toilet Umum', en: 'Public Toilets' } },
-  { icon: 'Moon', label: { id: 'Musala', en: 'Prayer Room' } },
-  { icon: 'Camera', label: { id: 'Spot Foto', en: 'Photo Spots' } },
-  { icon: 'Cross', label: { id: 'P3K', en: 'First Aid' } },
-];
-
-export function getFacilities(locale: Locale): Facility[] {
-  return facilitySources.map((f) => ({ icon: f.icon, label: pick(f.label, locale) }));
 }
 
 // ── Galeri (halaman Tentang, layout bento) ────────────────────

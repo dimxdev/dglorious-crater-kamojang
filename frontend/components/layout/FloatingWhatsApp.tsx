@@ -3,7 +3,7 @@
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 
-// Fase 1 pakai link wa.me manual (WhatsApp API otomatis = fase lanjutan).
+// Memakai link wa.me (tanpa WhatsApp API).
 // Nomor WA dari tabel `settings` (§8.3) lewat GET /settings, bukan hardcode.
 
 export function FloatingWhatsApp() {

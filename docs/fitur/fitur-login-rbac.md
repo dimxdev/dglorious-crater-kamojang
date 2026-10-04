@@ -1,7 +1,7 @@
 # Login & RBAC
 
 **Route:** `/login` (satu pintu semua role)
-**Status:** ✅ Selesai (Versi 1)
+**Status:** ✅ Selesai
 **File utama:** `frontend/components/public/LoginPage.tsx`, `backend/src/auth/`, `frontend/lib/auth/`
 
 ## Ringkasan

@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { copyFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
@@ -39,13 +41,11 @@ const ROLES: {
 
 // ─────────────────────────────────────────────────────────────
 // Konfigurasi global (§8.3 PROJECT.md) — JANGAN hardcode di kode,
-// admin bisa ubah lewat /admin/settings nanti.
+// nilainya disimpan di tabel `settings`.
 // ─────────────────────────────────────────────────────────────
 // 12 poin S&K RESMI dari klien (form reservasi WhatsApp D'Glorious Crater
-// Kamojang, dikonfirmasi 2026-07-26) — sama persis dengan yang sudah dipakai
-// `frontend/lib/data/settings.ts`. Menggantikan draft generik lama yang malah
-// kontradiktif ("tidak ada sistem DP") dengan model bisnis fase 1 yang
-// sebenarnya (DP 50%, lihat PROJECT.md §6.1).
+// Kamojang, dikonfirmasi 2026-07-26), dipakai di situs (DP 50%, lihat
+// PROJECT.md §6.1).
 //
 // `Setting.value` cuma satu string per key (bukan per-bahasa) — jadi teks
 // bilingual disimpan sebagai 2 KEY TERPISAH (`_id`/`_en`), bukan 1 kolom
@@ -96,17 +96,15 @@ const SETTINGS: { key: string; value: string }[] = [
   { key: 'instagram_url', value: 'https://www.instagram.com/dgloriouscraterkamojang' },
   { key: 'tiktok_url', value: 'https://www.tiktok.com/@dgloriouscraterkamojang' },
   { key: 'facebook_url', value: 'https://www.facebook.com/people/DGlorious-Crater-Kamojang/61554424100148/' },
-  { key: 'bank_account', value: 'BSI 7262292465 a/n KOPERASI ALAM LESTARI' },
   { key: 'terms_conditions_id', value: TERMS_ID },
   { key: 'terms_conditions_en', value: TERMS_EN },
 ];
 
 // ─────────────────────────────────────────────────────────────
 // Data 6 tenda/villa ASLI — sumber: "Pricelist Penginapan DGCK" (PDF resmi
-// klien), disamakan dengan `frontend/lib/data/rooms.ts` supaya mock frontend &
-// isi database gak beda. Harga/kapasitas/tarif tambah orang SUDAH final dari
-// klien; `totalUnits` masih ESTIMASI (belum dikonfirmasi, lihat PROJECT.md §11)
-// dan URL gambar masih placeholder sampai foto asli tiap unit dikirim klien.
+// klien). Harga/kapasitas/tarif tambah orang SUDAH final dari klien;
+// `totalUnits` masih ESTIMASI (belum dikonfirmasi, lihat PROJECT.md §11) dan
+// fotonya ilustrasi AI (lihat `prisma/seed-assets`).
 // ─────────────────────────────────────────────────────────────
 const ROOM_TYPES = [
   {
@@ -128,8 +126,7 @@ const ROOM_TYPES = [
       { icon: 'Martini', label: { id: 'Mini Bar', en: 'Mini Bar' } },
       { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
     ],
-    unitPrefix: 'EH',
-    images: ['https://picsum.photos/seed/eagle-hill-1/1200/800', 'https://picsum.photos/seed/eagle-hill-2/1200/800'],
+    images: ['eagle-hill-1.jpg', 'eagle-hill-2.jpg'],
     translations: {
       ID: {
         name: 'Eagle Hill',
@@ -139,7 +136,6 @@ const ROOM_TYPES = [
           'Cottage kayu nyaman dengan private hot spring di teras, kasur queen empuk, dan pemandangan hutan berkabut. Dilengkapi Smart TV & Netflix, mini bar, serta pemanas ruangan untuk malam yang sejuk di Kamojang.',
         bedInfo: '1 Queen Bed',
         bathroomInfo: 'Kamar mandi privat + private hot spring',
-        facilitiesText: 'Sarapan, penghangat ruangan, Smart TV & Netflix, Wi-Fi, water heater, mini bar',
         rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
       },
       EN: {
@@ -150,7 +146,6 @@ const ROOM_TYPES = [
           "A cozy wooden cottage with a private hot spring on the terrace, a plush queen bed, and misty forest views. Complete with Smart TV & Netflix, a mini bar, and a room heater for Kamojang's cool nights.",
         bedInfo: '1 Queen Bed',
         bathroomInfo: 'Private bathroom + private hot spring',
-        facilitiesText: 'Breakfast, room heater, Smart TV & Netflix, Wi-Fi, water heater, mini bar',
         rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
       },
     },
@@ -174,8 +169,7 @@ const ROOM_TYPES = [
       { icon: 'Martini', label: { id: 'Mini Bar', en: 'Mini Bar' } },
       { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
     ],
-    unitPrefix: 'RK',
-    images: ['https://picsum.photos/seed/royal-kahuripan-1/1200/800', 'https://picsum.photos/seed/royal-kahuripan-2/1200/800'],
+    images: ['royal-kahuripan-1.jpg', 'royal-kahuripan-2.jpg'],
     translations: {
       ID: {
         name: 'Royal Kahuripan',
@@ -185,7 +179,6 @@ const ROOM_TYPES = [
           'Tenda glamping dengan kasur queen empuk, kamar mandi privat berair panas, dan fasilitas selengkap kamar hotel — TV digital, mini bar, hingga meja santai di depan tenda.',
         bedInfo: '1 Queen Bed',
         bathroomInfo: 'Kamar mandi privat',
-        facilitiesText: 'Sarapan, penghangat ruangan, TV digital, Wi-Fi, water heater, mini bar',
         rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
       },
       EN: {
@@ -196,7 +189,6 @@ const ROOM_TYPES = [
           'A glamping tent with a plush queen bed, a private hot-water bathroom, and amenities as complete as a hotel room — digital TV, a mini bar, and a lounge table right outside the tent.',
         bedInfo: '1 Queen Bed',
         bathroomInfo: 'Private bathroom',
-        facilitiesText: 'Breakfast, room heater, digital TV, Wi-Fi, water heater, mini bar',
         rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
       },
     },
@@ -218,8 +210,7 @@ const ROOM_TYPES = [
       { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
       { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
     ],
-    unitPrefix: 'CJ',
-    images: ['https://picsum.photos/seed/camp-jamuju-1/1200/800', 'https://picsum.photos/seed/camp-jamuju-2/1200/800'],
+    images: ['camp-jamuju-1.jpg', 'camp-jamuju-2.jpg'],
     translations: {
       ID: {
         name: 'Camp Jamuju',
@@ -229,7 +220,6 @@ const ROOM_TYPES = [
           'Tenda kanvas untuk 4 orang dengan area halaman samping yang lega, api unggun bersama, dan coffee corner untuk menghangatkan badan sebelum tidur.',
         bedInfo: '4 Single Bed',
         bathroomInfo: 'Kamar mandi bersama (air panas)',
-        facilitiesText: 'Sarapan, api unggun bersama, coffee corner, Wi-Fi, air panas',
         rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
       },
       EN: {
@@ -240,7 +230,6 @@ const ROOM_TYPES = [
           'A canvas tent for 4, with a spacious side yard, a shared bonfire, and a coffee corner to warm up before sleep.',
         bedInfo: '4 Single Beds',
         bathroomInfo: 'Shared bathroom (hot water)',
-        facilitiesText: 'Breakfast, shared bonfire, coffee corner, Wi-Fi, hot water',
         rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
       },
     },
@@ -261,8 +250,7 @@ const ROOM_TYPES = [
       { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
       { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
     ],
-    unitPrefix: 'CR',
-    images: ['https://picsum.photos/seed/camp-rasamala-1/1200/800', 'https://picsum.photos/seed/camp-rasamala-2/1200/800'],
+    images: ['camp-rasamala-1.jpg', 'camp-rasamala-2.jpg'],
     translations: {
       ID: {
         name: 'Camp Rasamala',
@@ -272,7 +260,6 @@ const ROOM_TYPES = [
           'Tenda kanvas untuk 4 orang dengan bonfire privat sendiri — cocok untuk keluarga atau rombongan yang ingin bersantai di api unggun tanpa berbagi dengan tamu lain.',
         bedInfo: '4 Single Bed',
         bathroomInfo: 'Kamar mandi bersama (air panas)',
-        facilitiesText: 'Sarapan, api unggun privat, coffee corner, Wi-Fi, air panas',
         rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
       },
       EN: {
@@ -283,7 +270,6 @@ const ROOM_TYPES = [
           'A canvas tent for 4, with your own private bonfire — ideal for families or groups who want to unwind by the fire without sharing with other guests.',
         bedInfo: '4 Single Beds',
         bathroomInfo: 'Shared bathroom (hot water)',
-        facilitiesText: 'Breakfast, private bonfire, coffee corner, Wi-Fi, hot water',
         rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
       },
     },
@@ -304,8 +290,7 @@ const ROOM_TYPES = [
       { icon: 'Armchair', label: { id: 'Meja & Kursi Santai', en: 'Lounge Table & Chairs' } },
       { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
     ],
-    unitPrefix: 'CC',
-    images: ['https://picsum.photos/seed/camp-cakrawala-1/1200/800', 'https://picsum.photos/seed/camp-cakrawala-2/1200/800'],
+    images: ['camp-cakrawala-1.jpg', 'camp-cakrawala-2.jpg'],
     translations: {
       ID: {
         name: 'Camp Cakrawala',
@@ -315,7 +300,6 @@ const ROOM_TYPES = [
           'Tenda kanvas ringkas untuk 3 orang, pilihan pas untuk yang datang berdua atau bertiga dan ingin merasakan berkemah santai tanpa ribet.',
         bedInfo: '2 Single Bed',
         bathroomInfo: 'Kamar mandi bersama (air panas)',
-        facilitiesText: 'Sarapan, coffee corner, Wi-Fi, air panas',
         rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Kelebihan tamu dikenakan tarif tambah orang.',
       },
       EN: {
@@ -326,7 +310,6 @@ const ROOM_TYPES = [
           'A compact canvas tent for 3, a great fit for couples or small groups who want a relaxed camping experience without the hassle.',
         bedInfo: '2 Single Beds',
         bathroomInfo: 'Shared bathroom (hot water)',
-        facilitiesText: 'Breakfast, coffee corner, Wi-Fi, hot water',
         rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged an additional person rate.',
       },
     },
@@ -348,8 +331,7 @@ const ROOM_TYPES = [
       { icon: 'Coffee', label: { id: 'Coffee Corner', en: 'Coffee Corner' } },
       { icon: 'Wifi', label: { id: 'Free Wi-Fi', en: 'Free Wi-Fi' } },
     ],
-    unitPrefix: 'GC',
-    images: ['https://picsum.photos/seed/glorious-campervan-1/1200/800', 'https://picsum.photos/seed/glorious-campervan-2/1200/800'],
+    images: ['glorious-campervan-1.jpg', 'glorious-campervan-2.jpg'],
     translations: {
       ID: {
         name: 'Glorious Campervan',
@@ -359,7 +341,6 @@ const ROOM_TYPES = [
           'Kavling terbuka 5×7 meter untuk campervan atau tenda pribadimu sendiri, lengkap dengan sumber listrik, coffee corner, dan akses ke semua fasilitas umum DGCK.',
         bedInfo: 'Kavling 5×7 Meter',
         bathroomInfo: 'Kamar mandi bersama',
-        facilitiesText: 'Sumber listrik, coffee corner, Wi-Fi, kamar mandi bersama',
         rules: 'Check-in 14.00 WIB, check-out 12.00 WIB. Tambah orang dikenakan tarif flat per orang.',
       },
       EN: {
@@ -370,12 +351,20 @@ const ROOM_TYPES = [
           'An open 5×7 m plot for your own campervan or tent, complete with a power source, a coffee corner, and access to all DGCK common facilities.',
         bedInfo: '5×7 m Plot',
         bathroomInfo: 'Shared bathroom',
-        facilitiesText: 'Power source, coffee corner, Wi-Fi, shared bathroom',
         rules: 'Check-in 2 PM, check-out 12 PM. Extra guests are charged a flat per-person rate.',
       },
     },
   },
 ];
+
+const SEED_ASSETS_DIR = join(__dirname, 'seed-assets');
+const UPLOAD_DIR = join(__dirname, '..', 'uploads', 'room-types');
+
+function publishSeedImage(file: string): string {
+  mkdirSync(UPLOAD_DIR, { recursive: true });
+  copyFileSync(join(SEED_ASSETS_DIR, file), join(UPLOAD_DIR, `seed-${file}`));
+  return `/uploads/room-types/seed-${file}`;
+}
 
 async function seedRolesAndUsers() {
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
@@ -409,9 +398,9 @@ async function seedSettings() {
       create: { key: s.key, value: s.value },
     });
   }
-  // Old single-language key, replaced by terms_conditions_id/_en above —
-  // remove it so a re-seed (not a full reset) doesn't leave stale data.
-  await prisma.setting.deleteMany({ where: { key: 'terms_conditions' } });
+  // Key lama (S&K satu bahasa; rekening tidak ditampilkan di situs) — dihapus
+  // supaya re-seed (bukan reset penuh) tidak menyisakan data usang.
+  await prisma.setting.deleteMany({ where: { key: { in: ['terms_conditions', 'bank_account'] } } });
   console.log(`✔ Seeded ${SETTINGS.length} settings`);
 }
 
@@ -450,22 +439,12 @@ async function seedRoomTypes(createdById: number) {
       });
     }
 
-    // Unit fisik (unit_code unik per tipe)
-    for (let i = 1; i <= rt.totalUnits; i++) {
-      const unitCode = `${rt.unitPrefix}-${String(i).padStart(2, '0')}`;
-      await prisma.roomUnit.upsert({
-        where: { roomTypeId_unitCode: { roomTypeId: roomType.id, unitCode } },
-        update: {},
-        create: { roomTypeId: roomType.id, unitCode },
-      });
-    }
-
     // Gambar (reset lalu buat ulang — tidak ada unique alami)
     await prisma.roomImage.deleteMany({ where: { roomTypeId: roomType.id } });
     await prisma.roomImage.createMany({
-      data: rt.images.map((url, idx) => ({
+      data: rt.images.map((file, idx) => ({
         roomTypeId: roomType.id,
-        imageUrl: url,
+        imageUrl: publishSeedImage(file),
         isCover: idx === 0,
         sortOrder: idx,
       })),

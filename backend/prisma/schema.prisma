@@ -49,10 +49,6 @@ enum PaymentStatus {
   PAID
 }
 
-enum RoomUnitStatus {
-  AVAILABLE
-}
-
 enum LanguageCode {
   ID
   EN
@@ -81,20 +77,16 @@ model User {
   createdRoomTypes RoomType[]       @relation("RoomTypeCreatedBy")
   createdBookings  Booking[]        @relation("BookingCreatedBy")
   verifiedPayments Payment[]        @relation("PaymentVerifiedBy")
-  updatedSettings  Setting[]        @relation("SettingUpdatedBy")
   editedBookings   BookingEditLog[] @relation("BookingEditedBy")
 
   @@map("users")
 }
 
 model Setting {
-  id          Int      @id @default(autoincrement())
-  key         String   @unique
-  value       String
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  updatedById Int?     @map("updated_by")
-
-  updatedBy User? @relation("SettingUpdatedBy", fields: [updatedById], references: [id])
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
 }
@@ -121,24 +113,22 @@ model RoomType {
   createdBy    User?                 @relation("RoomTypeCreatedBy", fields: [createdById], references: [id])
   translations RoomTypeTranslation[]
   images       RoomImage[]
-  units        RoomUnit[]
   bookingItems BookingItem[]
 
   @@map("room_types")
 }
 
 model RoomTypeTranslation {
-  id             Int          @id @default(autoincrement())
-  roomTypeId     Int          @map("room_type_id")
-  languageCode   LanguageCode @map("language_code")
-  name           String
-  category       String
-  tagline        String?
-  description    String?
-  bedInfo        String?      @map("bed_info")
-  bathroomInfo   String?      @map("bathroom_info")
-  facilitiesText String?      @map("facilities_text")
-  rules          String?
+  id           Int          @id @default(autoincrement())
+  roomTypeId   Int          @map("room_type_id")
+  languageCode LanguageCode @map("language_code")
+  name         String
+  category     String
+  tagline      String?
+  description  String?
+  bedInfo      String?      @map("bed_info")
+  bathroomInfo String?      @map("bathroom_info")
+  rules        String?
 
   roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
 
@@ -158,25 +148,11 @@ model RoomImage {
   @@map("room_images")
 }
 
-model RoomUnit {
-  id         Int            @id @default(autoincrement())
-  roomTypeId Int            @map("room_type_id")
-  unitCode   String         @map("unit_code")
-  status     RoomUnitStatus @default(AVAILABLE)
-
-  roomType     RoomType      @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
-  bookingItems BookingItem[]
-
-  @@unique([roomTypeId, unitCode])
-  @@map("room_units")
-}
-
 model Booking {
   id          Int      @id @default(autoincrement())
   bookingCode String   @unique @map("booking_code")
   guestName   String   @map("guest_name")
   guestPhone  String   @map("guest_phone")
-  guestEmail  String?  @map("guest_email")
   createdAt   DateTime @default(now()) @map("created_at")
   checkIn     DateTime @map("check_in") @db.Date
   checkOut    DateTime @map("check_out") @db.Date
@@ -228,7 +204,6 @@ model BookingItem {
   id               Int     @id @default(autoincrement())
   bookingId        Int     @map("booking_id")
   roomTypeId       Int     @map("room_type_id")
-  roomUnitId       Int?    @map("room_unit_id")
   qty              Int     @default(1)
   subtotalSnapshot Decimal @map("subtotal_snapshot") @db.Decimal(12, 2)
 
@@ -238,9 +213,8 @@ model BookingItem {
   extraBedType  ExtraBedType? @map("extra_bed_type")
   extraBedPrice Decimal       @default(0) @map("extra_bed_price") @db.Decimal(12, 2)
 
-  booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  roomType RoomType  @relation(fields: [roomTypeId], references: [id])
-  roomUnit RoomUnit? @relation(fields: [roomUnitId], references: [id])
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  roomType RoomType @relation(fields: [roomTypeId], references: [id])
 
   @@index([bookingId])
   @@index([roomTypeId])
@@ -252,7 +226,6 @@ model Payment {
   bookingId    Int           @map("booking_id")
   method       PaymentMethod
   amount       Decimal       @db.Decimal(12, 2)
-  proofUrl     String?       @map("proof_url")
   status       PaymentStatus @default(PENDING)
   paidAt       DateTime?     @map("paid_at")
   verifiedById Int?          @map("verified_by")

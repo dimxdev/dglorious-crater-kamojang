@@ -17,7 +17,6 @@ type NavItem = {
   icon: string;
   label: string;
   exact?: boolean;
-  soon?: boolean;
 };
 
 /** Kartu putih bergaya Owner (border krem, radius besar) — dipakai di semua halaman Owner. */
@@ -46,8 +45,6 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
   const navItems: NavItem[] = [
     { href: '/owner', icon: '▦', label: t('owner.navRingkasan'), exact: true },
     { href: '/owner/penginapan', icon: '🛏', label: t('owner.navPenginapan') },
-    { href: '/owner/tiket', icon: '🎫', label: t('owner.navTiket'), soon: true },
-    { href: '/owner/cafe', icon: '☕', label: t('owner.navCafe'), soon: true },
   ];
 
   function handleLogout() {
@@ -76,20 +73,6 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
           {navItems.map((item) => {
-            if (item.soon) {
-              return (
-                <div
-                  key={item.href}
-                  className="flex cursor-not-allowed items-center gap-3 rounded-[10px] border-l-[3px] border-transparent px-3.5 py-3 text-sm font-medium text-[#7d746a]"
-                >
-                  <span className="w-4.5 text-center">{item.icon}</span>
-                  <span className="flex-1">{item.label}</span>
-                  <span className="rounded-[5px] bg-[#D4A04A]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#D4A04A]">
-                    SOON
-                  </span>
-                </div>
-              );
-            }
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             return (
               <Link
@@ -196,17 +179,6 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
         style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
       >
         {navItems.map((item) => {
-          if (item.soon) {
-            return (
-              <div
-                key={item.href}
-                className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[#c9c2b4]"
-              >
-                <span className="text-[19px] leading-none">{item.icon}</span>
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </div>
-            );
-          }
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link

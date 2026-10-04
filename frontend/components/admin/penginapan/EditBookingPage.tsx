@@ -14,12 +14,12 @@ import {
 import {
   checkRoomTypeAvailability,
   fetchAdminRoomTypes,
+  toBookableRoom,
 } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
-import { localizeRooms } from '@/lib/data/rooms';
 import { formatIDR } from '@/lib/format';
-import { calcGroupsTotal, calcNightsBreakdown } from '@/lib/pricing';
+import { calcGroupsTotal, calcNightsBreakdown, type BookableRoom } from '@/lib/pricing';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import {
   DiscountField,
@@ -35,10 +35,10 @@ import { StatusBadge } from './StatusBadge';
 import { displayStatus, toDisplay } from './BookingDetailModal';
 
 export function EditBookingPage({ code }: { code: string }) {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const { token } = useAuth();
   const router = useRouter();
-  const rooms = localizeRooms(locale);
+  const [rooms, setRooms] = useState<BookableRoom[]>([]);
 
   // Booking asli — diambil sekali saat mount
   const [booking, setBooking] = useState<AdminBookingDetail | null>(null);
@@ -71,6 +71,7 @@ export function EditBookingPage({ code }: { code: string }) {
     ])
       .then(([b, rtList]) => {
         setBooking(b);
+        setRooms(rtList.map(toBookableRoom));
         setRoomTypeIdBySlug(Object.fromEntries(rtList.map((r) => [r.slug, r.id])));
 
         // Pre-fill form dari data booking
