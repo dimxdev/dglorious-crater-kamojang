@@ -93,7 +93,7 @@ const SETTINGS: { key: string; value: string }[] = [
   { key: 'whatsapp_number', value: '6281110003016' },
   { key: 'whatsapp_number_2', value: '6281111121171' },
   { key: 'contact_email', value: 'dgloriouscraterkamojang@gmail.com' },
-  { key: 'instagram_url', value: 'https://www.instagram.com/dgloriouscraterkamojang' },
+  { key: 'instagram_url', value: 'https://www.instagram.com/dgloriouscrater.kamojang' },
   { key: 'tiktok_url', value: 'https://www.tiktok.com/@dgloriouscraterkamojang' },
   { key: 'facebook_url', value: 'https://www.facebook.com/people/DGlorious-Crater-Kamojang/61554424100148/' },
   { key: 'terms_conditions_id', value: TERMS_ID },

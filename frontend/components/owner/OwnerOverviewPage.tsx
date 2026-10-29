@@ -123,7 +123,8 @@ export function OwnerOverviewPage() {
         value: s.value,
         deltaText: s.isNew
           ? t('owner.newThisPeriod')
-          : `${s.up ? '▲' : '▼'} ${s.delta} ${t(`owner.${COMPARE_LABEL_KEY[range]}`)}`,
+          : // ▲/▼ tidak ada di font standar jsPDF (tercetak rusak) — pakai tanda ASCII.
+            `${s.up ? '+' : '-'}${s.delta} ${t(`owner.${COMPARE_LABEL_KEY[range]}`)}`,
         deltaTone: s.isNew ? 'neutral' : s.up ? 'up' : 'down',
       })),
       breakdowns: [],
