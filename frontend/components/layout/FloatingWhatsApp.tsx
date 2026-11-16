@@ -1,18 +1,21 @@
 'use client';
 
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { pickL } from '@/lib/api/siteContent';
+import { useSiteContent } from '@/lib/useSiteContent';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 
 // Memakai link wa.me (tanpa WhatsApp API).
 // Nomor WA dari tabel `settings` (§8.3) lewat GET /settings, bukan hardcode.
 
 export function FloatingWhatsApp() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { settings } = usePublicSettings();
+  const { content } = useSiteContent();
 
   const href = waLink(
     settings?.whatsapp_number,
-    'Halo D’Glorious Crater, saya ingin bertanya tentang penginapan.',
+    content ? pickL(content.sections.contact.waMessages.general, locale) : '',
   );
   if (!href) return null;
 

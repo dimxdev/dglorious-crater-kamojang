@@ -13,10 +13,12 @@ import {
   type PublicRoomTypeDetail,
 } from '@/lib/api/roomTypes';
 import { cn } from '@/lib/cn';
+import { pickL } from '@/lib/api/siteContent';
 import { getImage, type SourcedImage } from '@/lib/data/images';
 import { formatIDR } from '@/lib/format';
 import { getIcon, type IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { useSiteContent } from '@/lib/useSiteContent';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 
 // Situs tidak punya booking online, jadi CTA mengarah ke WhatsApp reservasi
@@ -29,6 +31,8 @@ export function DetailPage({ slug }: { slug: string }) {
   const [notFoundState, setNotFoundState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { settings } = usePublicSettings();
+  const { content } = useSiteContent();
+  const detail = content?.sections.room_detail;
 
   useEffect(() => {
     let active = true;
@@ -77,9 +81,16 @@ export function DetailPage({ slug }: { slug: string }) {
   // unit yang salah. Ini aset statis situs, bukan data unit.
   const ambience = [getImage('attractionAirPanas'), getImage('locationValley')];
 
+  // `{room}` di pesan CMS diganti nama tipe unit. Konten gagal dimuat: chat
+  // tetap terbuka tanpa teks awal.
   const waHref = waLink(
     settings.whatsapp_number,
-    `Halo D’Glorious Crater, saya ingin tanya ketersediaan & booking untuk ${room.name}.`,
+    content
+      ? pickL(content.sections.contact.waMessages.room, locale).replace(
+          /\{room\}/g,
+          room.name,
+        )
+      : '',
   );
 
   return (
@@ -146,14 +157,25 @@ export function DetailPage({ slug }: { slug: string }) {
               const own = otherImages[i];
               const fallback = ambience[i];
               return (
-                <figure key={i} className="relative overflow-hidden rounded-2xl">
+                <figure
+                  key={i}
+                  className="relative overflow-hidden rounded-2xl"
+                >
                   <Image
                     src={own ? resolveImageUrl(own.url) : fallback.src}
-                    alt={own ? t('detail.photoAlt', { name: room.name }) : fallback.alt}
+                    alt={
+                      own
+                        ? t('detail.photoAlt', { name: room.name })
+                        : fallback.alt
+                    }
                     fill
                     sizes="30vw"
                     className="object-cover"
-                    style={own ? undefined : { objectPosition: fallback.objectPosition }}
+                    style={
+                      own
+                        ? undefined
+                        : { objectPosition: fallback.objectPosition }
+                    }
                   />
                 </figure>
               );
@@ -211,22 +233,24 @@ export function DetailPage({ slug }: { slug: string }) {
               )}
             </dl>
 
-            <div className="border-mineral-200 bg-mineral-50 mt-5 flex gap-3 rounded-xl border p-4">
-              <Info
-                size={17}
-                strokeWidth={1.5}
-                className="text-mineral-600 mt-0.5 shrink-0"
-                aria-hidden
-              />
-              <div>
-                <div className="text-ash-900 text-[13.5px] font-semibold">
-                  {t('detail.childrenRuleTitle')}
+            {detail && (
+              <div className="border-mineral-200 bg-mineral-50 mt-5 flex gap-3 rounded-xl border p-4">
+                <Info
+                  size={17}
+                  strokeWidth={1.5}
+                  className="text-mineral-600 mt-0.5 shrink-0"
+                  aria-hidden
+                />
+                <div>
+                  <div className="text-ash-900 text-[13.5px] font-semibold">
+                    {t('detail.childrenRuleTitle')}
+                  </div>
+                  <p className="text-ash-700 mt-1 max-w-[60ch] text-[13px] leading-relaxed">
+                    {pickL(detail.childrenRule, locale)}
+                  </p>
                 </div>
-                <p className="text-ash-700 mt-1 max-w-[60ch] text-[13px] leading-relaxed">
-                  {t('detail.childrenRule')}
-                </p>
               </div>
-            </div>
+            )}
           </section>
 
           {/* FASILITAS */}
@@ -235,7 +259,9 @@ export function DetailPage({ slug }: { slug: string }) {
               {t('detail.facilities')}
             </h2>
             {room.bathroomInfo && (
-              <p className="text-ash-600 mt-1.5 text-[13px]">{room.bathroomInfo}</p>
+              <p className="text-ash-600 mt-1.5 text-[13px]">
+                {room.bathroomInfo}
+              </p>
             )}
             <ul className="mt-5 grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
               {room.facilities.map((f) => {
@@ -257,7 +283,7 @@ export function DetailPage({ slug }: { slug: string }) {
               })}
             </ul>
             <p className="text-ash-600 mt-5 max-w-[62ch] text-[13px] leading-relaxed">
-              {t('detail.universalFacilitiesNote')}{' '}
+              {detail && `${pickL(detail.universalFacilitiesNote, locale)} `}
               <Link
                 href="/tentang#fasilitas"
                 className="text-mineral-600 hover:text-mineral-700 font-medium underline underline-offset-2"
@@ -269,7 +295,9 @@ export function DetailPage({ slug }: { slug: string }) {
 
           {room.rules && (
             <section className="mt-14">
-              <h2 className="text-ash-900 font-serif text-2xl">{t('detail.rules')}</h2>
+              <h2 className="text-ash-900 font-serif text-2xl">
+                {t('detail.rules')}
+              </h2>
               <p className="text-ash-700 mt-4 max-w-[62ch] text-[14.5px] leading-[1.8]">
                 {room.rules}
               </p>
@@ -299,9 +327,11 @@ export function DetailPage({ slug }: { slug: string }) {
                 </div>
               </div>
             </div>
-            <p className="text-ash-600 mt-3 text-[12.5px] leading-relaxed">
-              {t('detail.highSeasonNote')}
-            </p>
+            {detail && (
+              <p className="text-ash-600 mt-3 text-[12.5px] leading-relaxed">
+                {pickL(detail.priceNote, locale)}
+              </p>
+            )}
 
             <hr className="border-ash-200 my-5" />
 
@@ -345,7 +375,9 @@ function Row({
         {icon && <span className="text-mineral-600 shrink-0">{icon}</span>}
         {label}
       </dt>
-      <dd className="text-ash-900 shrink-0 font-serif text-[1.05rem]">{value}</dd>
+      <dd className="text-ash-900 shrink-0 font-serif text-[1.05rem]">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -404,7 +436,12 @@ function GalleryMobileSlider({
   ): GallerySlide | null {
     if (own) return { kind: 'room', url: own.url };
     if (fallback) {
-      return { kind: 'ambience', src: fallback.src, alt: fallback.alt, objectPosition: fallback.objectPosition };
+      return {
+        kind: 'ambience',
+        src: fallback.src,
+        alt: fallback.alt,
+        objectPosition: fallback.objectPosition,
+      };
     }
     return null;
   }
@@ -436,15 +473,24 @@ function GalleryMobileSlider({
         className="no-scrollbar flex h-[22rem] snap-x snap-mandatory overflow-x-auto scroll-smooth rounded-2xl"
       >
         {slides.map((slide, i) => (
-          <figure key={i} className="relative h-full w-full shrink-0 snap-center">
+          <figure
+            key={i}
+            className="relative h-full w-full shrink-0 snap-center"
+          >
             <Image
-              src={slide.kind === 'room' ? resolveImageUrl(slide.url) : slide.src}
+              src={
+                slide.kind === 'room' ? resolveImageUrl(slide.url) : slide.src
+              }
               alt={slide.kind === 'room' ? photoAlt(roomName) : slide.alt}
               fill
               sizes="100vw"
               priority={i === 0}
               className="object-cover"
-              style={slide.kind === 'ambience' ? { objectPosition: slide.objectPosition } : undefined}
+              style={
+                slide.kind === 'ambience'
+                  ? { objectPosition: slide.objectPosition }
+                  : undefined
+              }
             />
           </figure>
         ))}

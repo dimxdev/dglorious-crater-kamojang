@@ -24,13 +24,10 @@
     "closeMenu": "Close menu"
   },
   "hero": {
-    "title": "Stay in the Heart of Kamojang Crater",
-    "subtitle": "Four craters, natural hot spring pools, and tents on a slope at 1,500 metres. An hour and a half from Bandung.",
     "ctaPrimary": "See Units & Rates",
     "ctaSecondary": "What Is There"
   },
   "footer": {
-    "tagline": "Geothermal crater tourism, hot springs & glamping in Kamojang, West Java.",
     "explore": "Explore",
     "contact": "Contact",
     "location": "Location",
@@ -41,46 +38,19 @@
     "mapTitle": "Map of D’Glorious Crater Kamojang"
   },
   "home": {
-    "attractionsTitle": "What Makes Kamojang Special",
     "attractionsViewAll": "See all attractions",
-    "lodgingTitle": "Sleep among mist & stars",
     "lodgingViewAll": "View all types",
-    "infoTitle": "Plan your visit",
-    "ctaTitle": "Rooms are limited every weekend.",
-    "ctaSubtitle": "Dates, rates, and deposit terms are handled over WhatsApp with our admin. You usually will not wait long for a reply.",
     "ctaButton": "Check Availability",
-    "facilitiesTeaser": "Four craters, four hot pools, three suspension bridges, and nine more facilities inside the same grounds.",
-    "facilitiesLink": "See every facility",
-    "lodgingSub": "Six unit types. Weekend rates differ, and both are printed on every card."
+    "facilitiesLink": "See every facility"
   },
   "about": {
-    "title": "From Kamojang Crater to D'Glorious Crater",
-    "historyLead": "Kamojang Crater has been known since colonial times as one of the oldest geothermal fields in Indonesia.",
-    "historyBody": "Steam from the cracks in the rock and the smell of sulfur have long been part of daily life here. To people nearby the crater is not just a natural feature. There are stories passed down about the power of the earth, and there is hot spring water that keeps you warm.",
-    "historyBody2": "This geothermal conservation area has drawn researchers and travellers for years. In 2023 D’Glorious Crater Kamojang began operating here, reworking access to the crater, the hot pools, and the places to stay without changing the character of the site.",
-    "historyBody3": "Mornings here are almost always foggy. Through the afternoon people gather at the hot pools, and once the sun drops the temperature follows it into the teens. Guests who stay the night usually spend it outside the tent rather than in it.",
-    "historyBody4": "What we protect is simple: the crater and the forest around it should not be worse off for our being here. Parts of the site are deliberately left alone, and the number of tents is capped so this slope does not turn into a car park.",
-    "statFoundedLabel": "Founded",
-    "statFoundedValue": "2023",
-    "statElevationLabel": "Elevation",
-    "statElevationValue": "±1,500 masl",
-    "statAreaLabel": "Estate Area",
-    "statAreaValue": "12 Hectares",
-    "attractionsTitle": "Tourist Attractions",
-    "galleryTitle": "Gallery",
-    "ticketTitle": "Entry Ticket Prices",
     "ticketDaytime": "06:00–19:00",
-    "ticketNighttime": "19:00–06:00",
-    "ticketNote": "Prices can change. Message us on WhatsApp to confirm current rates.",
-    "parkingTitle": "Parking Fees"
+    "ticketNighttime": "19:00–06:00"
   },
   "listing": {
-    "title": "Choose where to stay",
     "perNight": "per night",
-    "lead": "Six unit types, from a tent for two to a cottage with its own hot pool. Weekend rates differ, and both are printed on every card.",
     "metaUnitTypes": "Unit types",
     "metaCheckIn": "Check-in",
-    "metaCheckInValue": "From 2 PM",
     "resultCount": "{count} unit types shown",
     "empty": "No units to show yet",
     "emptyHint": "The catalogue is being updated. Message us on WhatsApp to ask about availability.",
@@ -89,8 +59,6 @@
     "rateWeekend": "Sat–Sun",
     "rateAllDays": "Any day",
     "metaRange": "Rate range",
-    "helpTitle": "Not sure which one?",
-    "helpBody": "Send us your dates and how many people. Our admin checks which unit fits and which dates are still open.",
     "gridHeading": "List of lodging units"
   },
   "detail": {
@@ -103,16 +71,13 @@
     "withoutBed": "Without Extra Bed",
     "extraFlatLabel": "Per additional person",
     "childrenRuleTitle": "Children policy",
-    "childrenRule": "Children aged 6 and above count as 1 adult. Children under 5 are not counted toward capacity. If the effective guest count exceeds standard capacity, extra-guest rates apply as shown above.",
     "facilities": "Room Facilities",
-    "universalFacilitiesNote": "All guests also get access to DGCK's general facilities (Nirwana Pool & Resto, Room Service, Playground, and more).",
     "universalFacilitiesLink": "See all facilities →",
     "rules": "House Rules",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "priceWeekday": "Weekday Price",
     "priceWeekend": "Weekend Price",
-    "highSeasonNote": "*Prices may change during High Season",
     "total": "Total",
     "contactNote": "Contact us via WhatsApp to check date availability and book.",
     "contactWa": "Contact via WhatsApp",
@@ -263,6 +228,7 @@
     "saveConfirm": "Save & Confirm",
     "saveCheckin": "Save & Check In",
     "bookingIncomplete": "Fill in the guest name, phone, and at least one tent first.",
+    "checkInPast": "Check-in date cannot be before today.",
     "cancel": "Cancel",
     "activeCount": "{n} active lodging types",
     "addRoom": "Add Lodging",
@@ -413,12 +379,360 @@
   },
   "superAdmin": {
     "portal": "Super Admin Portal",
-    "navHub": "Home",
     "greeting": "Welcome, {name}",
     "subtitle": "Choose which dashboard to manage.",
-    "cardPenginapanTitle": "Lodging",
-    "cardPenginapanDesc": "Bookings, room management, walk-ins, and reservation data.",
-    "openDashboard": "Open Dashboard"
+    "nav": {
+      "overview": "Overview",
+      "groupContent": "Site content",
+      "groupLodging": "Lodging",
+      "groupSystem": "System",
+      "home": "Home",
+      "about": "About",
+      "attractions": "Attractions & facilities",
+      "tickets": "Tickets & parking",
+      "gallery": "Gallery",
+      "contact": "Contact & footer",
+      "pages": "Lodging pages & terms",
+      "rooms": "Tents & units",
+      "settings": "General settings"
+    },
+    "hub": {
+      "subtitle": "Choose an area to manage.",
+      "contentDesc": "Text, photos and lists shown on the public site. Every text has an Indonesian and an English version.",
+      "home": "Hero, featured attractions, location info, routes, FAQ and booking call to action",
+      "about": "Introduction, short statistics and area history",
+      "attractions": "Attraction list and facility zones",
+      "tickets": "Entrance ticket packages and parking fees",
+      "gallery": "Gallery photos and their captions",
+      "contact": "Address, automatic WhatsApp messages, footer tagline and site description",
+      "pages": "Text on the lodging list, unit detail and terms & conditions pages",
+      "rooms": "Tent types, prices, facilities and unit photo galleries",
+      "settings": "WhatsApp numbers, email, social media, check-in time and terms",
+      "adminTitle": "Lodging Admin dashboard",
+      "adminDesc": "Bookings, walk-ins and reservation data."
+    },
+    "pages": {
+      "home": "Home page text and images, from the hero to the booking call to action.",
+      "about": "Introduction and history on the About page.",
+      "attractions": "Attractions, facility zones and their section titles.",
+      "tickets": "Ticket packages and parking fees. Prices are in rupiah.",
+      "gallery": "Gallery photos. The order here is the order on the site.",
+      "contact": "Address, automatic WhatsApp messages, footer tagline and the site description for search engines.",
+      "pages": "Extra text on the lodging list, unit detail and terms & conditions pages."
+    },
+    "rooms": {
+      "desc": "Tent and villa types: name, price, facilities and photos. Lodging Admins can only view them when creating a reservation."
+    },
+    "cms": {
+      "leaveConfirm": "You have unsaved changes. Leave this page?",
+      "discardConfirm": "Changes to this entry are not saved yet. Discard them?",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "menu": "Panel menu",
+      "viewOnSite": "View on site",
+      "langId": "ID · Indonesia",
+      "langEn": "EN · English",
+      "enEmpty": "EN version is empty: the site shows the ID text.",
+      "enEmptyShort": "EN version is empty",
+      "iconNone": "Choose an icon",
+      "imageNotImage": "The file must be an image.",
+      "imageTooLarge": "Image size must be 5 MB or less.",
+      "imageUploadError": "Could not upload the image. Try again.",
+      "imageNone": "No image yet",
+      "imageUploading": "Uploading...",
+      "imageReplace": "Replace image",
+      "imageUpload": "Upload image",
+      "imageRemove": "Remove image",
+      "imageRule": "Image file, 5 MB at most.",
+      "imageLabel": "Image",
+      "moveUpNamed": "Move up: {name}",
+      "moveDownNamed": "Move down: {name}",
+      "removeNamed": "Remove: {name}",
+      "loadError": "Could not load content. Check your connection and try again.",
+      "loading": "Loading...",
+      "sectionMissing": "Section \"{key}\" was not found on the server.",
+      "unsaved": "Not saved yet",
+      "saved": "Saved",
+      "lastUpdatedBy": "Last changed {when} by {name}",
+      "lastUpdated": "Last changed {when}",
+      "discard": "Discard changes",
+      "saving": "Saving...",
+      "save": "Save",
+      "onThisPage": "On this page",
+      "redirecting": "Redirecting...",
+      "nowVisible": "Item is now shown on the site.",
+      "nowHidden": "Item is now hidden from the site.",
+      "movedTo": "Moved to position {n} of {total}.",
+      "reorderError": "Could not change the order. The previous order was restored.",
+      "countSummary": "{n} items, {shown} shown on the site",
+      "hidden": "Hidden",
+      "showOnSiteNamed": "Show on site: {name}",
+      "showOnSite": "Show on site",
+      "editNamed": "Edit: {name}",
+      "deleteNamed": "Delete: {name}",
+      "addTitle": "Add {noun}",
+      "editTitle": "Edit {noun}",
+      "deleteTitle": "Delete {noun}",
+      "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
+      "deleteHint": "To hide it for now without deleting, turn off \"Show on site\" in the list."
+    },
+    "s": {
+      "home_hero": {
+        "title": "Home hero",
+        "desc": "The large headline, opening line and background photo at the top of the home page."
+      },
+      "home_attractions": {
+        "title": "Attractions section title",
+        "desc": "Title of the attractions section on the home page. Its cards come from attractions marked as featured."
+      },
+      "home_facilities_teaser": {
+        "title": "Facilities introduction",
+        "desc": "A short paragraph about facilities on the home page."
+      },
+      "home_lodging": {
+        "title": "Lodging section",
+        "desc": "Title and subtitle of the lodging section on the home page."
+      },
+      "home_info": {
+        "title": "Location info",
+        "desc": "Title and location photo. The info cards are managed below."
+      },
+      "home_routes": {
+        "title": "Routes to the site",
+        "desc": "Title, introduction and map link. The route list is managed below."
+      },
+      "home_faq": {
+        "title": "Frequently asked questions",
+        "desc": "FAQ title and introduction. The question list is managed below."
+      },
+      "home_cta": {
+        "title": "Booking call to action",
+        "desc": "The closing section of the home page with a background photo."
+      },
+      "about_intro": {
+        "title": "Introduction",
+        "desc": "Title, opening paragraph and up to four short statistics."
+      },
+      "about_history": {
+        "title": "Area history",
+        "desc": "The history text and its photo."
+      },
+      "about_attractions": {
+        "title": "Attractions section title",
+        "desc": "Title of the attraction list on the About page."
+      },
+      "about_gallery": {
+        "title": "Gallery title",
+        "desc": "Title of the gallery section on the About page."
+      },
+      "about_tickets": {
+        "title": "Tickets section",
+        "desc": "Title and note above the ticket package list."
+      },
+      "about_parking": {
+        "title": "Parking fees title",
+        "desc": "Title of the parking fee list."
+      },
+      "facilities": {
+        "title": "Facilities section",
+        "desc": "Title, note and disclaimer above the facility zone list."
+      },
+      "listing": {
+        "title": "Lodging list page",
+        "desc": "Title, introduction and help box on the lodging list page."
+      },
+      "room_detail": {
+        "title": "Unit detail page",
+        "desc": "Notes shown on every unit type detail page."
+      },
+      "terms": {
+        "title": "Terms & conditions page",
+        "desc": "Title, subtitle and question box. The terms text is in General settings."
+      },
+      "contact": {
+        "title": "Contact & footer",
+        "desc": "Address, footer tagline and WhatsApp message templates."
+      },
+      "site_meta": {
+        "title": "Site description",
+        "desc": "Site summary used in search results and link previews."
+      }
+    },
+    "c": {
+      "ATTRACTION": {
+        "title": "Attraction list",
+        "desc": "Each attraction has a photo and an icon. Attractions marked as featured also appear on the home page.",
+        "add": "Add attraction",
+        "empty": "No attractions yet.",
+        "noun": "attraction"
+      },
+      "INFO_CARD": {
+        "title": "Location info cards",
+        "desc": "Short info cards on the home page, such as address or opening hours.",
+        "add": "Add card",
+        "empty": "No info cards yet.",
+        "noun": "info card"
+      },
+      "ROUTE": {
+        "title": "Route list",
+        "desc": "Routes from a starting city, with duration and distance.",
+        "add": "Add route",
+        "empty": "No routes yet.",
+        "noun": "route"
+      },
+      "FAQ": {
+        "title": "Question list",
+        "desc": "Questions and answers shown on the home page.",
+        "add": "Add question",
+        "empty": "No questions yet.",
+        "noun": "question"
+      },
+      "TICKET_PACKAGE": {
+        "title": "Ticket packages",
+        "desc": "Each package has a day price, a night price and a benefit list.",
+        "add": "Add package",
+        "empty": "No ticket packages yet.",
+        "noun": "ticket package"
+      },
+      "PARKING_FEE": {
+        "title": "Parking fees",
+        "desc": "Fee per vehicle type.",
+        "add": "Add fee",
+        "empty": "No parking fees yet.",
+        "noun": "parking fee"
+      },
+      "GALLERY": {
+        "title": "Gallery photos",
+        "desc": "Photos shown in the About page gallery, in the order listed here.",
+        "add": "Add photo",
+        "empty": "No gallery photos yet.",
+        "noun": "photo"
+      },
+      "FACILITY_ZONE": {
+        "title": "Facility zones",
+        "desc": "Facility groups per area, each with its own item list.",
+        "add": "Add zone",
+        "empty": "No facility zones yet.",
+        "noun": "facility zone"
+      }
+    },
+    "f": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "lead": "Introduction paragraph",
+      "body": "Body text",
+      "note": "Note",
+      "disclaimer": "Disclaimer",
+      "heroImage": "Hero photo",
+      "locationPhoto": "Location photo",
+      "backgroundImage": "Background photo",
+      "photo": "Photo",
+      "icon": "Icon",
+      "line1": "Line 1",
+      "line2": "Line 2",
+      "linkLabel": "Link text",
+      "optional": "Optional",
+      "href": "Link address",
+      "hrefHint": "Optional. A full address (https://...) or a WhatsApp/phone link.",
+      "mapsUrl": "Google Maps link",
+      "mapsUrlHint": "Full address opened by the map button.",
+      "from": "From",
+      "duration": "Duration",
+      "distance": "Distance",
+      "question": "Question",
+      "answer": "Answer",
+      "stats": "Short statistics",
+      "statsHint": "Up to 4. Values and labels are typed by hand, not calculated.",
+      "addStat": "Add statistic",
+      "statN": "Statistic {n}",
+      "statsEmpty": "No statistics yet. This part can stay empty.",
+      "statValue": "Value",
+      "statLabel": "Label",
+      "paragraphHint": "Separate paragraphs with one blank line.",
+      "name": "Name",
+      "desc": "Description",
+      "featuredMeta": "Featured on home",
+      "featuredOnHome": "Show as a featured attraction on the home page",
+      "itemCount": "{n} items",
+      "zoneName": "Zone name",
+      "facilityItems": "Facility items",
+      "addFacility": "Add item",
+      "facilityN": "Item {n}",
+      "facilityEmpty": "No items yet.",
+      "priceSummary": "Day {day} · Night {night}",
+      "priceDay": "Day price",
+      "priceNight": "Night price",
+      "benefits": "Package benefits",
+      "addBenefit": "Add benefit",
+      "benefitN": "Benefit {n}",
+      "benefitsEmpty": "No benefits yet.",
+      "vehicle": "Vehicle type",
+      "price": "Fee",
+      "caption": "Photo caption",
+      "address": "Address",
+      "mapsQuery": "Map search text",
+      "mapsQueryHint": "The text searched on Google Maps for the embedded map.",
+      "footerTagline": "Footer tagline",
+      "waLegend": "Automatic WhatsApp messages",
+      "waIntro": "Text pre-filled when a visitor opens a WhatsApp chat from a button on the site.",
+      "waGeneral": "General question",
+      "waBooking": "Booking",
+      "waRoom": "Ask about a specific unit type",
+      "waRoomHint": "Write {room} to be replaced automatically with the unit type name.",
+      "waTerms": "Question about terms & conditions",
+      "metaDescription": "Site description",
+      "metaHint": "Shown in search results and link previews. Keep it short.",
+      "helpTitle": "Help box title",
+      "helpBody": "Help box text",
+      "childrenRule": "Children rule",
+      "universalFacilitiesNote": "General facilities note",
+      "priceNote": "Price note",
+      "questionTitle": "Question box title",
+      "questionBody": "Question box text"
+    },
+    "settings": {
+      "desc": "Contact numbers, social media links, check-in and check-out times, and the terms & conditions text. Changes are used on the site and in guest messages right away.",
+      "label": {
+        "whatsapp_number": "Main WhatsApp number",
+        "whatsapp_number_2": "Second WhatsApp number",
+        "contact_email": "Contact email",
+        "instagram_url": "Instagram link",
+        "tiktok_url": "TikTok link",
+        "facebook_url": "Facebook link",
+        "check_in_time": "Check-in time",
+        "check_out_time": "Check-out time",
+        "terms_conditions_id": "Terms & conditions",
+        "terms_conditions_en": "Terms & conditions"
+      },
+      "hint": {
+        "whatsapp_number": "International format without a plus sign, e.g. 628123456789.",
+        "whatsapp_number_2": "International format without a plus sign."
+      },
+      "group": {
+        "contact": {
+          "title": "Contact",
+          "desc": "Numbers and email shown on the site and used by the WhatsApp buttons."
+        },
+        "social": {
+          "title": "Social media",
+          "desc": "Full links to the official accounts."
+        },
+        "hours": {
+          "title": "Stay hours",
+          "desc": "Standard check-in and check-out times."
+        },
+        "terms": {
+          "title": "Terms & conditions",
+          "desc": "The full text. Its title and question box are managed under Site content, Lodging pages & terms."
+        },
+        "other": {
+          "title": "Other settings",
+          "desc": "Settings without a specific label. The key name is shown as is."
+        }
+      },
+      "changedCount": "{n} settings changed, not saved yet",
+      "noChanges": "No changes yet"
+    }
   },
   "dashboard": {
     "overview": "Overview",
@@ -433,22 +747,10 @@
     "navShortManage": "Manage",
     "revenue": "Revenue This Month"
   },
-  "terms": {
-    "title": "Terms & Conditions",
-    "subtitle": "Please read before making a lodging reservation at D'Glorious Crater Kamojang.",
-    "questionTitle": "Anything else you need to know?",
-    "questionBody": "Rates, deposit terms, and date availability are all handled directly over WhatsApp with our admin."
-  },
   "roles": {
     "SUPER_ADMIN": "Super Admin",
     "OWNER": "Owner",
     "ADMIN_PENGINAPAN": "Lodging Admin"
-  },
-  "visit": {
-    "routeTitle": "Getting here",
-    "routeLead": "Nearly every guest drives more than an hour to get here. Two roads lead in, and which one suits you depends on the car you are driving.",
-    "faqTitle": "Common questions",
-    "faqLead": "Reservations run through WhatsApp with our admin. The answers below usually land before you need to ask."
   },
   "notFound": {
     "title": "This page does not exist",
@@ -457,10 +759,5 @@
     "orTry": "Or go straight to",
     "linkLodging": "See the places to stay",
     "linkAbout": "About & things to do"
-  },
-  "kawasan": {
-    "title": "What is actually there",
-    "note": "Four craters, four hot pools, three suspension bridges. Enough to fill a whole day without leaving the grounds.",
-    "disclaimer": "These are groupings, not a site plan. The real layout on the ground may differ."
   }
 }

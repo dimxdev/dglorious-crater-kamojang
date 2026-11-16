@@ -7,11 +7,14 @@ import { useEffect, useState } from 'react';
 import { actionClass } from '@/components/public/ui';
 import { cn } from '@/lib/cn';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { pickL } from '@/lib/api/siteContent';
+import { useSiteContent } from '@/lib/useSiteContent';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Navbar() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const { content } = useSiteContent();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { settings } = usePublicSettings();
@@ -95,7 +98,7 @@ export function Navbar() {
   const transparent = overHero && !lifted && !open;
   const waHref = waLink(
     settings?.whatsapp_number,
-    'Halo D’Glorious Crater, saya ingin bertanya soal reservasi penginapan.',
+    content ? pickL(content.sections.contact.waMessages.booking, locale) : '',
   );
 
   return (

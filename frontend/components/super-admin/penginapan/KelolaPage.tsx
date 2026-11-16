@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { SuperAdminLayout } from '@/components/super-admin/SuperAdminLayout';
 import { Badge, Button, Input, Modal, Select } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import {
@@ -365,7 +365,12 @@ export function KelolaPage() {
   const totalUnits = rooms?.reduce((sum, r) => sum + r.totalUnits, 0) ?? 0;
 
   return (
-    <DashboardLayout title={t('dashboard.manage')}>
+    <SuperAdminLayout
+      wide
+      group={t('superAdmin.nav.groupLodging')}
+      title={t('superAdmin.nav.rooms')}
+      description={t('superAdmin.rooms.desc')}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-[13.5px] font-semibold">
@@ -459,7 +464,7 @@ export function KelolaPage() {
           </Button>
         </div>
       </Modal>
-    </DashboardLayout>
+    </SuperAdminLayout>
   );
 }
 

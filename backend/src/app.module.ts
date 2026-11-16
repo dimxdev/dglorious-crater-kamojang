@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { BookingsModule } from './penginapan/bookings/bookings.module';
 import { RoomTypesModule } from './penginapan/room-types/room-types.module';
 import { SettingsModule } from './settings/settings.module';
+import { SiteContentModule } from './site-content/site-content.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SettingsModule } from './settings/settings.module';
     RoomTypesModule,
     SettingsModule,
     BookingsModule,
+    SiteContentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

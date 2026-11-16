@@ -8,7 +8,6 @@ import {
   MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
-  Tent,
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -58,12 +57,6 @@ export function useAdminNavItems(): AdminNavItem[] {
       label: t('dashboard.bookings'),
       shortLabel: t('dashboard.navShortBookings'),
       icon: ClipboardList,
-    },
-    {
-      href: '/admin/penginapan/kelola',
-      label: t('dashboard.manage'),
-      shortLabel: t('dashboard.navShortManage'),
-      icon: Tent,
     },
   ];
 }

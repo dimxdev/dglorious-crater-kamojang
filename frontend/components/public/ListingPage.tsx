@@ -2,13 +2,20 @@
 
 import { Tent } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { PageMast, RoomCardSkeleton, actionClass } from '@/components/public/ui';
+import {
+  MastSkeleton,
+  PageMast,
+  RoomCardSkeleton,
+  actionClass,
+} from '@/components/public/ui';
 import {
   fetchPublicRoomTypes,
   type PublicRoomTypeSummary,
 } from '@/lib/api/roomTypes';
+import { pickL } from '@/lib/api/siteContent';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { useSiteContent } from '@/lib/useSiteContent';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 import { RoomCard } from './RoomCard';
 
@@ -19,10 +26,23 @@ export function ListingPage() {
   const [rooms, setRooms] = useState<PublicRoomTypeSummary[]>([]);
   const [status, setStatus] = useState<Status>('loading');
   const { settings } = usePublicSettings();
+  const { content, failed: contentFailed } = useSiteContent();
+  const listing = content?.sections.listing;
+  // Pesan WA dari CMS; kalau konten belum/gagal dimuat, tautannya tetap
+  // membuka chat tanpa teks awal, bukan dengan teks yang di-hardcode.
   const waHref = waLink(
     settings?.whatsapp_number,
-    'Halo D’Glorious Crater, saya ingin tanya ketersediaan tanggal dan harga penginapan.',
+    content ? pickL(content.sections.contact.waMessages.booking, locale) : '',
   );
+  // "Mulai 14.00" / "From 14.00": jamnya dari settings (`check_in_time`,
+  // format HH:mm), cuma kata depannya yang bergantung bahasa.
+  const checkIn = settings?.check_in_time
+    ? `${locale === 'en' ? 'From' : 'Mulai'} ${
+        locale === 'en'
+          ? settings.check_in_time
+          : settings.check_in_time.replace(':', '.')
+      }`
+    : null;
   // Dinaikkan tombol "Coba lagi" supaya percobaan ulang lewat effect yang sama
   // dengan pemuatan pertama — satu jalur fetch, bukan dua yang bisa berbeda.
   const [attempt, setAttempt] = useState(0);
@@ -46,33 +66,38 @@ export function ListingPage() {
 
   return (
     <div className="pb-24">
-      <PageMast
-        title={t('listing.title')}
-        lead={t('listing.lead')}
-        meta={
-          status === 'ready' && rooms.length > 0
-            ? [
-                {
-                  label: t('listing.metaUnitTypes'),
-                  value: String(rooms.length),
-                },
-                // Rentang harga di kepala halaman menjawab pertanyaan pertama
-                // orang ("muat nggak di budget saya?") sebelum mereka harus
-                // menggulir keenam kartu untuk mengumpulkannya sendiri.
-                {
-                  label: t('listing.metaRange'),
-                  value: `${formatIDR(
-                    Math.min(...rooms.map((r) => r.priceWeekday)),
-                  )} – ${formatIDR(Math.max(...rooms.map((r) => r.priceWeekend)))}`,
-                },
-                {
-                  label: t('listing.metaCheckIn'),
-                  value: t('listing.metaCheckInValue'),
-                },
-              ]
-            : undefined
-        }
-      />
+      {listing ? (
+        <PageMast
+          title={pickL(listing.title, locale)}
+          lead={pickL(listing.lead, locale)}
+          meta={
+            status === 'ready' && rooms.length > 0
+              ? [
+                  {
+                    label: t('listing.metaUnitTypes'),
+                    value: String(rooms.length),
+                  },
+                  // Rentang harga di kepala halaman menjawab pertanyaan pertama
+                  // orang ("muat nggak di budget saya?") sebelum mereka harus
+                  // menggulir keenam kartu untuk mengumpulkannya sendiri.
+                  {
+                    label: t('listing.metaRange'),
+                    value: `${formatIDR(
+                      Math.min(...rooms.map((r) => r.priceWeekday)),
+                    )} – ${formatIDR(Math.max(...rooms.map((r) => r.priceWeekend)))}`,
+                  },
+                  ...(checkIn
+                    ? [{ label: t('listing.metaCheckIn'), value: checkIn }]
+                    : []),
+                ]
+              : undefined
+          }
+        />
+      ) : contentFailed ? (
+        <PageMast title={t('nav.lodging')} />
+      ) : (
+        <MastSkeleton />
+      )}
 
       <div className="container-page pt-12">
         {/* Perubahan jumlah hasil diumumkan ke pembaca layar — tanpa ini,
@@ -96,7 +121,9 @@ export function ListingPage() {
         {status === 'error' && (
           <div className="border-ash-300 mx-auto max-w-md rounded-2xl border border-dashed px-6 py-14 text-center">
             <p className="text-ash-800 font-medium">{t('common.loadError')}</p>
-            <p className="text-ash-600 mt-1.5 text-sm">{t('listing.errorHint')}</p>
+            <p className="text-ash-600 mt-1.5 text-sm">
+              {t('listing.errorHint')}
+            </p>
             <button
               type="button"
               onClick={() => setAttempt((n) => n + 1)}
@@ -115,8 +142,12 @@ export function ListingPage() {
               className="text-ash-500 mx-auto"
               aria-hidden
             />
-            <p className="text-ash-800 mt-4 font-medium">{t('listing.empty')}</p>
-            <p className="text-ash-600 mt-1.5 text-sm">{t('listing.emptyHint')}</p>
+            <p className="text-ash-800 mt-4 font-medium">
+              {t('listing.empty')}
+            </p>
+            <p className="text-ash-600 mt-1.5 text-sm">
+              {t('listing.emptyHint')}
+            </p>
           </div>
         )}
 
@@ -135,12 +166,16 @@ export function ListingPage() {
                 cara menghubungi kami adalah gesekan yang tidak perlu. */}
             <div className="border-ash-300 mt-16 flex flex-wrap items-end justify-between gap-x-10 gap-y-6 border-t pt-10">
               <div>
-                <h2 className="text-ash-900 max-w-[18ch] font-serif text-[clamp(1.5rem,1.2rem+1.2vw,2.2rem)] leading-[1.1] tracking-[-0.03em]">
-                  {t('listing.helpTitle')}
-                </h2>
-                <p className="text-ash-600 mt-3 max-w-[46ch] text-sm leading-relaxed">
-                  {t('listing.helpBody')}
-                </p>
+                {listing && (
+                  <>
+                    <h2 className="text-ash-900 max-w-[18ch] font-serif text-[clamp(1.5rem,1.2rem+1.2vw,2.2rem)] leading-[1.1] tracking-[-0.03em]">
+                      {pickL(listing.helpTitle, locale)}
+                    </h2>
+                    <p className="text-ash-600 mt-3 max-w-[46ch] text-sm leading-relaxed">
+                      {pickL(listing.helpBody, locale)}
+                    </p>
+                  </>
+                )}
               </div>
               {waHref && (
                 <a

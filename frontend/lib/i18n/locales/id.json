@@ -24,13 +24,10 @@
     "closeMenu": "Tutup menu"
   },
   "hero": {
-    "title": "Menginap di Jantung Kawah Kamojang",
-    "subtitle": "Empat kawah, kolam air panas alami, dan tenda di lereng 1.500 meter. Satu setengah jam berkendara dari Bandung.",
     "ctaPrimary": "Lihat Unit & Harga",
     "ctaSecondary": "Apa Saja yang Ada"
   },
   "footer": {
-    "tagline": "Destinasi wisata kawah geothermal, pemandian air panas & glamping di Kamojang, Jawa Barat.",
     "explore": "Jelajahi",
     "contact": "Kontak",
     "location": "Lokasi",
@@ -41,46 +38,19 @@
     "mapTitle": "Peta lokasi D’Glorious Crater Kamojang"
   },
   "home": {
-    "attractionsTitle": "Yang Membuat Kamojang Istimewa",
     "attractionsViewAll": "Lihat semua daya tarik",
-    "lodgingTitle": "Tidur ditemani kabut & bintang",
     "lodgingViewAll": "Lihat semua tipe",
-    "infoTitle": "Rencanakan kunjunganmu",
-    "ctaTitle": "Kamar terbatas tiap akhir pekan.",
-    "ctaSubtitle": "Ketersediaan tanggal, harga, dan aturan DP diurus lewat WhatsApp bersama admin kami. Balasannya biasanya tidak lama.",
     "ctaButton": "Cek Ketersediaan",
-    "facilitiesTeaser": "Empat kawah, empat kolam air panas, tiga jembatan gantung, dan sembilan fasilitas lain di dalam satu kawasan.",
-    "facilitiesLink": "Lihat semua fasilitas",
-    "lodgingSub": "Enam tipe unit. Tarif akhir pekan berbeda, dan keduanya ditulis di tiap kartu."
+    "facilitiesLink": "Lihat semua fasilitas"
   },
   "about": {
-    "title": "Dari Kawah Kamojang ke D'Glorious Crater",
-    "historyLead": "Kawah Kamojang telah dikenal sejak era kolonial sebagai salah satu ladang panas bumi tertua di Indonesia.",
-    "historyBody": "Uap yang keluar dari celah bebatuan dan bau belerang yang khas sudah lama jadi bagian keseharian warga sekitar. Bagi mereka kawah ini bukan cuma gejala alam. Ada cerita turun-temurun soal kekuatan bumi yang harus dihormati, dan ada mata air panas yang menghangatkan.",
-    "historyBody2": "Kawasan konservasi panas bumi ini sudah lama ramai didatangi peneliti dan pelancong. Pada 2023 D’Glorious Crater Kamojang mulai beroperasi di sini, menata ulang akses ke kawah, kolam air panas, dan area menginap tanpa mengubah karakter tempatnya.",
-    "historyBody3": "Pagi di sini hampir selalu berkabut. Siang sampai sore orang berkumpul di kolam air panas, dan begitu matahari turun suhunya ikut turun ke belasan derajat. Tamu yang menginap biasanya menghabiskan malam di depan tenda, bukan di dalamnya.",
-    "historyBody4": "Yang kami jaga sederhana: kawah dan hutan di sekitarnya tidak boleh rusak karena kami ada di sini. Sebagian kawasan sengaja dibiarkan apa adanya, dan jumlah tenda dibatasi supaya lereng ini tidak berubah jadi tempat parkir.",
-    "statFoundedLabel": "Berdiri",
-    "statFoundedValue": "2023",
-    "statElevationLabel": "Ketinggian",
-    "statElevationValue": "±1.500 mdpl",
-    "statAreaLabel": "Luas Kawasan",
-    "statAreaValue": "12 Hektare",
-    "attractionsTitle": "Daya Tarik Wisata",
-    "galleryTitle": "Galeri",
-    "ticketTitle": "Harga Tiket Masuk",
     "ticketDaytime": "Pukul 06.00–19.00",
-    "ticketNighttime": "Pukul 19.00–06.00",
-    "ticketNote": "Harga bisa berubah sewaktu-waktu. Hubungi kami lewat WhatsApp untuk memastikan tarif terbaru.",
-    "parkingTitle": "Tarif Parkir"
+    "ticketNighttime": "Pukul 19.00–06.00"
   },
   "listing": {
-    "title": "Pilih tempat menginapmu",
     "perNight": "per malam",
-    "lead": "Enam tipe unit, dari tenda berdua sampai cottage dengan kolam air panas sendiri. Tarif akhir pekan berbeda, dan keduanya ditulis apa adanya di tiap kartu.",
     "metaUnitTypes": "Tipe unit",
     "metaCheckIn": "Check-in",
-    "metaCheckInValue": "Mulai 14.00",
     "resultCount": "{count} tipe unit ditampilkan",
     "empty": "Belum ada unit yang ditampilkan",
     "emptyHint": "Katalog sedang diperbarui. Hubungi kami lewat WhatsApp untuk menanyakan ketersediaan.",
@@ -89,8 +59,6 @@
     "rateWeekend": "Sabtu–Minggu",
     "rateAllDays": "Semua hari",
     "metaRange": "Kisaran tarif",
-    "helpTitle": "Belum yakin yang mana?",
-    "helpBody": "Kirim tanggal rencanamu dan jumlah orangnya. Admin kami yang cek unit mana yang muat dan tanggalnya masih kosong.",
     "gridHeading": "Daftar unit penginapan"
   },
   "detail": {
@@ -103,16 +71,13 @@
     "withoutBed": "Tanpa Ekstra Bed",
     "extraFlatLabel": "Tambahan per orang",
     "childrenRuleTitle": "Ketentuan anak-anak",
-    "childrenRule": "Anak usia 6 tahun ke atas dihitung sebagai 1 dewasa. Anak usia di bawah 5 tahun tidak dihitung dalam kapasitas. Jika jumlah tamu efektif melebihi kapasitas standar, tersedia opsi tambah orang sesuai tarif di atas.",
     "facilities": "Fasilitas Kamar",
-    "universalFacilitiesNote": "Semua tamu juga mendapat akses fasilitas umum DGCK (Nirwana Pool & Resto, Room Service, Playground, dll).",
     "universalFacilitiesLink": "Lihat fasilitas lengkap →",
     "rules": "Aturan Menginap",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "priceWeekday": "Harga Weekday",
     "priceWeekend": "Harga Weekend",
-    "highSeasonNote": "*Harga dapat berubah saat High Season",
     "total": "Total",
     "contactNote": "Hubungi kami via WhatsApp untuk cek ketersediaan tanggal dan booking.",
     "contactWa": "Hubungi via WhatsApp",
@@ -263,6 +228,7 @@
     "saveConfirm": "Simpan & Konfirmasi",
     "saveCheckin": "Simpan & Check-in",
     "bookingIncomplete": "Lengkapi nama, no. telepon, dan minimal satu tenda dulu.",
+    "checkInPast": "Tanggal check-in tidak boleh sebelum hari ini.",
     "cancel": "Batal",
     "activeCount": "{n} tipe penginapan aktif",
     "addRoom": "Tambah Penginapan",
@@ -413,12 +379,360 @@
   },
   "superAdmin": {
     "portal": "Super Admin Portal",
-    "navHub": "Beranda",
     "greeting": "Selamat datang, {name}",
     "subtitle": "Pilih dashboard yang ingin dikelola.",
-    "cardPenginapanTitle": "Penginapan",
-    "cardPenginapanDesc": "Booking, kelola kamar, walk-in, dan data reservasi.",
-    "openDashboard": "Buka Dashboard"
+    "nav": {
+      "overview": "Ringkasan",
+      "groupContent": "Konten situs",
+      "groupLodging": "Penginapan",
+      "groupSystem": "Sistem",
+      "home": "Beranda",
+      "about": "Tentang",
+      "attractions": "Atraksi & fasilitas",
+      "tickets": "Tiket & parkir",
+      "gallery": "Galeri",
+      "contact": "Kontak & footer",
+      "pages": "Halaman penginapan & S&K",
+      "rooms": "Tenda & unit",
+      "settings": "Pengaturan umum"
+    },
+    "hub": {
+      "subtitle": "Pilih area yang ingin dikelola.",
+      "contentDesc": "Teks, foto, dan daftar yang tampil di situs publik. Setiap teks punya versi Indonesia dan Inggris.",
+      "home": "Hero, atraksi unggulan, info lokasi, rute, FAQ, dan ajakan reservasi",
+      "about": "Pengantar, statistik singkat, dan sejarah kawasan",
+      "attractions": "Daftar atraksi dan zona fasilitas",
+      "tickets": "Paket tiket masuk dan tarif parkir",
+      "gallery": "Foto galeri beserta keterangannya",
+      "contact": "Alamat, pesan WhatsApp otomatis, tagline footer, dan deskripsi situs",
+      "pages": "Teks halaman daftar penginapan, detail unit, dan syarat & ketentuan",
+      "rooms": "Tipe tenda, harga, fasilitas, dan galeri foto unit",
+      "settings": "Nomor WhatsApp, email, media sosial, jam check-in, dan S&K",
+      "adminTitle": "Dashboard Admin Penginapan",
+      "adminDesc": "Booking, walk-in, dan data reservasi."
+    },
+    "pages": {
+      "home": "Teks dan gambar halaman utama, dari hero sampai ajakan reservasi.",
+      "about": "Pengantar dan sejarah di halaman Tentang.",
+      "attractions": "Atraksi, zona fasilitas, dan judul bagiannya.",
+      "tickets": "Paket tiket dan tarif parkir. Harga ditulis dalam rupiah.",
+      "gallery": "Foto galeri. Urutan di sini adalah urutan di situs.",
+      "contact": "Alamat, pesan WhatsApp otomatis, tagline footer, dan deskripsi situs untuk mesin pencari.",
+      "pages": "Teks tambahan di halaman daftar penginapan, detail unit, dan syarat & ketentuan."
+    },
+    "rooms": {
+      "desc": "Tipe tenda dan villa: nama, harga, fasilitas, dan foto. Admin Penginapan hanya dapat melihatnya saat membuat reservasi."
+    },
+    "cms": {
+      "leaveConfirm": "Ada perubahan yang belum disimpan. Tinggalkan halaman ini?",
+      "discardConfirm": "Perubahan pada isian ini belum disimpan. Buang perubahan?",
+      "openMenu": "Buka menu",
+      "closeMenu": "Tutup menu",
+      "menu": "Menu panel",
+      "viewOnSite": "Lihat di situs",
+      "langId": "ID · Indonesia",
+      "langEn": "EN · English",
+      "enEmpty": "Versi EN kosong: situs menampilkan teks ID.",
+      "enEmptyShort": "Versi EN kosong",
+      "iconNone": "Pilih ikon",
+      "imageNotImage": "File harus berupa gambar.",
+      "imageTooLarge": "Ukuran gambar maksimal 5 MB.",
+      "imageUploadError": "Gagal mengunggah gambar. Coba lagi.",
+      "imageNone": "Belum ada gambar",
+      "imageUploading": "Mengunggah...",
+      "imageReplace": "Ganti gambar",
+      "imageUpload": "Unggah gambar",
+      "imageRemove": "Hapus gambar",
+      "imageRule": "Format gambar, maksimal 5 MB.",
+      "imageLabel": "Gambar",
+      "moveUpNamed": "Naikkan: {name}",
+      "moveDownNamed": "Turunkan: {name}",
+      "removeNamed": "Hapus: {name}",
+      "loadError": "Gagal memuat konten. Periksa koneksi lalu coba lagi.",
+      "loading": "Memuat...",
+      "sectionMissing": "Bagian \"{key}\" tidak ditemukan di server.",
+      "unsaved": "Belum disimpan",
+      "saved": "Tersimpan",
+      "lastUpdatedBy": "Terakhir diubah {when} oleh {name}",
+      "lastUpdated": "Terakhir diubah {when}",
+      "discard": "Batalkan perubahan",
+      "saving": "Menyimpan...",
+      "save": "Simpan",
+      "onThisPage": "Di halaman ini",
+      "redirecting": "Mengalihkan...",
+      "nowVisible": "Item ditampilkan di situs.",
+      "nowHidden": "Item disembunyikan dari situs.",
+      "movedTo": "Dipindah ke urutan {n} dari {total}.",
+      "reorderError": "Gagal mengubah urutan. Urutan dikembalikan.",
+      "countSummary": "{n} item, {shown} tampil di situs",
+      "hidden": "Disembunyikan",
+      "showOnSiteNamed": "Tampilkan di situs: {name}",
+      "showOnSite": "Tampilkan di situs",
+      "editNamed": "Edit: {name}",
+      "deleteNamed": "Hapus: {name}",
+      "addTitle": "Tambah {noun}",
+      "editTitle": "Ubah {noun}",
+      "deleteTitle": "Hapus {noun}",
+      "deleteConfirm": "Hapus \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
+      "deleteHint": "Untuk menyembunyikan sementara tanpa menghapus, matikan \"Tampilkan di situs\" pada daftar."
+    },
+    "s": {
+      "home_hero": {
+        "title": "Hero beranda",
+        "desc": "Judul besar, kalimat pembuka, dan foto latar di bagian paling atas beranda."
+      },
+      "home_attractions": {
+        "title": "Judul bagian atraksi",
+        "desc": "Judul bagian atraksi di beranda. Kartunya diambil dari atraksi bertanda unggulan."
+      },
+      "home_facilities_teaser": {
+        "title": "Pengantar fasilitas",
+        "desc": "Paragraf pendek tentang fasilitas di beranda."
+      },
+      "home_lodging": {
+        "title": "Bagian penginapan",
+        "desc": "Judul dan sub-judul bagian pilihan penginapan di beranda."
+      },
+      "home_info": {
+        "title": "Info lokasi",
+        "desc": "Judul dan foto lokasi. Kartu informasinya diatur di bawah."
+      },
+      "home_routes": {
+        "title": "Rute menuju lokasi",
+        "desc": "Judul, pengantar, dan tautan peta. Daftar rute diatur di bawah."
+      },
+      "home_faq": {
+        "title": "Pertanyaan umum",
+        "desc": "Judul dan pengantar FAQ. Daftar pertanyaan diatur di bawah."
+      },
+      "home_cta": {
+        "title": "Ajakan reservasi",
+        "desc": "Bagian penutup beranda dengan foto latar."
+      },
+      "about_intro": {
+        "title": "Pengantar",
+        "desc": "Judul, paragraf pembuka, dan hingga empat statistik singkat."
+      },
+      "about_history": {
+        "title": "Sejarah kawasan",
+        "desc": "Isi cerita sejarah dan fotonya."
+      },
+      "about_attractions": {
+        "title": "Judul bagian atraksi",
+        "desc": "Judul daftar atraksi di halaman Tentang."
+      },
+      "about_gallery": {
+        "title": "Judul galeri",
+        "desc": "Judul bagian galeri di halaman Tentang."
+      },
+      "about_tickets": {
+        "title": "Bagian tiket",
+        "desc": "Judul dan catatan di atas daftar paket tiket."
+      },
+      "about_parking": {
+        "title": "Judul tarif parkir",
+        "desc": "Judul daftar tarif parkir."
+      },
+      "facilities": {
+        "title": "Bagian fasilitas",
+        "desc": "Judul, catatan, dan penafian di atas daftar zona fasilitas."
+      },
+      "listing": {
+        "title": "Halaman daftar penginapan",
+        "desc": "Judul, pengantar, dan kotak bantuan di halaman daftar penginapan."
+      },
+      "room_detail": {
+        "title": "Halaman detail unit",
+        "desc": "Catatan yang tampil di semua halaman detail tipe unit."
+      },
+      "terms": {
+        "title": "Halaman syarat & ketentuan",
+        "desc": "Judul, sub-judul, dan kotak pertanyaan. Isi S&K ada di Pengaturan umum."
+      },
+      "contact": {
+        "title": "Kontak & footer",
+        "desc": "Alamat, tagline footer, dan templat pesan WhatsApp."
+      },
+      "site_meta": {
+        "title": "Deskripsi situs",
+        "desc": "Ringkasan situs untuk hasil pencarian dan pratinjau tautan."
+      }
+    },
+    "c": {
+      "ATTRACTION": {
+        "title": "Daftar atraksi",
+        "desc": "Tiap atraksi punya foto dan ikon. Atraksi bertanda unggulan juga tampil di beranda.",
+        "add": "Tambah atraksi",
+        "empty": "Belum ada atraksi.",
+        "noun": "atraksi"
+      },
+      "INFO_CARD": {
+        "title": "Kartu info lokasi",
+        "desc": "Kartu informasi singkat di beranda, mis. alamat atau jam buka.",
+        "add": "Tambah kartu",
+        "empty": "Belum ada kartu info.",
+        "noun": "kartu info"
+      },
+      "ROUTE": {
+        "title": "Daftar rute",
+        "desc": "Rute dari kota asal, lengkap dengan durasi dan jarak.",
+        "add": "Tambah rute",
+        "empty": "Belum ada rute.",
+        "noun": "rute"
+      },
+      "FAQ": {
+        "title": "Daftar pertanyaan",
+        "desc": "Pertanyaan dan jawaban yang tampil di beranda.",
+        "add": "Tambah pertanyaan",
+        "empty": "Belum ada pertanyaan.",
+        "noun": "pertanyaan"
+      },
+      "TICKET_PACKAGE": {
+        "title": "Paket tiket",
+        "desc": "Tiap paket punya harga siang dan malam serta daftar benefit.",
+        "add": "Tambah paket",
+        "empty": "Belum ada paket tiket.",
+        "noun": "paket tiket"
+      },
+      "PARKING_FEE": {
+        "title": "Tarif parkir",
+        "desc": "Tarif per jenis kendaraan.",
+        "add": "Tambah tarif",
+        "empty": "Belum ada tarif parkir.",
+        "noun": "tarif parkir"
+      },
+      "GALLERY": {
+        "title": "Foto galeri",
+        "desc": "Foto yang tampil di galeri halaman Tentang, sesuai urutan di sini.",
+        "add": "Tambah foto",
+        "empty": "Belum ada foto galeri.",
+        "noun": "foto"
+      },
+      "FACILITY_ZONE": {
+        "title": "Zona fasilitas",
+        "desc": "Kelompok fasilitas per area, masing-masing dengan daftar butirnya.",
+        "add": "Tambah zona",
+        "empty": "Belum ada zona fasilitas.",
+        "noun": "zona fasilitas"
+      }
+    },
+    "f": {
+      "title": "Judul",
+      "subtitle": "Sub-judul",
+      "lead": "Paragraf pengantar",
+      "body": "Isi teks",
+      "note": "Catatan",
+      "disclaimer": "Penafian",
+      "heroImage": "Foto hero",
+      "locationPhoto": "Foto lokasi",
+      "backgroundImage": "Foto latar",
+      "photo": "Foto",
+      "icon": "Ikon",
+      "line1": "Baris 1",
+      "line2": "Baris 2",
+      "linkLabel": "Teks tautan",
+      "optional": "Opsional",
+      "href": "Alamat tautan",
+      "hrefHint": "Opsional. Boleh berupa alamat lengkap (https://...) atau tautan WhatsApp/telepon.",
+      "mapsUrl": "Tautan Google Maps",
+      "mapsUrlHint": "Alamat lengkap yang dibuka dari tombol peta.",
+      "from": "Dari",
+      "duration": "Durasi",
+      "distance": "Jarak",
+      "question": "Pertanyaan",
+      "answer": "Jawaban",
+      "stats": "Statistik singkat",
+      "statsHint": "Maksimal 4. Nilai dan label ditulis sendiri, tidak dihitung otomatis.",
+      "addStat": "Tambah statistik",
+      "statN": "Statistik {n}",
+      "statsEmpty": "Belum ada statistik. Bagian ini boleh kosong.",
+      "statValue": "Nilai",
+      "statLabel": "Label",
+      "paragraphHint": "Pisahkan paragraf dengan satu baris kosong.",
+      "name": "Nama",
+      "desc": "Deskripsi",
+      "featuredMeta": "Unggulan di beranda",
+      "featuredOnHome": "Tampilkan sebagai atraksi unggulan di beranda",
+      "itemCount": "{n} butir",
+      "zoneName": "Nama zona",
+      "facilityItems": "Butir fasilitas",
+      "addFacility": "Tambah butir",
+      "facilityN": "Butir {n}",
+      "facilityEmpty": "Belum ada butir.",
+      "priceSummary": "Siang {day} · Malam {night}",
+      "priceDay": "Harga siang",
+      "priceNight": "Harga malam",
+      "benefits": "Benefit paket",
+      "addBenefit": "Tambah benefit",
+      "benefitN": "Benefit {n}",
+      "benefitsEmpty": "Belum ada benefit.",
+      "vehicle": "Jenis kendaraan",
+      "price": "Tarif",
+      "caption": "Keterangan foto",
+      "address": "Alamat",
+      "mapsQuery": "Kata kunci peta",
+      "mapsQueryHint": "Teks yang dicari di Google Maps pada peta tersemat.",
+      "footerTagline": "Tagline footer",
+      "waLegend": "Pesan WhatsApp otomatis",
+      "waIntro": "Teks yang sudah terisi saat pengunjung membuka chat WhatsApp dari tombol di situs.",
+      "waGeneral": "Pertanyaan umum",
+      "waBooking": "Reservasi",
+      "waRoom": "Tanya tipe unit tertentu",
+      "waRoomHint": "Tulis {room} untuk diganti otomatis dengan nama tipe unit.",
+      "waTerms": "Pertanyaan soal syarat & ketentuan",
+      "metaDescription": "Deskripsi situs",
+      "metaHint": "Tampil di hasil pencarian dan pratinjau tautan. Ringkas saja.",
+      "helpTitle": "Judul kotak bantuan",
+      "helpBody": "Isi kotak bantuan",
+      "childrenRule": "Aturan anak",
+      "universalFacilitiesNote": "Catatan fasilitas umum",
+      "priceNote": "Catatan harga",
+      "questionTitle": "Judul kotak pertanyaan",
+      "questionBody": "Isi kotak pertanyaan"
+    },
+    "settings": {
+      "desc": "Nomor kontak, tautan media sosial, jam check-in dan check-out, serta teks syarat & ketentuan. Perubahan langsung dipakai di situs dan pesan ke tamu.",
+      "label": {
+        "whatsapp_number": "Nomor WhatsApp utama",
+        "whatsapp_number_2": "Nomor WhatsApp kedua",
+        "contact_email": "Email kontak",
+        "instagram_url": "Tautan Instagram",
+        "tiktok_url": "Tautan TikTok",
+        "facebook_url": "Tautan Facebook",
+        "check_in_time": "Jam check-in",
+        "check_out_time": "Jam check-out",
+        "terms_conditions_id": "Syarat & ketentuan",
+        "terms_conditions_en": "Syarat & ketentuan"
+      },
+      "hint": {
+        "whatsapp_number": "Format internasional tanpa tanda plus, mis. 628123456789.",
+        "whatsapp_number_2": "Format internasional tanpa tanda plus."
+      },
+      "group": {
+        "contact": {
+          "title": "Kontak",
+          "desc": "Nomor dan email yang tampil di situs dan dipakai tombol WhatsApp."
+        },
+        "social": {
+          "title": "Media sosial",
+          "desc": "Tautan lengkap ke akun resmi."
+        },
+        "hours": {
+          "title": "Jam menginap",
+          "desc": "Jam check-in dan check-out standar."
+        },
+        "terms": {
+          "title": "Syarat & ketentuan",
+          "desc": "Isi lengkap S&K. Judul dan kotak pertanyaannya diatur di Konten situs, Halaman penginapan & S&K."
+        },
+        "other": {
+          "title": "Pengaturan lainnya",
+          "desc": "Pengaturan tanpa label khusus. Nama kunci ditampilkan apa adanya."
+        }
+      },
+      "changedCount": "{n} pengaturan diubah, belum disimpan",
+      "noChanges": "Belum ada perubahan"
+    }
   },
   "dashboard": {
     "overview": "Ringkasan",
@@ -433,22 +747,10 @@
     "navShortManage": "Kelola",
     "revenue": "Pendapatan Bulan Ini"
   },
-  "terms": {
-    "title": "Syarat & Ketentuan",
-    "subtitle": "Mohon dibaca sebelum melakukan reservasi penginapan di D'Glorious Crater Kamojang.",
-    "questionTitle": "Masih ada yang ingin ditanyakan?",
-    "questionBody": "Nego harga, aturan DP, dan ketersediaan tanggal diurus langsung lewat WhatsApp bersama admin kami."
-  },
   "roles": {
     "SUPER_ADMIN": "Super Admin",
     "OWNER": "Owner",
     "ADMIN_PENGINAPAN": "Admin Penginapan"
-  },
-  "visit": {
-    "routeTitle": "Cara ke sini",
-    "routeLead": "Hampir semua tamu menempuh perjalanan lebih dari satu jam untuk sampai ke sini. Ada dua jalur masuk, dan pilihannya bergantung pada mobil yang kamu bawa.",
-    "faqTitle": "Yang sering ditanyakan",
-    "faqLead": "Reservasi diurus lewat WhatsApp bersama admin kami. Yang di bawah ini biasanya sudah menjawab sebelum kamu sempat bertanya."
   },
   "notFound": {
     "title": "Halaman ini tidak ada",
@@ -457,10 +759,5 @@
     "orTry": "Atau langsung ke",
     "linkLodging": "Lihat pilihan penginapan",
     "linkAbout": "Tentang & daya tarik wisata"
-  },
-  "kawasan": {
-    "title": "Apa saja yang ada di sana",
-    "note": "Empat kawah, empat kolam air panas, tiga jembatan gantung. Cukup untuk mengisi satu hari penuh tanpa keluar dari kawasan.",
-    "disclaimer": "Urutan di sini cuma pengelompokan, bukan denah. Letak sebenarnya di kawasan bisa berbeda."
   }
 }

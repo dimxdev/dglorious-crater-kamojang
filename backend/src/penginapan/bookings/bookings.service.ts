@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -12,6 +13,7 @@ import {
   PaymentMethod,
   PaymentStatus,
 } from '../../generated/prisma/enums';
+import { isBeforeTodayWib } from '../../common/date-wib';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   calcNights,
@@ -25,6 +27,8 @@ import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 
 // Alfabet tanpa 0/O/1/I — hindari salah baca pas admin dikte kode via telepon/WA.
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+const PAST_CHECKIN_MESSAGE = 'Tanggal check-in tidak boleh sebelum hari ini.';
 
 const bookingWithItems = {
   include: {
@@ -84,6 +88,10 @@ export class BookingsService {
   // ── Create (§6.1, §8.1 PROJECT.md) ──
 
   async create(dto: CreateBookingDto, createdById: number) {
+    // Check-in tidak boleh sebelum hari ini (WIB); hari ini boleh (walk-in).
+    if (isBeforeTodayWib(dto.checkIn)) {
+      throw new BadRequestException(PAST_CHECKIN_MESSAGE);
+    }
     const checkIn = new Date(dto.checkIn);
     const checkOut = new Date(dto.checkOut);
 
@@ -333,6 +341,16 @@ export class BookingsService {
     });
     if (!booking) {
       throw new NotFoundException(`Booking ${code} tidak ditemukan`);
+    }
+
+    // Validasi hanya kalau check-in benar-benar diubah, supaya booking lama
+    // (mis. COMPLETED) dengan check-in lampau tetap bisa diedit catatannya.
+    if (
+      dto.checkIn !== undefined &&
+      dto.checkIn.slice(0, 10) !== booking.checkIn.toISOString().slice(0, 10) &&
+      isBeforeTodayWib(dto.checkIn)
+    ) {
+      throw new BadRequestException(PAST_CHECKIN_MESSAGE);
     }
 
     const datesChanging =

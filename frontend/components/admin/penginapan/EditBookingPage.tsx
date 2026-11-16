@@ -20,6 +20,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
 import { formatIDR } from '@/lib/format';
 import { calcGroupsTotal, calcNightsBreakdown, type BookableRoom } from '@/lib/pricing';
+import { addDaysStr, todayWib } from '@/lib/dateWib';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import {
   DiscountField,
@@ -148,14 +149,19 @@ export function EditBookingPage({ code }: { code: string }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, checkIn, checkOut, slugsKey, roomTypeIdBySlug, booking?.id]);
 
-  const minCheckOut = checkIn
-    ? new Date(new Date(checkIn).getTime() + 86400000).toISOString().slice(0, 10)
-    : '';
+  const minCheckOut = checkIn ? addDaysStr(checkIn, 1) : '';
+
+  // Check-in tidak boleh sebelum hari ini (WIB), kecuali nilainya tidak diubah
+  // dari data tersimpan — booking lama (mis. COMPLETED) tetap bisa diedit.
+  const today = todayWib();
+  const originalCheckIn = booking ? booking.checkIn.slice(0, 10) : '';
+  const minCheckIn = originalCheckIn && originalCheckIn < today ? originalCheckIn : today;
+  const checkInPast = checkIn !== '' && checkIn !== originalCheckIn && checkIn < today;
 
   function handleCheckInChange(val: string) {
     setCheckIn(val);
-    if (val >= checkOut) {
-      setCheckOut(new Date(new Date(val).getTime() + 86400000).toISOString().slice(0, 10));
+    if (val && val >= checkOut) {
+      setCheckOut(addDaysStr(val, 1));
     }
   }
 
@@ -200,6 +206,10 @@ export function EditBookingPage({ code }: { code: string }) {
     if (!booking) return;
     if (!name.trim() || !phone.trim() || roomGroups.length === 0) {
       setError(t('admin.bookingIncomplete'));
+      return;
+    }
+    if (checkInPast) {
+      setError(t('admin.checkInPast'));
       return;
     }
     if (!hasChanges()) {
@@ -311,6 +321,8 @@ export function EditBookingPage({ code }: { code: string }) {
               label={t('admin.tCheckIn')}
               type="date"
               value={checkIn}
+              min={minCheckIn}
+              error={checkInPast ? t('admin.checkInPast') : undefined}
               onChange={(e) => handleCheckInChange(e.target.value)}
             />
             <Input

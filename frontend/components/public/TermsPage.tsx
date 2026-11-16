@@ -1,9 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageMast, Skeleton, actionClass } from '@/components/public/ui';
+import {
+  MastSkeleton,
+  PageMast,
+  Skeleton,
+  actionClass,
+} from '@/components/public/ui';
 import { fetchPublicSettings } from '@/lib/api/settings';
+import { pickL } from '@/lib/api/siteContent';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { useSiteContent } from '@/lib/useSiteContent';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 
 type Status = 'loading' | 'ready' | 'error';
@@ -13,6 +20,8 @@ export function TermsPage() {
   const [terms, setTerms] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>('loading');
   const { settings } = usePublicSettings();
+  const { content, failed: contentFailed } = useSiteContent();
+  const page = content?.sections.terms;
 
   useEffect(() => {
     let active = true;
@@ -23,7 +32,8 @@ export function TermsPage() {
     fetchPublicSettings()
       .then((s) => {
         if (!active) return;
-        const raw = locale === 'en' ? s.terms_conditions_en : s.terms_conditions_id;
+        const raw =
+          locale === 'en' ? s.terms_conditions_en : s.terms_conditions_id;
         setTerms((raw ?? '').split('\n').filter(Boolean));
         setStatus('ready');
       })
@@ -37,15 +47,21 @@ export function TermsPage() {
 
   const waHref = waLink(
     settings?.whatsapp_number,
-    'Halo D’Glorious Crater, saya ingin bertanya tentang syarat & ketentuan reservasi.',
+    content ? pickL(content.sections.contact.waMessages.terms, locale) : '',
   );
 
   return (
     <div className="pb-24">
-      <PageMast
-        title={t('terms.title')}
-        lead={t('terms.subtitle')}
-      />
+      {page ? (
+        <PageMast
+          title={pickL(page.title, locale)}
+          lead={pickL(page.subtitle, locale)}
+        />
+      ) : contentFailed ? (
+        <PageMast title={t('footer.terms')} />
+      ) : (
+        <MastSkeleton />
+      )}
 
       <div className="container-page max-w-[46rem] pt-12">
         {status === 'loading' && (
@@ -91,11 +107,13 @@ export function TermsPage() {
           </ol>
         )}
 
-        {status === 'ready' && terms.length > 0 && (
+        {status === 'ready' && terms.length > 0 && page && (
           <div className="border-ash-300/70 mt-14 rounded-2xl border border-dashed px-6 py-7">
-            <p className="text-ash-800 font-serif text-lg">{t('terms.questionTitle')}</p>
+            <p className="text-ash-800 font-serif text-lg">
+              {pickL(page.questionTitle, locale)}
+            </p>
             <p className="text-ash-600 mt-1.5 max-w-[58ch] text-sm leading-relaxed">
-              {t('terms.questionBody')}
+              {pickL(page.questionBody, locale)}
             </p>
             {waHref && (
               <a

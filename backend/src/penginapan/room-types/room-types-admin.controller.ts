@@ -30,8 +30,10 @@ import {
 import { RoomTypesService } from './room-types.service';
 
 /**
- * CMS penginapan (§8.1 FASE 5 TASK.md). Owner & Super Admin bisa turun ke
- * dashboard admin (§5 PROJECT.md); Admin Penginapan CRUD penuh di area ini.
+ * CMS penginapan. Baca (list, detail, ketersediaan) terbuka untuk Super Admin,
+ * Owner, dan Admin Penginapan; ubah data (tambah/ubah/hapus tipe + unggah
+ * gambar) khusus Super Admin sejak revisi dospem 2026-11. `@Roles` di level
+ * method menimpa level class (RolesGuard memakai getAllAndOverride).
  */
 @Controller('admin/room-types')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -49,11 +51,13 @@ export class RoomTypesAdminController {
     return this.roomTypesService.findOneAdminOrThrow(id);
   }
 
+  @Roles(RoleName.SUPER_ADMIN)
   @Post()
   create(@Body() dto: CreateRoomTypeDto, @CurrentUser() user: AuthUser) {
     return this.roomTypesService.create(dto, user.id);
   }
 
+  @Roles(RoleName.SUPER_ADMIN)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -62,6 +66,7 @@ export class RoomTypesAdminController {
     return this.roomTypesService.update(id, dto);
   }
 
+  @Roles(RoleName.SUPER_ADMIN)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.roomTypesService.softDelete(id);
@@ -82,6 +87,7 @@ export class RoomTypesAdminController {
     );
   }
 
+  @Roles(RoleName.SUPER_ADMIN)
   @Post(':id/images')
   @UseInterceptors(FileInterceptor('file', roomImageMulterOptions))
   uploadImage(

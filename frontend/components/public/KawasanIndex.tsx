@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Contour } from '@/components/public/ui';
-import { getZones, totalFacilities } from '@/lib/data/kawasan';
-import { getIcon } from '@/lib/icons';
+import { HeadingSkeleton, Contour, Skeleton } from '@/components/public/ui';
+import { pickL } from '@/lib/api/siteContent';
+import { resolveIcon } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { useSiteContent } from '@/lib/useSiteContent';
 import { cn } from '@/lib/cn';
 
 /**
@@ -21,10 +22,24 @@ import { cn } from '@/lib/cn';
  * Interaksinya menajamkan fokus, bukan memotong isi.
  */
 export function KawasanIndex() {
-  const { t, locale } = useTranslation();
-  const zones = getZones(locale);
-  const [active, setActive] = useState<string | null>(null);
+  const { locale } = useTranslation();
+  const { content, failed } = useSiteContent();
+  const [active, setActive] = useState<number | null>(null);
   const { ref, shown } = useDrawOnEnter<HTMLElement>();
+
+  // Gagal memuat: seksi ini disembunyikan, halaman induk sudah menampilkan
+  // pesan galatnya sendiri.
+  if (failed) return null;
+
+  const section = content?.sections.facilities;
+  const zones = (content?.collections.FACILITY_ZONE ?? []).map((z) => ({
+    id: z.id,
+    icon: z.content.icon,
+    name: pickL(z.content.name, locale),
+    note: pickL(z.content.note, locale),
+    items: z.content.items.map((i) => pickL(i, locale)).filter(Boolean),
+  }));
+  const total = zones.reduce((sum, z) => sum + z.items.length, 0);
 
   return (
     <section
@@ -34,12 +49,20 @@ export function KawasanIndex() {
     >
       <div className="container-page">
         <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-          <h2 className="text-ash-900 max-w-[13ch] font-serif text-[clamp(2rem,1.35rem+2.6vw,3.4rem)] leading-[1.04] tracking-[-0.035em] text-balance">
-            {t('kawasan.title')}
-          </h2>
-          <p className="text-ash-600 max-w-[34ch] text-sm leading-relaxed">
-            {t('kawasan.note', { count: totalFacilities() })}
-          </p>
+          {section ? (
+            <h2 className="text-ash-900 max-w-[13ch] font-serif text-[clamp(2rem,1.35rem+2.6vw,3.4rem)] leading-[1.04] tracking-[-0.035em] text-balance">
+              {pickL(section.title, locale)}
+            </h2>
+          ) : (
+            <HeadingSkeleton />
+          )}
+          {section && (
+            <p className="text-ash-600 max-w-[34ch] text-sm leading-relaxed">
+              {/* Token {count} opsional: kalau admin menaruhnya di catatan,
+                  diisi jumlah butir yang benar-benar ada. */}
+              {pickL(section.note, locale).replace('{count}', String(total))}
+            </p>
+          )}
         </div>
 
         {/* Kontur dikurung di sini, di belakang DAFTAR saja — bukan sepanjang
@@ -56,85 +79,102 @@ export function KawasanIndex() {
             className="border-ash-300 border-t"
             onMouseLeave={() => setActive(null)}
           >
-          {zones.map((z) => {
-            const Icon = getIcon(z.icon);
-            const dimmed = active !== null && active !== z.key;
-            return (
-              <div
-                key={z.key}
-                onMouseEnter={() => setActive(z.key)}
-                onFocus={() => setActive(z.key)}
-                onBlur={() => setActive(null)}
-                tabIndex={0}
-                className={cn(
-                  'border-ash-300 focus-visible:ring-mineral-500 grid gap-x-8 gap-y-4 border-b py-8 transition-opacity duration-300 outline-none focus-visible:ring-2 md:grid-cols-[5.5rem_14rem_1fr]',
-                  dimmed ? 'opacity-45' : 'opacity-100',
-                )}
-              >
-                {/* Angka, bukan ikon, yang dibesarkan: jumlahnya memang
-                    keterangan yang paling berguna di sini. */}
-                <dt className="flex items-baseline gap-3 md:block">
-                  <span
-                    className={cn(
-                      'font-serif text-[2.6rem] leading-none tabular-nums transition-colors duration-300',
-                      active === z.key ? 'text-mineral-600' : 'text-ash-300',
-                    )}
-                  >
-                    {String(z.count).padStart(2, '0')}
-                  </span>
-                  <span className="sr-only">{z.name}</span>
-                </dt>
-
-                <div className="md:pt-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <Icon
-                      size={16}
-                      strokeWidth={1.5}
-                      className="text-mineral-600 shrink-0"
-                      aria-hidden
-                    />
-                    <span
-                      aria-hidden
-                      className="text-ash-900 font-serif text-[1.3rem] leading-none"
-                    >
-                      {z.name}
-                    </span>
+            {!content &&
+              [0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  aria-hidden
+                  className="border-ash-300 grid gap-x-8 gap-y-4 border-b py-8 md:grid-cols-[5.5rem_14rem_1fr]"
+                >
+                  <Skeleton className="h-10 w-14" />
+                  <div>
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="mt-3 h-3.5 w-full" />
                   </div>
-                  <p className="text-ash-600 mt-2.5 text-[13px] leading-relaxed">
-                    {z.note}
-                  </p>
+                  <Skeleton className="h-8 w-full max-w-md" />
                 </div>
-
-                <dd
+              ))}
+            {zones.map((z) => {
+              const Icon = resolveIcon(z.icon);
+              const dimmed = active !== null && active !== z.id;
+              return (
+                <div
+                  key={z.id}
+                  onMouseEnter={() => setActive(z.id)}
+                  onFocus={() => setActive(z.id)}
+                  onBlur={() => setActive(null)}
+                  tabIndex={0}
                   className={cn(
-                    'flex flex-wrap items-start gap-x-2.5 gap-y-2 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:pt-2',
-                    active === z.key ? 'md:translate-x-1.5' : '',
+                    'border-ash-300 focus-visible:ring-mineral-500 grid gap-x-8 gap-y-4 border-b py-8 transition-opacity duration-300 outline-none focus-visible:ring-2 md:grid-cols-[5.5rem_14rem_1fr]',
+                    dimmed ? 'opacity-45' : 'opacity-100',
                   )}
                 >
-                  {z.items.map((item) => (
+                  {/* Angka, bukan ikon, yang dibesarkan: jumlahnya memang
+                    keterangan yang paling berguna di sini. */}
+                  <dt className="flex items-baseline gap-3 md:block">
                     <span
-                      key={item}
                       className={cn(
-                        'rounded-full px-3 py-1.5 text-[13px] transition-colors duration-300',
-                        active === z.key
-                          ? 'bg-mineral-50 text-mineral-800'
-                          : 'bg-ash-200/70 text-ash-700',
+                        'font-serif text-[2.6rem] leading-none tabular-nums transition-colors duration-300',
+                        active === z.id ? 'text-mineral-600' : 'text-ash-300',
                       )}
                     >
-                      {item}
+                      {String(z.items.length).padStart(2, '0')}
                     </span>
-                  ))}
-                </dd>
-              </div>
-            );
-          })}
+                    <span className="sr-only">{z.name}</span>
+                  </dt>
+
+                  <div className="md:pt-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <Icon
+                        size={16}
+                        strokeWidth={1.5}
+                        className="text-mineral-600 shrink-0"
+                        aria-hidden
+                      />
+                      <span
+                        aria-hidden
+                        className="text-ash-900 font-serif text-[1.3rem] leading-none"
+                      >
+                        {z.name}
+                      </span>
+                    </div>
+                    <p className="text-ash-600 mt-2.5 text-[13px] leading-relaxed">
+                      {z.note}
+                    </p>
+                  </div>
+
+                  <dd
+                    className={cn(
+                      'flex flex-wrap items-start gap-x-2.5 gap-y-2 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:pt-2',
+                      active === z.id ? 'md:translate-x-1.5' : '',
+                    )}
+                  >
+                    {z.items.map((item, i) => (
+                      <span
+                        key={i}
+                        className={cn(
+                          'rounded-full px-3 py-1.5 text-[13px] transition-colors duration-300',
+                          active === z.id
+                            ? 'bg-mineral-50 text-mineral-800'
+                            : 'bg-ash-200/70 text-ash-700',
+                        )}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
         </div>
 
         {/* Kejujuran soal apa yang TIDAK bisa dijanjikan halaman ini. */}
-        <p className="text-ash-600 mt-8 max-w-[52ch] text-[12.5px] leading-relaxed">
-          {t('kawasan.disclaimer')}
-        </p>
+        {section && (
+          <p className="text-ash-600 mt-8 max-w-[52ch] text-[12.5px] leading-relaxed">
+            {pickL(section.disclaimer, locale)}
+          </p>
+        )}
       </div>
     </section>
   );

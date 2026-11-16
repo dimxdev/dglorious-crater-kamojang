@@ -25,6 +25,7 @@ import {
   calcNightsBreakdown,
   type BookableRoom,
 } from '@/lib/pricing';
+import { addDaysStr, todayWib } from '@/lib/dateWib';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import {
   DiscountField,
@@ -72,8 +73,8 @@ export function BookingFormPage({ channel }: { channel: BookingFormChannel }) {
   const isWalkIn = channel === 'WALK_IN';
 
   const [{ today, tomorrow }] = useState(() => ({
-    today: new Date().toISOString().slice(0, 10),
-    tomorrow: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+    today: todayWib(),
+    tomorrow: addDaysStr(todayWib(), 1),
   }));
 
   const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([
@@ -169,14 +170,14 @@ export function BookingFormPage({ channel }: { channel: BookingFormChannel }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, checkIn, checkOut, slugsKey, roomTypeIdBySlug]);
 
-  const minCheckOut = new Date(new Date(checkIn).getTime() + 86400000)
-    .toISOString()
-    .slice(0, 10);
+  const minCheckOut = checkIn ? addDaysStr(checkIn, 1) : tomorrow;
+  // Check-in tidak boleh sebelum hari ini (WIB); hari ini boleh untuk walk-in.
+  const checkInPast = checkIn !== '' && checkIn < today;
 
   function handleCheckInChange(val: string) {
     setCheckIn(val);
-    if (val >= checkOut) {
-      setCheckOut(new Date(new Date(val).getTime() + 86400000).toISOString().slice(0, 10));
+    if (val && val >= checkOut) {
+      setCheckOut(addDaysStr(val, 1));
     }
   }
 
@@ -231,6 +232,10 @@ export function BookingFormPage({ channel }: { channel: BookingFormChannel }) {
 
     if (!name.trim() || !phone.trim() || roomGroups.length === 0) {
       setError(t('admin.bookingIncomplete'));
+      return;
+    }
+    if (!checkIn || checkInPast) {
+      setError(t('admin.checkInPast'));
       return;
     }
     if (unavailableSlug) {
@@ -401,6 +406,8 @@ export function BookingFormPage({ channel }: { channel: BookingFormChannel }) {
                     label={t('admin.tCheckIn')}
                     type="date"
                     value={checkIn}
+                    min={today}
+                    error={checkInPast ? t('admin.checkInPast') : undefined}
                     onChange={(e) => handleCheckInChange(e.target.value)}
                   />
                   <Input

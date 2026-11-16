@@ -114,3 +114,12 @@ export type IconName = keyof typeof icons;
 export function getIcon(name: IconName): LucideIcon {
   return icons[name];
 }
+
+/**
+ * Versi untuk nama ikon dari CMS: string bebas, jadi nama yang tidak dikenal
+ * (salah ketik, atau ikon yang sudah dihapus dari registry) jatuh ke `Info`
+ * alih-alih membuat komponen `undefined` dan merobohkan halaman.
+ */
+export function resolveIcon(name: string): LucideIcon {
+  return Object.hasOwn(icons, name) ? icons[name as IconName] : Info;
+}

@@ -12,9 +12,10 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { RoleName } from '../../generated/prisma/enums';
 import { RoomTypesService } from './room-types.service';
 
+/** Atur cover & hapus gambar tenda — khusus Super Admin. */
 @Controller('admin/room-images')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RoleName.SUPER_ADMIN, RoleName.OWNER, RoleName.ADMIN_PENGINAPAN)
+@Roles(RoleName.SUPER_ADMIN)
 export class RoomImagesAdminController {
   constructor(private readonly roomTypesService: RoomTypesService) {}
 
