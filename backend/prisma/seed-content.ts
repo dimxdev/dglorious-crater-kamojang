@@ -202,8 +202,8 @@ const SECTIONS: Record<string, unknown> = {
   },
   contact: {
     address: l(
-      'Kp. Kamojang, Desa Laksana, Kec. Ibun, Kab. Bandung, Jawa Barat',
-      'Kp. Kamojang, Laksana Village, Ibun District, Bandung Regency, West Java',
+      'Kawah Kamojang, Desa Mekarwangi, Kec. Ibun, Kab. Bandung, Jawa Barat 40384',
+      'Kamojang Crater, Mekarwangi Village, Ibun District, Bandung Regency, West Java 40384',
     ),
     mapsQuery: MAPS_QUERY,
     footerTagline: l(
