@@ -7,6 +7,7 @@ import {
   Home,
   Images,
   Info,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -16,6 +17,7 @@ import {
   Tent,
   Ticket,
   Trees,
+  Users,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -61,7 +63,10 @@ function useSuperNav(): NavGroup[] {
     },
     {
       label: t('superAdmin.nav.groupSystem'),
-      items: [{ href: '/super-admin/pengaturan', icon: Settings, label: t('superAdmin.nav.settings') }],
+      items: [
+        { href: '/super-admin/pengaturan', icon: Settings, label: t('superAdmin.nav.settings') },
+        { href: '/super-admin/akun', icon: Users, label: t('superAdmin.nav.accounts') },
+      ],
     },
   ];
 }
@@ -134,6 +139,7 @@ function Shell({ title, group, description, viewHref, wide, children }: ShellPro
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-[#0f172a] text-[#94a3b8] md:flex">
         <Brand />
         <NavList groups={groups} pathname={pathname} onNavigate={guardLeave} className="flex-1 overflow-y-auto" />
+        <PasswordLink onNavigate={guardLeave} label={t('account.changePassword')} />
         <LogoutButton onClick={handleLogout} label={t('admin.logout')} />
       </aside>
 
@@ -147,6 +153,7 @@ function Shell({ title, group, description, viewHref, wide, children }: ShellPro
               <div className="text-[13px] font-semibold text-white">{displayName}</div>
               <div className="text-[12px] text-[#94a3b8]">{roleLabel}</div>
             </div>
+            <PasswordLink onNavigate={guardLeave} label={t('account.changePassword')} className="mx-0 mb-0" />
             <LogoutButton onClick={handleLogout} label={t('admin.logout')} />
           </div>
         </MobileDrawer>
@@ -271,6 +278,31 @@ function NavList({
         </div>
       ))}
     </nav>
+  );
+}
+
+function PasswordLink({
+  onNavigate,
+  label,
+  className,
+}: {
+  onNavigate: (e: React.MouseEvent) => void;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <Link
+      href="/akun/kata-sandi"
+      onClick={onNavigate}
+      className={cn(
+        'mx-2.5 mt-2.5 -mb-1.5 flex min-h-11 items-center gap-3 rounded-[10px] px-3.5 py-2 text-[13.5px] font-medium text-[#a3b0c4] transition-colors md:min-h-9',
+        'hover:bg-sky-400/10 hover:text-white focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none',
+        className,
+      )}
+    >
+      <KeyRound size={17} strokeWidth={1.75} className="shrink-0" aria-hidden />
+      {label}
+    </Link>
   );
 }
 

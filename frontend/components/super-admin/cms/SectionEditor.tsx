@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
 import { formatDateTime } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { contentErrors, errorMessage } from '@/lib/validation';
 import { ghostBtn } from './controls';
 import { useReportDirty } from './dirty';
 
@@ -212,8 +213,10 @@ function SectionForm<K extends SectionKey>({
     setDraft((d) => ({ ...d, ...p }));
   }, []);
 
+  const invalid = contentErrors(draft, t);
+
   async function save() {
-    if (!token || saving) return;
+    if (!token || saving || invalid) return;
     setSaving(true);
     setError(null);
     try {
@@ -224,7 +227,7 @@ function SectionForm<K extends SectionKey>({
       put(res);
       setJustSaved(true);
     } catch (e) {
-      setError(e instanceof ApiError || e instanceof Error ? e.message : t('admin.saveError'));
+      setError(errorMessage(e, t('admin.saveError')));
     } finally {
       setSaving(false);
     }
@@ -283,7 +286,7 @@ function SectionForm<K extends SectionKey>({
             <button
               type="button"
               onClick={() => void save()}
-              disabled={!dirty || saving}
+              disabled={!dirty || saving || !!invalid}
               className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-green-700 px-4 text-[13.5px] sm:h-10 sm:px-5 font-semibold text-white transition-colors hover:bg-green-800 focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
             >
               {saving ? t('superAdmin.cms.saving') : t('superAdmin.cms.save')}
@@ -294,6 +297,7 @@ function SectionForm<K extends SectionKey>({
     >
       <div className="flex flex-col gap-5">
         {children({ draft, patch })}
+        {dirty && invalid && <ErrorBlock message={invalid} />}
         {error && <ErrorBlock message={error} />}
       </div>
     </CardShell>

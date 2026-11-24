@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Mountain } from 'lucide-react';
+import { KeyRound, LogOut, Mountain } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -20,8 +20,8 @@ type DashboardLayoutProps = {
 
 /**
  * Layout dashboard admin: sidebar (desktop) / bottom nav (mobile) + header + konten.
- * Diperbolehkan untuk SUPER_ADMIN, OWNER (bisa turun ke dashboard admin, §5
- * PROJECT.md), dan ADMIN_PENGINAPAN. Redirect ke /login kalau belum masuk.
+ * Hanya untuk ADMIN_PENGINAPAN; SUPER_ADMIN dan OWNER diarahkan ke beranda
+ * masing-masing oleh `useRequireRole`. Redirect ke /login kalau belum masuk.
  */
 export function DashboardLayout({ title, children }: DashboardLayoutProps) {
   const { t } = useTranslation();
@@ -30,7 +30,7 @@ export function DashboardLayout({ title, children }: DashboardLayoutProps) {
   const navItems = useAdminNavItems();
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout } = useAuth();
-  const { user, isAllowed } = useRequireRole(['SUPER_ADMIN', 'OWNER', 'ADMIN_PENGINAPAN']);
+  const { user, isAllowed } = useRequireRole(['ADMIN_PENGINAPAN']);
 
   function handleLogout() {
     logout();
@@ -101,6 +101,13 @@ export function DashboardLayout({ title, children }: DashboardLayoutProps) {
                       <div className="text-[13px] leading-tight font-semibold">{displayName}</div>
                       <div className="text-muted mt-0.5 text-[11.5px] leading-tight">{roleLabel}</div>
                     </div>
+                    <Link
+                      href="/akun/kata-sandi"
+                      className="text-muted-strong hover:bg-green-50 mt-1 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium"
+                    >
+                      <KeyRound size={16} strokeWidth={1.75} aria-hidden />
+                      {t('account.changePassword')}
+                    </Link>
                     <button
                       type="button"
                       onClick={handleLogout}

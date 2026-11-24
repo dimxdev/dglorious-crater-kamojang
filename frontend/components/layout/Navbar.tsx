@@ -17,6 +17,12 @@ export function Navbar() {
   const { content } = useSiteContent();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  // Menu tertutup otomatis saat pindah halaman (reset saat render, bukan effect).
+  const [openedAt, setOpenedAt] = useState(pathname);
+  if (openedAt !== pathname) {
+    setOpenedAt(pathname);
+    setOpen(false);
+  }
   const { settings } = usePublicSettings();
 
   const links = [
@@ -93,12 +99,11 @@ export function Navbar() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  useEffect(() => setOpen(false), [pathname]);
 
   const transparent = overHero && !lifted && !open;
   const waHref = waLink(
     settings?.whatsapp_number,
-    content ? pickL(content.sections.contact.waMessages.booking, locale) : '',
+    content ? pickL(content.sections.contact.waMessages.reservation, locale) : '',
   );
 
   return (

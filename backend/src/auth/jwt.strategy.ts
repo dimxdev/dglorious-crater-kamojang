@@ -33,6 +33,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('User no longer exists');
     }
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'Akun dinonaktifkan. Hubungi Super Admin.',
+      );
+    }
 
     return {
       id: user.id,

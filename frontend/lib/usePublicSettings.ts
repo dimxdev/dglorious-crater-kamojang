@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchPublicSettings } from '@/lib/api/settings';
+import { waDigits } from '@/lib/phone';
 
 /**
  * Settings global (no. WA, jam check-in/out, S&K) untuk halaman publik.
@@ -54,5 +55,5 @@ export function usePublicSettings() {
 /** Link wa.me lengkap dengan pesan awal, atau null kalau nomor belum termuat. */
 export function waLink(number: string | undefined, message: string) {
   if (!number) return null;
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${waDigits(number)}?text=${encodeURIComponent(message)}`;
 }

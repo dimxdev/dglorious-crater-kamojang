@@ -6,9 +6,8 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import {
   RoleName,
-  BookingSource,
-  BookingStatus,
-  BookingChannel,
+  ReservationStatus,
+  ReservationChannel,
   ExtraBedType,
 } from '../src/generated/prisma/enums';
 
@@ -54,7 +53,7 @@ const ROLES: {
 // "jangan name_id/name_en" di §9 PROJECT.md soal itu, bukan soal ini).
 const TERMS_ID = [
   '1. Melakukan pembayaran Down Payment 50% paling lambat 1x24 jam setelah dealing.',
-  '2. Lebih dari 1x24 jam, booking akan rilis otomatis oleh sistem ke tamu lain.',
+  '2. Lebih dari 1x24 jam tanpa DP, reservasi dibatalkan dan unit dilepas ke tamu lain.',
   '3. FOTO bukti transfer silahkan dikirim ke nomor WhatsApp ini.',
   '4. Hanya melakukan pembayaran ke rekening yang diberikan oleh staff Reservasi.',
   '5. Apabila melakukan pembatalan setelah pembayaran, maka pembayaran akan hangus (tidak ada refund).',
@@ -69,7 +68,7 @@ const TERMS_ID = [
 
 const TERMS_EN = [
   '1. Pay a 50% down payment no later than 1x24 hours after the deal is agreed.',
-  '2. After 1x24 hours, the booking is automatically released by the system to other guests.',
+  '2. Without a down payment within 1x24 hours, the reservation is cancelled and the unit is released to other guests.',
   '3. Please send a photo of the transfer receipt to this WhatsApp number.',
   '4. Only make payment to the account provided by the Reservation staff.',
   '5. If you cancel after payment, the payment is forfeited (no refund).',
@@ -90,8 +89,8 @@ const TERMS_EN = [
 const SETTINGS: { key: string; value: string }[] = [
   { key: 'check_in_time', value: '14:00' },
   { key: 'check_out_time', value: '12:00' },
-  { key: 'whatsapp_number', value: '6281110003016' },
-  { key: 'whatsapp_number_2', value: '6281111121171' },
+  { key: 'whatsapp_number', value: '+6281110003016' },
+  { key: 'whatsapp_number_2', value: '+6281111121171' },
   { key: 'contact_email', value: 'dgloriouscraterkamojang@gmail.com' },
   { key: 'instagram_url', value: 'https://www.instagram.com/dgloriouscrater.kamojang' },
   { key: 'tiktok_url', value: 'https://www.tiktok.com/@dgloriouscraterkamojang' },
@@ -454,18 +453,18 @@ async function seedRoomTypes(createdById: number) {
 }
 
 /**
- * Contoh booking dummy — sengaja 2 baris supaya dua jalur pencatatan yang
- * beda kelihatan: WhatsApp (tamu belum tiba, masih DP, `createdAt` beberapa
- * hari sebelum check-in) & Walk-in (tamu langsung datang, sudah lunas &
- * CHECKED_IN, `createdAt` = tanggal check-in). Yang WhatsApp juga multi-tenda
- * + extra bed, buat membuktikan `booking_items` & tarif tambah orang.
+ * Contoh reservasi dummy — sengaja 2 baris supaya dua jalur pencatatan yang
+ * beda kelihatan: Reservasi (tamu belum tiba, masih DP, `createdAt` beberapa
+ * hari sebelum check-in) & Langsung (tamu langsung datang, sudah lunas &
+ * CHECKED_IN, `createdAt` = tanggal check-in). Yang Reservasi juga multi-tenda
+ * + extra bed, buat membuktikan `reservation_items` & tarif tambah orang.
  */
-async function seedSampleBookings(createdById: number) {
+async function seedSampleReservations(createdById: number) {
   const eagleHill = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'eagle-hill' } });
   const royal = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'royal-kahuripan' } });
   const jamuju = await prisma.roomType.findUniqueOrThrow({ where: { slug: 'camp-jamuju' } });
 
-  // ── 1. Jalur WhatsApp: multi-tenda, masih DP, tamu belum tiba ──
+  // ── 1. Jalur Reservasi: multi-tenda, masih DP, tamu belum tiba ──
   const nights = 2;
   const eagleSubtotal = Number(eagleHill.priceWeekday) * nights;
   const royalSubtotal = Number(royal.priceWeekday) * nights;
@@ -475,21 +474,20 @@ async function seedSampleBookings(createdById: number) {
   const waTotal = eagleSubtotal + royalSubtotal + extraBedQty * extraBedPrice * nights;
 
   const waCode = 'DGC-SEED01';
-  if (!(await prisma.booking.findUnique({ where: { bookingCode: waCode } }))) {
-    await prisma.booking.create({
+  if (!(await prisma.reservation.findUnique({ where: { reservationCode: waCode } }))) {
+    await prisma.reservation.create({
       data: {
-        bookingCode: waCode,
+        reservationCode: waCode,
         guestName: 'Budi Santoso',
-        guestPhone: '081234567890',
+        guestPhone: '+6281234567890',
         createdAt: new Date('2026-07-24'), // dicatat 8 hari sebelum check-in
         checkIn: new Date('2026-08-01'),
         checkOut: new Date('2026-08-03'),
         priceSnapshot: waTotal,
         isPriceOverride: false,
-        status: BookingStatus.DP,
-        bookingChannel: BookingChannel.WHATSAPP,
-        bookingSource: BookingSource.MANUAL,
-        notes: 'Contoh booking dummy — multi-tenda + extra bed, masih DP.',
+        status: ReservationStatus.DP,
+        channel: ReservationChannel.RESERVASI,
+        notes: 'Contoh reservasi dummy — multi-tenda + extra bed, masih DP.',
         createdById,
         // Dewasa/anak/extra-bed per tenda (§8.2) — Eagle Hill dapat extra
         // bed (2 dewasa + 1 tambahan), Royal Kahuripan pasangan + 1 anak.
@@ -518,37 +516,36 @@ async function seedSampleBookings(createdById: number) {
     });
   }
 
-  // ── 2. Jalur Walk-in: langsung lunas & check-in di hari yang sama ──
-  const walkinCode = 'DGC-SEED02';
-  if (!(await prisma.booking.findUnique({ where: { bookingCode: walkinCode } }))) {
-    const walkinSubtotal = Number(jamuju.priceWeekday) * 1;
+  // ── 2. Jalur Langsung: langsung lunas & check-in di hari yang sama ──
+  const langsungCode = 'DGC-SEED02';
+  if (!(await prisma.reservation.findUnique({ where: { reservationCode: langsungCode } }))) {
+    const langsungSubtotal = Number(jamuju.priceWeekday) * 1;
     const checkInDate = new Date('2026-07-26');
-    await prisma.booking.create({
+    await prisma.reservation.create({
       data: {
-        bookingCode: walkinCode,
+        reservationCode: langsungCode,
         guestName: 'Citra Lestari',
-        guestPhone: '082177881122',
-        createdAt: checkInDate, // walk-in: dicatat persis saat tamu datang
+        guestPhone: '+6282177881122',
+        createdAt: checkInDate, // langsung: dicatat persis saat tamu datang
         checkIn: checkInDate,
         checkOut: new Date('2026-07-27'),
-        priceSnapshot: walkinSubtotal,
-        status: BookingStatus.CHECKED_IN,
-        bookingChannel: BookingChannel.WALK_IN,
-        bookingSource: BookingSource.MANUAL,
-        notes: 'Contoh booking dummy — tamu langsung, lunas & check-in seketika.',
+        priceSnapshot: langsungSubtotal,
+        status: ReservationStatus.CHECKED_IN,
+        channel: ReservationChannel.LANGSUNG,
+        notes: 'Contoh reservasi dummy — tamu langsung, lunas & check-in seketika.',
         createdById,
         lunasAt: checkInDate,
         checkedInAt: checkInDate,
         items: {
           create: [
-            { roomTypeId: jamuju.id, qty: 1, subtotalSnapshot: walkinSubtotal, adults: 4, children: 0 },
+            { roomTypeId: jamuju.id, qty: 1, subtotalSnapshot: langsungSubtotal, adults: 4, children: 0 },
           ],
         },
       },
     });
   }
 
-  console.log('✔ Seeded 2 sample bookings (WhatsApp multi-tenda + Walk-in)');
+  console.log('✔ Seeded 2 sample reservations (Reservasi multi-tenda + Langsung)');
 }
 
 async function main() {
@@ -559,7 +556,7 @@ async function main() {
     where: { email: 'superadmin@dglorious.com' },
   });
   await seedRoomTypes(superAdmin.id);
-  await seedSampleBookings(superAdmin.id);
+  await seedSampleReservations(superAdmin.id);
 
   console.log('\n🌱 Seed selesai.');
   console.log(`   Login dummy — password semua akun: "${DEFAULT_PASSWORD}"`);

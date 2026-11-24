@@ -11,9 +11,11 @@ import {
   Put,
   Query,
   UploadedFile,
+  UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ImageTooLargeFilter } from '../penginapan/room-types/room-image.multer';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -86,6 +88,7 @@ export class SiteContentAdminController {
   }
 
   @Post('upload')
+  @UseFilters(ImageTooLargeFilter)
   @UseInterceptors(FileInterceptor('file', siteImageMulterOptions))
   upload(@UploadedFile() file: Express.Multer.File) {
     if (!file) {

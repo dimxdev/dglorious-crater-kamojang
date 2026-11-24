@@ -1,16 +1,15 @@
 'use client';
 
-import { ArrowUpRight, Download } from 'lucide-react';
-import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { StatusBadge } from '@/components/admin/penginapan/StatusBadge';
 import { ApiError } from '@/lib/api/client';
-import { fetchAdminBookings, toAdminBooking } from '@/lib/api/bookings';
+import { fetchAdminReservations, toAdminReservation } from '@/lib/api/reservations';
 import { fetchAdminRoomTypes } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { effectiveStatus, roomsSummary, statusLabelId, type AdminBooking } from '@/lib/data/admin';
+import { effectiveStatus, roomsSummary, statusLabelId, type AdminReservation } from '@/lib/data/admin';
 import {
-  bookingsInRange,
+  reservationsInRange,
   calcOwnerStats,
   calcRecentTransactions,
   calcRevenueTrend,
@@ -44,28 +43,45 @@ export function OwnerOverviewPage() {
   const [customRange, setCustomRange] = useState<CustomRange>({ from: '', to: '' });
   const ref = { today: new Date(), custom: customRange };
 
-  const [bookings, setBookings] = useState<AdminBooking[] | null>(null);
+  const [reservations, setReservations] = useState<AdminReservation[] | null>(null);
   const [rooms, setRooms] = useState<OwnerRoomSummary[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
     try {
-      setLoadError(null);
-      const [bookingList, roomTypes] = await Promise.all([
-        fetchAdminBookings(token),
+      const [reservationList, roomTypes] = await Promise.all([
+        fetchAdminReservations(token),
         fetchAdminRoomTypes(token),
       ]);
-      setBookings(bookingList.map(toAdminBooking));
+      setReservations(reservationList.map(toAdminReservation));
       setRooms(roomTypes.filter((r) => r.isActive));
+      setLoadError(null);
     } catch (e) {
       setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
     }
   }, [token, t]);
 
+  // Pemuatan awal: setState hanya di dalam callback promise, bukan sinkron di
+  // badan effect (`refresh` tetap dipakai untuk tombol Coba lagi).
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (!token) return;
+    let active = true;
+    Promise.all([fetchAdminReservations(token), fetchAdminRoomTypes(token)])
+      .then(([reservationList, roomTypes]) => {
+        if (!active) return;
+        setReservations(reservationList.map(toAdminReservation));
+        setRooms(roomTypes.filter((r) => r.isActive));
+        setLoadError(null);
+      })
+      .catch((e) => {
+        if (active)
+          setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, t]);
 
   if (loadError) {
     return (
@@ -73,7 +89,10 @@ export function OwnerOverviewPage() {
         <div className="rounded-2xl border border-[#e8e2d5] bg-white px-4 py-8 text-center">
           <p className="text-sm text-red-600">{loadError}</p>
           <button
-            onClick={() => void refresh()}
+            onClick={() => {
+              setLoadError(null);
+              void refresh();
+            }}
             className="text-accent mt-2 text-sm font-semibold underline"
           >
             {t('admin.retry')}
@@ -83,7 +102,7 @@ export function OwnerOverviewPage() {
     );
   }
 
-  if (bookings === null || rooms === null) {
+  if (reservations === null || rooms === null) {
     return (
       <OwnerLayout title={t('owner.title')}>
         <div className="text-muted rounded-2xl border border-[#e8e2d5] bg-white px-4 py-8 text-center text-sm">
@@ -95,11 +114,11 @@ export function OwnerOverviewPage() {
 
   // Alias biar TS tetap narrow ke non-null di dalam closure `handleExport` di
   // bawah (nested function scope tidak ikut narrowing pengecekan di atas).
-  const bookingsData = bookings;
-  const ownerStats = calcOwnerStats(bookingsData, rooms, range, ref);
-  const sparklines = calcStatSparklines(bookings, rooms, range, ref);
-  const revenueTrend = calcRevenueTrend(bookings);
-  const recentBookings = calcRecentTransactions(bookings, 8);
+  const reservationsData = reservations;
+  const ownerStats = calcOwnerStats(reservationsData, rooms, range, ref);
+  const sparklines = calcStatSparklines(reservations, rooms, range, ref);
+  const revenueTrend = calcRevenueTrend(reservations);
+  const recentReservations = calcRecentTransactions(reservations, 8);
   const periodLabel = periodRangeLabel(range, ref);
   const compareLabel = t(`owner.${COMPARE_LABEL_KEY[range]}`);
   const newLabel = t('owner.newThisPeriod');
@@ -112,7 +131,7 @@ export function OwnerOverviewPage() {
   >;
 
   function handleExport() {
-    const filteredBookings = [...bookingsInRange(bookingsData, range, ref)].sort((a, b) =>
+    const filteredReservations = [...reservationsInRange(reservationsData, range, ref)].sort((a, b) =>
       b.checkIn.localeCompare(a.checkIn),
     );
 
@@ -129,7 +148,7 @@ export function OwnerOverviewPage() {
       })),
       breakdowns: [],
       table: {
-        sectionTitle: t('owner.reportBookingSection'),
+        sectionTitle: t('owner.reportReservationSection'),
         headers: [
           t('admin.tCode'),
           t('admin.tGuest'),
@@ -140,17 +159,17 @@ export function OwnerOverviewPage() {
           t('admin.tStatus'),
           t('admin.tTotal'),
         ],
-        rows: filteredBookings.map((b) => [
+        rows: filteredReservations.map((b) => [
           b.kode,
           b.guest,
           roomsSummary(b.rooms),
           b.checkIn,
           b.checkOut,
-          b.source === 'WHATSAPP' ? 'WhatsApp' : 'Walk-in',
+          b.source === 'RESERVASI' ? 'Reservasi' : 'Langsung',
           statusLabelId[effectiveStatus(b)],
           formatIDR(b.total),
         ]),
-        noDataText: t('owner.reportNoBookings'),
+        noDataText: t('owner.reportNoReservations'),
         rightAlignColumns: [7],
       },
       labels: {
@@ -206,11 +225,11 @@ export function OwnerOverviewPage() {
             terlalu dominan dan halamannya kepanjangan buat di-scroll. */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4.5">
           <StatCard
-            stat={byKey.statBooking}
-            label={t('owner.statBooking')}
+            stat={byKey.statReservation}
+            label={t('owner.statReservation')}
             compareLabel={compareLabel}
             newLabel={newLabel}
-            sparkline={sparklines.statBooking}
+            sparkline={sparklines.statReservation}
           />
           <StatCard
             stat={byKey.statVisitors}
@@ -248,13 +267,6 @@ export function OwnerOverviewPage() {
       <Panel className="mt-4.5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="text-[15px] font-bold">{t('owner.recentTx')}</div>
-          <Link
-            href="/admin/penginapan/booking"
-            className="text-accent inline-flex items-center gap-1 text-[12.5px] font-semibold hover:underline"
-          >
-            {t('owner.seeAll')}
-            <ArrowUpRight size={13} strokeWidth={2.4} aria-hidden />
-          </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[12.5px]">
@@ -269,7 +281,7 @@ export function OwnerOverviewPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0ebe0]">
-              {recentBookings.map((b) => (
+              {recentReservations.map((b) => (
                 <tr key={b.kode} className="transition-colors hover:bg-[#faf8f3]">
                   <td className="text-forest-700 px-1.5 py-2.5 font-semibold whitespace-nowrap">
                     {b.kode}

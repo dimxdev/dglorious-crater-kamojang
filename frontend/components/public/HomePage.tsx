@@ -446,7 +446,7 @@ export function HomePage() {
         </section>
       )}
 
-      {/* FAQ — situs tidak punya booking online, jadi tiap reservasi lewat
+      {/* FAQ — situs tidak punya reservasi online, jadi tiap reservasi lewat
           percakapan WhatsApp. Pertanyaan yang sudah terjawab di sini adalah
           satu bolak-balik chat yang tidak perlu terjadi. Isinya dikelola
           admin di CMS dan diturunkan dari S&K resmi klien. */}

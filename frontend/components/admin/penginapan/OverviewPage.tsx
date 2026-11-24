@@ -19,31 +19,31 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, TBody, Td, Th, THead, Table, Tr } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import {
-  fetchAdminBookings,
-  toAdminBooking,
-  updateBookingStatus,
-  type AdminBookingDetail,
-  type BookingStatusUpdate,
-} from '@/lib/api/bookings';
+  fetchAdminReservations,
+  toAdminReservation,
+  updateReservationStatus,
+  type AdminReservationDetail,
+  type ReservationStatusUpdate,
+} from '@/lib/api/reservations';
 import { fetchAdminRoomTypes, type AdminRoomTypeListItem } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
-import { occupiedQtyOnDate, roomsSummary, type AdminBooking } from '@/lib/data/admin';
+import { occupiedQtyOnDate, roomsSummary, type AdminReservation } from '@/lib/data/admin';
 import { periodRangeLabel } from '@/lib/data/owner';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import {
-  BookingDetailModal,
+  ReservationDetailModal,
   displayStatus,
   toDisplay,
-  type DisplayBooking,
-} from './BookingDetailModal';
+  type DisplayReservation,
+} from './ReservationDetailModal';
 import { SourceBadge, StatusBadge } from './StatusBadge';
 
 const WEEK = ['S', 'S', 'R', 'K', 'J', 'S', 'M'];
 
 // Ringkasan cuma buat lihat sekilas, bukan tempat browsing data penuh (itu
-// tugas Data Booking yang udah punya search/filter/pagination/export) —
+// tugas Data Reservasi yang udah punya search/filter/pagination/export) —
 // jadi tiap tabel dibatasi, sisanya diarahkan lewat link "Lihat semua".
 const OVERVIEW_LIST_LIMIT = 10;
 
@@ -54,10 +54,10 @@ function ViewAllLink({ show }: { show: boolean }) {
   if (!show) return null;
   return (
     <Link
-      href="/admin/penginapan/booking"
+      href="/admin/penginapan/reservasi"
       className="shrink-0 text-xs font-semibold whitespace-nowrap text-green-700 hover:underline"
     >
-      {t('admin.viewAllInBookings')} →
+      {t('admin.viewAllInReservations')} →
     </Link>
   );
 }
@@ -76,8 +76,8 @@ export function OverviewPage() {
   const [selectedKode, setSelectedKode] = useState<string | null>(null);
   const [opsTab, setOpsTab] = useState<OpsTab>('arrivals');
 
-  const [bookings, setBookings] = useState<AdminBooking[] | null>(null);
-  const [rawBookings, setRawBookings] = useState<AdminBookingDetail[] | null>(null);
+  const [reservations, setReservations] = useState<AdminReservation[] | null>(null);
+  const [rawReservations, setRawReservations] = useState<AdminReservationDetail[] | null>(null);
   const [activeRoomTypes, setActiveRoomTypes] = useState<AdminRoomTypeListItem[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
@@ -95,22 +95,40 @@ export function OverviewPage() {
   const refresh = useCallback(async () => {
     if (!token) return;
     try {
-      setLoadError(null);
-      const [bookingList, roomTypes] = await Promise.all([
-        fetchAdminBookings(token),
+      const [reservationList, roomTypes] = await Promise.all([
+        fetchAdminReservations(token),
         fetchAdminRoomTypes(token),
       ]);
-      setBookings(bookingList.map(toAdminBooking));
-      setRawBookings(bookingList);
+      setReservations(reservationList.map(toAdminReservation));
+      setRawReservations(reservationList);
       setActiveRoomTypes(roomTypes.filter((r) => r.isActive));
+      setLoadError(null);
     } catch (e) {
       setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
     }
   }, [token, t]);
 
+  // Pemuatan awal: setState hanya di dalam callback promise, bukan sinkron di
+  // badan effect (`refresh` tetap dipakai untuk tombol Coba lagi & setelah ubah status).
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (!token) return;
+    let active = true;
+    Promise.all([fetchAdminReservations(token), fetchAdminRoomTypes(token)])
+      .then(([reservationList, roomTypes]) => {
+        if (!active) return;
+        setReservations(reservationList.map(toAdminReservation));
+        setRawReservations(reservationList);
+        setActiveRoomTypes(roomTypes.filter((r) => r.isActive));
+        setLoadError(null);
+      })
+      .catch((e) => {
+        if (active)
+          setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, t]);
 
   const today = new Date();
   const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate());
@@ -121,7 +139,10 @@ export function OverviewPage() {
         <div className="border-border rounded-2xl border bg-white px-4 py-8 text-center">
           <p className="text-sm text-red-600">{loadError}</p>
           <button
-            onClick={() => void refresh()}
+            onClick={() => {
+              setLoadError(null);
+              void refresh();
+            }}
             className="mt-2 text-sm font-semibold text-green-700 underline"
           >
             {t('admin.retry')}
@@ -131,7 +152,7 @@ export function OverviewPage() {
     );
   }
 
-  if (bookings === null || rawBookings === null || activeRoomTypes === null) {
+  if (reservations === null || rawReservations === null || activeRoomTypes === null) {
     return (
       <DashboardLayout title={t('dashboard.overview')}>
         <div className="border-border text-muted rounded-2xl border bg-white px-4 py-8 text-center text-sm">
@@ -162,8 +183,8 @@ export function OverviewPage() {
     activeDate,
   );
 
-  const bookingsToday = bookings.filter((b) => b.checkIn === activeDate).length;
-  const paidTransactions = rawBookings
+  const reservationsToday = reservations.filter((b) => b.checkIn === activeDate).length;
+  const paidTransactions = rawReservations
     .flatMap((b) => b.payments)
     .filter((p): p is { amount: number; paidAt: string } => p.paidAt !== null);
   const revenueToday = paidTransactions
@@ -173,7 +194,7 @@ export function OverviewPage() {
     .filter((p) => p.paidAt.slice(0, 7) === activeDate.slice(0, 7))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const todayTransactions = rawBookings
+  const todayTransactions = rawReservations
     .filter((b) => b.createdAt.slice(0, 10) === activeDate)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map(toDisplay);
@@ -188,7 +209,7 @@ export function OverviewPage() {
   }[] = [
     {
       label: t('admin.overviewStatToday'),
-      value: String(bookingsToday),
+      value: String(reservationsToday),
       sub: t('admin.arrivingToday'),
       icon: CalendarCheck,
       tint: 'bg-green-50',
@@ -221,14 +242,14 @@ export function OverviewPage() {
   ];
 
   // Tamu yang CHECK-IN hari ini (beda konsep dari `todayTransactions` di atas
-  // yang berbasis tanggal booking DIBUAT) — buat admin reservasi nyiapin unit
+  // yang berbasis tanggal reservasi DIBUAT) — buat admin reservasi nyiapin unit
   // SEBELUM tamunya datang. Diurutkan LUNAS → DP → CHECKED_IN: yang belum
   // check-in (masih perlu disiapin) muncul duluan, yang udah check-in (kamar
   // sudah ditempati, tinggal riwayat) ditaruh paling bawah. (Gak akan pernah
-  // HANGUS/NO_SHOW di sini — tanggal checkout booking yang checkIn-nya hari
+  // HANGUS/NO_SHOW di sini — tanggal checkout reservasi yang checkIn-nya hari
   // ini pasti belum lewat.)
   const CHECK_IN_TODAY_ORDER: Record<string, number> = { LUNAS: 0, DP: 1, CHECKED_IN: 2 };
-  const checkInToday = rawBookings
+  const checkInToday = rawReservations
     .filter((b) => b.checkIn.slice(0, 10) === activeDate)
     .sort((a, b) => {
       const orderDiff =
@@ -244,7 +265,7 @@ export function OverviewPage() {
   // backend otomatis anggap COMPLETED walau admin belum sempat klik "Tandai
   // Selesai" manual. Kalau pakai `status` mentah, tamu yang udah efektif
   // Selesai masih nyangkut di sini padahal badge di tabel lain udah benar.
-  const currentlyStaying = rawBookings
+  const currentlyStaying = rawReservations
     .filter(
       (b) =>
         b.effectiveStatus === 'CHECKED_IN' &&
@@ -255,10 +276,10 @@ export function OverviewPage() {
     .map(toDisplay);
 
   // CHECKED_IN duluan — tamunya masih di dalam dan kamarnya perlu disiapkan
-  // ulang setelah checkout. LUNAS/DP di bawah (edge case: booking yang
+  // ulang setelah checkout. LUNAS/DP di bawah (edge case: reservasi yang
   // check-in & checkout sama hari ini tanpa sempat di-update statusnya).
   const CHECK_OUT_ORDER: Record<string, number> = { CHECKED_IN: 0, LUNAS: 1, DP: 2 };
-  const checkOutToday = rawBookings
+  const checkOutToday = rawReservations
     .filter((b) => b.checkOut.slice(0, 10) === activeDate && b.status !== 'HANGUS')
     .sort((a, b) => {
       const orderDiff = (CHECK_OUT_ORDER[a.status] ?? 99) - (CHECK_OUT_ORDER[b.status] ?? 99);
@@ -274,7 +295,7 @@ export function OverviewPage() {
     key: OpsTab;
     label: string;
     icon: LucideIcon;
-    rows: DisplayBooking[];
+    rows: DisplayReservation[];
     empty: string;
   }[] = [
     {
@@ -301,15 +322,15 @@ export function OverviewPage() {
   ];
   const activeOps = OPS_TABS.find((tab) => tab.key === opsTab) ?? OPS_TABS[0];
 
-  // Dicari langsung dari `rawBookings` (bukan cuma salah satu list di atas)
-  // biar modal detail bisa dibuka dari tabel mana pun tanpa peduli booking-nya
+  // Dicari langsung dari `rawReservations` (bukan cuma salah satu list di atas)
+  // biar modal detail bisa dibuka dari tabel mana pun tanpa peduli reservasi-nya
   // ada di list yang mana.
-  const selectedBookingRaw = rawBookings.find((b) => b.bookingCode === selectedKode) ?? null;
-  const selectedBooking = selectedBookingRaw ? toDisplay(selectedBookingRaw) : null;
+  const selectedReservationRaw = rawReservations.find((b) => b.reservationCode === selectedKode) ?? null;
+  const selectedReservation = selectedReservationRaw ? toDisplay(selectedReservationRaw) : null;
 
-  async function handleUpdateStatus(newStatus: BookingStatusUpdate) {
-    if (!selectedBooking || !token) return;
-    await updateBookingStatus(token, selectedBooking.kode, newStatus);
+  async function handleUpdateStatus(newStatus: ReservationStatusUpdate) {
+    if (!selectedReservation || !token) return;
+    await updateReservationStatus(token, selectedReservation.kode, newStatus);
     await refresh();
   }
 
@@ -341,7 +362,7 @@ export function OverviewPage() {
     }
   }
 
-  const activeOccupied = occupiedQtyOnDate(bookings, activeDate);
+  const activeOccupied = occupiedQtyOnDate(reservations, activeDate);
   const occupancyPct =
     totalCapacity > 0 ? Math.round((activeOccupied / totalCapacity) * 100) : 0;
 
@@ -625,7 +646,7 @@ export function OverviewPage() {
               ))}
               {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                 const dateISO = toISO(year, monthIndex, day);
-                const occupied = occupiedQtyOnDate(bookings, dateISO);
+                const occupied = occupiedQtyOnDate(reservations, dateISO);
                 const full = totalCapacity > 0 && occupied >= totalCapacity;
                 const empty = occupied === 0;
                 const isSelected = dateISO === activeDate;
@@ -704,7 +725,7 @@ export function OverviewPage() {
 
               <div className="border-border mt-2.5 flex flex-col gap-1 border-t border-dashed pt-2.5">
                 {activeRoomTypes.map((rt) => {
-                  const occupiedType = occupiedQtyOnDate(bookings, activeDate, rt.slug);
+                  const occupiedType = occupiedQtyOnDate(reservations, activeDate, rt.slug);
                   const available = Math.max(0, rt.totalUnits - occupiedType);
                   const isFull = available === 0;
                   return (
@@ -728,9 +749,9 @@ export function OverviewPage() {
         </Card>
       </div>
 
-      {selectedBooking && (
-        <BookingDetailModal
-          booking={selectedBooking}
+      {selectedReservation && (
+        <ReservationDetailModal
+          reservation={selectedReservation}
           onClose={() => setSelectedKode(null)}
           onMarkLunas={() => handleUpdateStatus('LUNAS')}
           onMarkCheckedIn={() => handleUpdateStatus('CHECKED_IN')}

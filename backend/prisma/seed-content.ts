@@ -215,13 +215,13 @@ const SECTIONS: Record<string, unknown> = {
         'Halo D’Glorious Crater, saya ingin bertanya tentang penginapan.',
         'Hello D’Glorious Crater, I would like to ask about lodging.',
       ),
-      booking: l(
+      reservation: l(
         'Halo D’Glorious Crater, saya ingin bertanya soal reservasi penginapan.',
         'Hello D’Glorious Crater, I would like to ask about a lodging reservation.',
       ),
       room: l(
-        'Halo D’Glorious Crater, saya ingin tanya ketersediaan & booking untuk {room}.',
-        'Hello D’Glorious Crater, I would like to ask about availability and booking for {room}.',
+        'Halo D’Glorious Crater, saya ingin tanya ketersediaan & reservasi untuk {room}.',
+        'Hello D’Glorious Crater, I would like to ask about availability and a reservation for {room}.',
       ),
       terms: l(
         'Halo D’Glorious Crater, saya ingin bertanya tentang syarat & ketentuan reservasi.',
@@ -405,7 +405,7 @@ const COLLECTIONS: Record<ContentCollection, Seed[]> = {
         q: l('Bagaimana cara memesan penginapan?', 'How do I book a stay?'),
         a: l(
           'Hubungi admin lewat WhatsApp untuk mengecek ketersediaan tanggal dan menyepakati harga. Setelah deal, bayar DP 50% lewat transfer bank, lalu kirimkan foto bukti transfernya ke nomor WhatsApp yang sama. Belum ada pemesanan otomatis di situs ini — semuanya lewat admin.',
-          'Message our admin on WhatsApp to check date availability and agree on a rate. Once settled, pay a 50% deposit by bank transfer and send the transfer receipt to that same WhatsApp number. There is no self-service booking on this site yet — every reservation goes through an admin.',
+          'Message our admin on WhatsApp to check date availability and agree on a rate. Once settled, pay a 50% deposit by bank transfer and send the transfer receipt to that same WhatsApp number. There is no online self-service reservation on this site yet — every reservation goes through an admin.',
         ),
       },
     },

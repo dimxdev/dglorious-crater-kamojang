@@ -4,10 +4,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { BookingsModule } from './penginapan/bookings/bookings.module';
+import { ReservationsModule } from './penginapan/reservations/reservations.module';
 import { RoomTypesModule } from './penginapan/room-types/room-types.module';
 import { SettingsModule } from './settings/settings.module';
 import { SiteContentModule } from './site-content/site-content.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -17,8 +18,9 @@ import { SiteContentModule } from './site-content/site-content.module';
     AuthModule,
     RoomTypesModule,
     SettingsModule,
-    BookingsModule,
+    ReservationsModule,
     SiteContentModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

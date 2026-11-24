@@ -1,7 +1,9 @@
 'use client';
 
 import { Copy, Plus, X } from 'lucide-react';
-import { Input, Select } from '@/components/ui';
+import { IntInput, Select } from '@/components/ui';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { capacityErrors, LIMITS } from '@/lib/validation';
 import type { BookableRoom } from '@/lib/pricing';
 import { formatIDR } from '@/lib/format';
 import {
@@ -47,7 +49,7 @@ type RoomGroupEditorProps = {
   hideTotal?: boolean;
 };
 
-/** Editor grup tenda per booking: tiap grup = tipe + jumlah unit + dewasa/anak/extra bed-nya sendiri, plus subtotal harga real-time. */
+/** Editor grup tenda per reservasi: tiap grup = tipe + jumlah unit + dewasa/anak/extra bed-nya sendiri, plus subtotal harga real-time. */
 export function RoomGroupEditor({
   value,
   onChange,
@@ -58,6 +60,8 @@ export function RoomGroupEditor({
   availabilityBySlug,
   hideTotal,
 }: RoomGroupEditorProps) {
+  const { t } = useTranslation();
+  const capErrors = capacityErrors(value, rooms, t);
   const options = rooms.map((r) => ({
     value: r.slug,
     label: `${r.name} — ${r.category}`,
@@ -169,35 +173,36 @@ export function RoomGroupEditor({
                   return null;
                 })()}
               </div>
-              <Input
+              <IntInput
                 label={labels.adultsLabel}
-                type="number"
-                min={1}
                 value={group.adults}
-                onChange={(e) =>
-                  update(i, {
-                    adults: Math.max(1, Number(e.target.value) || 1),
-                  })
-                }
+                min={LIMITS.adults.min}
+                max={LIMITS.adults.max}
+                onValueChange={(n) => update(i, { adults: n })}
+                className={capErrors[i] ? 'border-red-500' : undefined}
               />
-              <Input
+              <IntInput
                 label={labels.childrenLabel}
-                type="number"
-                min={0}
                 value={group.children}
-                onChange={(e) =>
-                  update(i, { children: Number(e.target.value) || 0 })
-                }
+                min={LIMITS.children.min}
+                max={LIMITS.children.max}
+                onValueChange={(n) => update(i, { children: n })}
               />
-              <Input
+              <IntInput
                 label={labels.extraBedQtyLabel}
-                type="number"
-                min={0}
                 value={group.extraBedQty}
-                onChange={(e) =>
-                  update(i, { extraBedQty: Number(e.target.value) || 0 })
-                }
+                min={LIMITS.extraBed.min}
+                max={LIMITS.extraBed.max}
+                onValueChange={(n) => update(i, { extraBedQty: n })}
               />
+              {capErrors[i] && (
+                <p
+                  role="alert"
+                  className="col-span-2 text-[12.5px] font-medium text-red-600 sm:col-span-3"
+                >
+                  {capErrors[i]}
+                </p>
+              )}
             </div>
             <div className="mt-3 flex items-center justify-end gap-2 text-sm font-semibold text-green-700">
               {labels.subtotalLabel}

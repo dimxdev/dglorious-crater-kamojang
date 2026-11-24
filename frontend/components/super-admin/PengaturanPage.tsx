@@ -9,7 +9,25 @@ import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { CardShell, ErrorBlock, LoadingBlock } from './cms/SectionEditor';
 import { LangPill, fieldClass, ghostBtn, textareaClass } from './cms/controls';
 import { useReportDirty } from './cms/dirty';
+import { isInvalidPhone, normalizeIdPhone } from '@/lib/phone';
+import { errorMessage, isEmail, isHttpsUrl } from '@/lib/validation';
 import { SuperAdminLayout } from './SuperAdminLayout';
+
+const TIME_RE = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+const MAX_TERMS = 20000;
+
+/** Pesan galat satu kolom pengaturan, null kalau valid (kolom kosong dibolehkan). */
+function settingError(key: string, kind: Kind, value: string, t: (k: string) => string): string | null {
+  const v = value.trim();
+  if (kind === 'time') return TIME_RE.test(v) ? null : t('validation.timeInvalid');
+  if (v === '') return null;
+  if (kind === 'tel') return isInvalidPhone(v) ? t('admin.invalidPhone') : null;
+  if (kind === 'email') return isEmail(v) ? null : t('validation.emailInvalid');
+  if (kind === 'url') return isHttpsUrl(v) ? null : t('validation.httpsOnly');
+  if (kind === 'multiline') return v.length > MAX_TERMS ? t('validation.textTooLong') : null;
+  void key;
+  return v.length > 500 ? t('validation.textTooLong') : null;
+}
 
 type Kind = 'text' | 'time' | 'multiline' | 'url' | 'email' | 'tel';
 type KnownKey = { key: string; kind: Kind; lang?: 'id' | 'en' };
@@ -104,6 +122,17 @@ function SettingsForm() {
     [saved, draft],
   );
   const dirty = changedKeys.length > 0;
+  const fieldErrors = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (!saved) return out;
+    for (const key of Object.keys(draft)) {
+      const kind = KNOWN.get(key)?.kind ?? 'text';
+      const msg = settingError(key, kind, draft[key] ?? '', t);
+      if (msg) out[key] = msg;
+    }
+    return out;
+  }, [draft, saved, t]);
+  const hasFieldError = changedKeys.some((k) => fieldErrors[k]);
   useReportDirty('settings', dirty);
 
   const otherKeys = useMemo(() => (saved ? Object.keys(saved).filter((k) => !KNOWN.has(k)).sort() : []), [saved]);
@@ -114,17 +143,23 @@ function SettingsForm() {
   }
 
   async function save() {
-    if (!token || !dirty || saving) return;
+    if (!token || !dirty || saving || hasFieldError) return;
     setSaving(true);
     setSaveError(null);
     try {
-      const values = Object.fromEntries(changedKeys.map((k) => [k, draft[k]]));
+      const values = Object.fromEntries(
+        changedKeys.map((k) => {
+          const raw = (draft[k] ?? '').trim();
+          const kind = KNOWN.get(k)?.kind;
+          return [k, kind === 'tel' && raw ? (normalizeIdPhone(raw) ?? raw) : kind === 'multiline' ? draft[k] : raw];
+        }),
+      );
       const next = await updateSettings(token, values);
       setSaved(next);
       setDraft(next);
       setJustSaved(true);
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : t('admin.saveError'));
+      setSaveError(errorMessage(e, t('admin.saveError')));
     } finally {
       setSaving(false);
     }
@@ -159,6 +194,7 @@ function SettingsForm() {
             lang={lang}
             rows={12}
             value={value}
+            maxLength={MAX_TERMS}
             onChange={(e) => setValue(key, e.target.value)}
             className={textareaClass}
           />
@@ -166,12 +202,25 @@ function SettingsForm() {
           <input
             id={id}
             type={kind === 'tel' ? 'tel' : kind === 'email' ? 'email' : kind === 'time' ? 'time' : kind === 'url' ? 'url' : 'text'}
-            inputMode={kind === 'tel' ? 'numeric' : undefined}
+            inputMode={kind === 'tel' ? 'tel' : undefined}
+            maxLength={kind === 'tel' ? 25 : 500}
+            placeholder={kind === 'url' ? 'https://' : kind === 'tel' ? '0812-3456-7890' : undefined}
+            aria-invalid={fieldErrors[key] ? true : undefined}
+            aria-describedby={fieldErrors[key] ? `${id}-err` : undefined}
             value={value}
             onChange={(e) => setValue(key, e.target.value)}
-            className={`${fieldClass} ${kind === 'time' ? 'sm:max-w-48' : ''}`}
+            className={`${fieldClass} ${kind === 'time' ? 'sm:max-w-48' : ''} ${fieldErrors[key] ? 'border-red-600' : ''}`}
           />
         )}
+        {fieldErrors[key] ? (
+          <p id={`${id}-err`} role="alert" className="mt-1.5 text-[12.5px] font-medium text-red-700">
+            {fieldErrors[key]}
+          </p>
+        ) : kind === 'tel' && normalizeIdPhone(value) ? (
+          <p className="text-muted mt-1.5 text-[12px]">
+            {t('validation.phoneSavedAs', { phone: normalizeIdPhone(value) ?? '' })}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -235,7 +284,7 @@ function SettingsForm() {
               <button
                 type="button"
                 onClick={() => void save()}
-                disabled={!dirty || saving}
+                disabled={!dirty || saving || hasFieldError}
                 className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-green-700 px-4 text-[13.5px] sm:h-10 sm:px-5 font-semibold text-white transition-colors hover:bg-green-800 focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
               >
                 {saving ? t('superAdmin.cms.saving') : t('superAdmin.cms.save')}

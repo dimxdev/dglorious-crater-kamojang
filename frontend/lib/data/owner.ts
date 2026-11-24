@@ -1,10 +1,10 @@
-// Analitik dashboard Owner — dihitung dari booking & tipe tenda ASLI (API),
+// Analitik dashboard Owner — dihitung dari reservasi & tipe tenda ASLI (API),
 // dikirim eksplisit sebagai parameter oleh pemanggil (OwnerOverviewPage,
-// OwnerPenginapanPage) lewat adapter `toAdminBooking()` (lib/api/bookings.ts),
+// OwnerPenginapanPage) lewat adapter `toAdminReservation()` (lib/api/reservations.ts),
 // pola yang sama dengan Dashboard Admin. Tidak ada fallback diam-diam ke data
 // contoh — kalau pemanggil lupa kirim data, TypeScript akan menolak compile
 // (parameter wajib), bukan diam-diam nampilin angka dummy.
-import { occupiedQtyOnDate, type AdminBooking } from './admin';
+import { occupiedQtyOnDate, type AdminReservation } from './admin';
 import { formatIDR } from '../format';
 
 export type DateRange = 'rangeToday' | 'rangeWeek' | 'rangeMonth' | 'rangeCustom';
@@ -88,32 +88,32 @@ export function periodRangeLabel(range: DateRange, ref: PeriodRef = DEFAULT_REF)
 }
 
 /**
- * Booking yang tanggal check-in-nya masuk dalam rentang. Generik atas `T`
+ * Reservasi yang tanggal check-in-nya masuk dalam rentang. Generik atas `T`
  * (cuma butuh `checkIn`, format `YYYY-MM-DD`) — dipakai Owner dashboard maupun
- * `BookingsPage.tsx` (data API). `bookings` WAJIB dikirim pemanggil.
+ * `ReservationsPage.tsx` (data API). `reservasis` WAJIB dikirim pemanggil.
  */
-export function bookingsInRange<T extends { checkIn: string } = AdminBooking>(
-  bookings: T[],
+export function reservationsInRange<T extends { checkIn: string } = AdminReservation>(
+  reservations: T[],
   range: DateRange,
   ref: PeriodRef = DEFAULT_REF,
 ): T[] {
   const dates = new Set(datesInRange(range, ref));
-  return bookings.filter((b) => dates.has(b.checkIn));
+  return reservations.filter((b) => dates.has(b.checkIn));
 }
 
 /**
- * Booking yang tanggal DIBUAT-nya masuk dalam rentang — untuk stat tiles
- * pendapatan/jumlah booking. Berbeda dari `bookingsInRange` yang by check-in:
- * booking Juli yang check-in Agustus tercatat sebagai pendapatan Juli,
+ * Reservasi yang tanggal DIBUAT-nya masuk dalam rentang — untuk stat tiles
+ * pendapatan/jumlah reservasi. Berbeda dari `reservationsInRange` yang by check-in:
+ * reservasi Juli yang check-in Agustus tercatat sebagai pendapatan Juli,
  * bukan Agustus.
  */
-export function bookingsCreatedInRange<T extends { createdAt: string }>(
-  bookings: T[],
+export function reservationsCreatedInRange<T extends { createdAt: string }>(
+  reservations: T[],
   range: DateRange,
   ref: PeriodRef = DEFAULT_REF,
 ): T[] {
   const dates = new Set(datesInRange(range, ref));
-  return bookings.filter((b) => dates.has(b.createdAt.slice(0, 10)));
+  return reservations.filter((b) => dates.has(b.createdAt.slice(0, 10)));
 }
 
 /** Geser acuan periode ke periode sebelumnya, durasi sama (buat bandingkan delta %). */
@@ -155,7 +155,7 @@ export function totalCapacity(rooms: OwnerRoomSummary[]): number {
 }
 
 function averageOccupancyPct(
-  bookings: AdminBooking[],
+  reservations: AdminReservation[],
   rooms: OwnerRoomSummary[],
   range: DateRange,
   ref: PeriodRef,
@@ -163,7 +163,7 @@ function averageOccupancyPct(
   const capacity = totalCapacity(rooms);
   if (capacity === 0) return 0;
   const dates = datesInRange(range, ref);
-  const pct = dates.reduce((sum, d) => sum + occupiedQtyOnDate(bookings, d) / capacity, 0);
+  const pct = dates.reduce((sum, d) => sum + occupiedQtyOnDate(reservations, d) / capacity, 0);
   return Math.round((pct / dates.length) * 100);
 }
 
@@ -176,24 +176,24 @@ function averageOccupancyPct(
  */
 export type StatUnit = 'idr' | 'int' | 'pct';
 
-export type OwnerStatKey = 'statRevenue' | 'statBooking' | 'statVisitors' | 'statOccupancy';
+export type OwnerStatKey = 'statRevenue' | 'statReservation' | 'statVisitors' | 'statOccupancy';
 
 /** 4 stat card Ringkasan Owner, dengan delta % vs periode sebelumnya. */
 export function calcOwnerStats(
-  bookings: AdminBooking[],
+  reservations: AdminReservation[],
   rooms: OwnerRoomSummary[],
   range: DateRange,
   ref: PeriodRef = DEFAULT_REF,
 ) {
-  const current = bookingsInRange(bookings, range, ref);
-  const previous = bookingsInRange(bookings, range, previousPeriod(range, ref));
+  const current = reservationsInRange(reservations, range, ref);
+  const previous = reservationsInRange(reservations, range, previousPeriod(range, ref));
 
   const currentRevenue = current.reduce((sum, b) => sum + b.total, 0);
   const previousRevenue = previous.reduce((sum, b) => sum + b.total, 0);
   const currentVisitors = current.reduce((sum, b) => sum + b.adults + b.children, 0);
   const previousVisitors = previous.reduce((sum, b) => sum + b.adults + b.children, 0);
-  const currentOccupancy = averageOccupancyPct(bookings, rooms, range, ref);
-  const previousOccupancy = averageOccupancyPct(bookings, rooms, range, previousPeriod(range, ref));
+  const currentOccupancy = averageOccupancyPct(reservations, rooms, range, ref);
+  const previousOccupancy = averageOccupancyPct(reservations, rooms, range, previousPeriod(range, ref));
 
   // `raw` + `unit` dipakai kartu di layar buat animasi hitung-naik (angka mentah
   // yang diformat ulang tiap frame); `value` yang sudah jadi string tetap ada
@@ -207,7 +207,7 @@ export function calcOwnerStats(
       ...deltaPct(currentRevenue, previousRevenue),
     },
     {
-      key: 'statBooking' as const,
+      key: 'statReservation' as const,
       value: String(current.length),
       raw: current.length,
       unit: 'int' as StatUnit,
@@ -237,7 +237,7 @@ export function calcOwnerStats(
  * titik = satu hari — jadi sparkline selalu sebanding dengan angka besarnya.
  */
 export function calcStatSparklines(
-  bookings: AdminBooking[],
+  reservations: AdminReservation[],
   rooms: OwnerRoomSummary[],
   range: DateRange,
   ref: PeriodRef = DEFAULT_REF,
@@ -247,18 +247,18 @@ export function calcStatSparklines(
   for (let i = 1; i < points; i++) refs.unshift(previousPeriod(range, refs[0]));
 
   const series = refs.map((r) => {
-    const list = bookingsInRange(bookings, range, r);
+    const list = reservationsInRange(reservations, range, r);
     return {
       statRevenue: list.reduce((s, b) => s + b.total, 0),
-      statBooking: list.length,
+      statReservation: list.length,
       statVisitors: list.reduce((s, b) => s + b.adults + b.children, 0),
-      statOccupancy: averageOccupancyPct(bookings, rooms, range, r),
+      statOccupancy: averageOccupancyPct(reservations, rooms, range, r),
     };
   });
 
   return {
     statRevenue: series.map((s) => s.statRevenue),
-    statBooking: series.map((s) => s.statBooking),
+    statReservation: series.map((s) => s.statReservation),
     statVisitors: series.map((s) => s.statVisitors),
     statOccupancy: series.map((s) => s.statOccupancy),
   };
@@ -272,7 +272,7 @@ export function calcStatSparklines(
  * 1 di grafik. Pemendekan label ("Rp13,0 jt") sekarang urusan komponen grafik.
  */
 export function calcRevenueTrend(
-  bookings: AdminBooking[],
+  reservations: AdminReservation[],
   today: Date = new Date(),
 ): { m: string; v: number }[] {
   const months = Array.from({ length: 6 }, (_, i) => {
@@ -281,7 +281,7 @@ export function calcRevenueTrend(
   });
   return months.map(({ key, label }) => ({
     m: label,
-    v: bookings
+    v: reservations
       .filter((b) => b.checkIn.slice(0, 7) === key)
       .reduce((s, b) => s + b.total, 0),
   }));
@@ -290,21 +290,21 @@ export function calcRevenueTrend(
 const DONUT_PALETTE = ['#1B4332', '#C1663F', '#8CA98F', '#2c5a8a', '#D4A04A', '#6b4f3f'];
 
 /**
- * Sebaran booking per tipe tenda (nama/kategori dari `rooms`, data API asli).
+ * Sebaran reservasi per tipe tenda (nama/kategori dari `rooms`, data API asli).
  * `revenue` diaproksimasi proporsional per qty (sama seperti
- * `calcRoomTypePerformance`) — `total` di `AdminBooking` cuma satu angka
- * gabungan untuk booking multi-tipe, jadi ini estimasi, bukan pemisahan
+ * `calcRoomTypePerformance`) — `total` di `AdminReservation` cuma satu angka
+ * gabungan untuk reservasi multi-tipe, jadi ini estimasi, bukan pemisahan
  * harga presisi.
  */
-export function calcBookingByType(
-  bookings: AdminBooking[],
+export function calcReservationByType(
+  reservations: AdminReservation[],
   rooms: OwnerRoomSummary[],
   range: DateRange,
   ref: PeriodRef = DEFAULT_REF,
 ) {
   const counts = new Map<string, number>();
   const revenues = new Map<string, number>();
-  bookingsInRange(bookings, range, ref).forEach((b) => {
+  reservationsInRange(reservations, range, ref).forEach((b) => {
     const totalQty = b.rooms.reduce((s, r) => s + r.qty, 0);
     b.rooms.forEach((r) => {
       const name = rooms.find((rt) => rt.slug === r.slug)?.name ?? r.slug;
@@ -322,31 +322,31 @@ export function calcBookingByType(
   }));
 }
 
-/** Sebaran booking per kanal: WhatsApp vs Walk-in. */
-export function calcBySource(bookings: AdminBooking[], range: DateRange, ref: PeriodRef = DEFAULT_REF) {
-  const inRange = bookingsInRange(bookings, range, ref);
-  const bySource = (source: AdminBooking['source']) => inRange.filter((b) => b.source === source);
+/** Sebaran reservasi per kanal: Reservasi vs Langsung. */
+export function calcBySource(reservations: AdminReservation[], range: DateRange, ref: PeriodRef = DEFAULT_REF) {
+  const inRange = reservationsInRange(reservations, range, ref);
+  const bySource = (source: AdminReservation['source']) => inRange.filter((b) => b.source === source);
   return [
     {
-      label: 'WhatsApp',
-      value: bySource('WHATSAPP').length,
-      count: bySource('WHATSAPP').length,
-      revenue: bySource('WHATSAPP').reduce((s, b) => s + b.total, 0),
+      label: 'Reservasi',
+      value: bySource('RESERVASI').length,
+      count: bySource('RESERVASI').length,
+      revenue: bySource('RESERVASI').reduce((s, b) => s + b.total, 0),
       color: '#2c5a8a',
     },
     {
-      label: 'Walk-in',
-      value: bySource('WALK_IN').length,
-      count: bySource('WALK_IN').length,
-      revenue: bySource('WALK_IN').reduce((s, b) => s + b.total, 0),
+      label: 'Langsung',
+      value: bySource('LANGSUNG').length,
+      count: bySource('LANGSUNG').length,
+      revenue: bySource('LANGSUNG').reduce((s, b) => s + b.total, 0),
       color: '#C1663F',
     },
   ];
 }
 
-/** Booking terbaru berdasarkan tanggal check-in. */
-export function calcRecentTransactions(bookings: AdminBooking[], count = 8): AdminBooking[] {
-  return [...bookings].sort((a, b) => b.checkIn.localeCompare(a.checkIn)).slice(0, count);
+/** Reservasi terbaru berdasarkan tanggal check-in. */
+export function calcRecentTransactions(reservations: AdminReservation[], count = 8): AdminReservation[] {
+  return [...reservations].sort((a, b) => b.checkIn.localeCompare(a.checkIn)).slice(0, count);
 }
 
 export type RoomTypePerformance = {
@@ -354,39 +354,39 @@ export type RoomTypePerformance = {
   name: string;
   category: string;
   totalUnits: number;
-  bookingsCount: number;
+  reservationsCount: number;
   revenue: number;
 };
 
 /**
  * Performa per tipe tenda/villa — dipakai halaman Owner "Penginapan".
- * ⚠️ Pendapatan booking multi-tipe (>1 slug dalam satu booking, lihat
- * `BookingRoomItem`) **diaproksimasi proporsional per qty**, karena `total`
- * di `AdminBooking` cuma satu angka gabungan (belum ada subtotal per tipe
+ * ⚠️ Pendapatan reservasi multi-tipe (>1 slug dalam satu reservasi, lihat
+ * `ReservationRoomItem`) **diaproksimasi proporsional per qty**, karena `total`
+ * di `AdminReservation` cuma satu angka gabungan (belum ada subtotal per tipe
  * yang tersimpan) — jadi angka pendapatan per tipe di sini estimasi, bukan
  * pemisahan harga yang presisi.
  *
  * (Sengaja TIDAK menghitung okupansi per tipe di sini — rata-rata harian
  * sepanjang rentang bikin tipe yang jarang dipesan keliatan 0%/rendah,
  * padahal itu wajar buat bisnis yang masih berkembang. Lebih actionable buat
- * Owner cukup lihat Booking + Pendapatan; okupansi harian tetap ada di
+ * Owner cukup lihat Reservasi + Pendapatan; okupansi harian tetap ada di
  * Admin Overview yang memang buat operasional.)
  */
 export function calcRoomTypePerformance(
-  bookings: AdminBooking[],
+  reservations: AdminReservation[],
   rooms: OwnerRoomSummary[],
   range: DateRange,
   ref: PeriodRef = DEFAULT_REF,
 ): RoomTypePerformance[] {
-  const inRange = bookingsInRange(bookings, range, ref);
+  const inRange = reservationsInRange(reservations, range, ref);
 
   return rooms.map((room) => {
-    let bookingsCount = 0;
+    let reservationsCount = 0;
     let revenue = 0;
     inRange.forEach((b) => {
       const roomItem = b.rooms.find((r) => r.slug === room.slug);
       if (!roomItem) return;
-      bookingsCount += 1;
+      reservationsCount += 1;
       const totalQty = b.rooms.reduce((s, r) => s + r.qty, 0);
       revenue += totalQty > 0 ? (b.total * roomItem.qty) / totalQty : 0;
     });
@@ -396,7 +396,7 @@ export function calcRoomTypePerformance(
       name: room.name,
       category: room.category,
       totalUnits: room.totalUnits,
-      bookingsCount,
+      reservationsCount,
       revenue: Math.round(revenue),
     };
   });
@@ -405,14 +405,14 @@ export function calcRoomTypePerformance(
 /**
  * Angka ringkas halaman Owner "Penginapan" + delta vs periode sebelumnya.
  *
- * Total pendapatan/booking dihitung langsung dari `bookingsInRange`, BUKAN
+ * Total pendapatan/reservasi dihitung langsung dari `reservationsInRange`, BUKAN
  * dari penjumlahan `calcRoomTypePerformance` — pendapatan per tipe di sana
  * hasil pembagian proporsional yang dibulatkan per tipe, jadi jumlahnya bisa
  * meleset beberapa rupiah dari total sebenarnya.
  */
-export function calcPenginapanStats(bookings: AdminBooking[], range: DateRange, ref: PeriodRef = DEFAULT_REF) {
-  const current = bookingsInRange(bookings, range, ref);
-  const previous = bookingsInRange(bookings, range, previousPeriod(range, ref));
+export function calcPenginapanStats(reservations: AdminReservation[], range: DateRange, ref: PeriodRef = DEFAULT_REF) {
+  const current = reservationsInRange(reservations, range, ref);
+  const previous = reservationsInRange(reservations, range, previousPeriod(range, ref));
 
   const currentRevenue = current.reduce((s, b) => s + b.total, 0);
   const previousRevenue = previous.reduce((s, b) => s + b.total, 0);
@@ -427,15 +427,15 @@ export function calcPenginapanStats(bookings: AdminBooking[], range: DateRange, 
       unit: 'idr' as StatUnit,
       ...deltaPct(currentRevenue, previousRevenue),
     },
-    bookings: {
-      key: 'statBooking' as const,
+    reservations: {
+      key: 'statReservation' as const,
       value: String(current.length),
       raw: current.length,
       unit: 'int' as StatUnit,
       ...deltaPct(current.length, previous.length),
     },
-    avgPerBooking: {
-      key: 'statAvgPerBooking' as const,
+    avgPerReservation: {
+      key: 'statAvgPerReservation' as const,
       value: formatIDR(currentAvg),
       raw: currentAvg,
       unit: 'idr' as StatUnit,

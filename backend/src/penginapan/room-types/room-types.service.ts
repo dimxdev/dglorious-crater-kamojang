@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
-import { BookingStatus, LanguageCode } from '../../generated/prisma/enums';
+import { ReservationStatus, LanguageCode } from '../../generated/prisma/enums';
+import { todayWib } from '../../common/date-wib';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
@@ -77,8 +79,20 @@ export class RoomTypesService {
   }
 
   async update(id: number, dto: UpdateRoomTypeDto) {
-    await this.findOneAdminOrThrow(id);
+    const current = await this.findOneAdminOrThrow(id);
     const { translations, facilities, ...rest } = dto;
+
+    if (rest.totalUnits !== undefined && rest.totalUnits < current.totalUnits) {
+      const peak = await this.peakFutureBooking(id);
+      if (peak && rest.totalUnits < peak.qty) {
+        throw new BadRequestException(
+          `Jumlah unit tidak boleh lebih kecil dari unit yang sudah direservasi (${peak.qty} unit pada ${peak.date}).`,
+        );
+      }
+    }
+    if (rest.isActive === false && current.isActive) {
+      await this.assertNoFutureReservations(id, 'dinonaktifkan');
+    }
 
     await this.prisma.$transaction(async (tx) => {
       await tx.roomType.update({
@@ -130,10 +144,62 @@ export class RoomTypesService {
 
   async softDelete(id: number): Promise<void> {
     await this.findOneAdminOrThrow(id);
+    await this.assertNoFutureReservations(id, 'dihapus');
     await this.prisma.roomType.update({
       where: { id },
       data: { deletedAt: new Date(), isActive: false },
     });
+  }
+
+  /** Reservasi aktif (bukan HANGUS) yang belum selesai (check-out setelah hari ini, WIB). */
+  private futureReservationItems(roomTypeId: number) {
+    return this.prisma.reservationItem.findMany({
+      where: {
+        roomTypeId,
+        reservation: {
+          status: { not: ReservationStatus.HANGUS },
+          checkOut: { gt: new Date(`${todayWib()}T00:00:00.000Z`) },
+        },
+      },
+      select: {
+        qty: true,
+        reservation: { select: { checkIn: true, checkOut: true } },
+      },
+    });
+  }
+
+  /** Tanggal dengan jumlah unit terpesan tertinggi dari hari ini ke depan. */
+  private async peakFutureBooking(roomTypeId: number) {
+    const items = await this.futureReservationItems(roomTypeId);
+    const DAY = 86_400_000;
+    const today = new Date(`${todayWib()}T00:00:00.000Z`).getTime();
+    const perDay = new Map<number, number>();
+    for (const it of items) {
+      const start = Math.max(it.reservation.checkIn.getTime(), today);
+      const end = it.reservation.checkOut.getTime();
+      for (let t = start; t < end; t += DAY) {
+        perDay.set(t, (perDay.get(t) ?? 0) + it.qty);
+      }
+    }
+    let best: { qty: number; date: string } | null = null;
+    for (const [t, qty] of [...perDay].sort((a, b) => a[0] - b[0])) {
+      if (!best || qty > best.qty) {
+        best = { qty, date: new Date(t).toISOString().slice(0, 10) };
+      }
+    }
+    return best;
+  }
+
+  private async assertNoFutureReservations(
+    roomTypeId: number,
+    action: 'dihapus' | 'dinonaktifkan',
+  ) {
+    const items = await this.futureReservationItems(roomTypeId);
+    if (items.length > 0) {
+      throw new ConflictException(
+        `Tipe ini tidak dapat ${action} karena masih memiliki ${items.length} reservasi aktif yang belum selesai. Batalkan atau selesaikan reservasi tersebut terlebih dahulu.`,
+      );
+    }
   }
 
   async findAllAdmin() {
@@ -240,7 +306,7 @@ export class RoomTypesService {
 
   /**
    * `totalUnits` dipakai sebagai kapasitas acuan — form CMS admin cuma edit
-   * satu angka jumlah unit, bukan daftar kode unit satu-satu. Booking tidak
+   * satu angka jumlah unit, bukan daftar kode unit satu-satu. Reservation tidak
    * menunjuk unit fisik tertentu, jadi perbandingannya di level qty per
    * tipe.
    */
@@ -248,23 +314,26 @@ export class RoomTypesService {
     roomTypeId: number,
     checkIn: Date,
     checkOut: Date,
-    excludeBookingId?: number,
+    excludeReservationId?: number,
+    client: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    const roomType = await this.prisma.roomType.findFirst({
+    const roomType = await client.roomType.findFirst({
       where: { id: roomTypeId, deletedAt: null },
     });
     if (!roomType) {
       throw new NotFoundException(`Room type ${roomTypeId} tidak ditemukan`);
     }
 
-    const overlapping = await this.prisma.bookingItem.findMany({
+    const overlapping = await client.reservationItem.findMany({
       where: {
         roomTypeId,
-        booking: {
-          status: { not: BookingStatus.HANGUS },
+        reservation: {
+          status: { not: ReservationStatus.HANGUS },
           checkIn: { lt: checkOut },
           checkOut: { gt: checkIn },
-          ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
+          ...(excludeReservationId
+            ? { id: { not: excludeReservationId } }
+            : {}),
         },
       },
       select: { qty: true },

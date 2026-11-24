@@ -2,14 +2,13 @@
 
 import { Download } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { ApiError } from '@/lib/api/client';
-import { fetchAdminBookings, toAdminBooking } from '@/lib/api/bookings';
+import { fetchAdminReservations, toAdminReservation } from '@/lib/api/reservations';
 import { fetchAdminRoomTypes } from '@/lib/api/roomTypes';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import type { AdminBooking } from '@/lib/data/admin';
+import type { AdminReservation } from '@/lib/data/admin';
 import {
-  calcBookingByType,
+  calcReservationByType,
   calcBySource,
   calcPenginapanStats,
   calcRoomTypePerformance,
@@ -36,7 +35,7 @@ const COMPARE_LABEL_KEY: Record<DateRange, string> = {
 
 /**
  * Performa tiap tipe tenda/villa — level bisnis (Owner), bukan operasional.
- * CRUD tenda & booking harian tetap di menu Admin (PROJECT.md: Owner bisa
+ * CRUD tenda & reservasi harian tetap di menu Admin (PROJECT.md: Owner bisa
  * masuk "ke bawah" ke dashboard Admin, cukup link ke sana, bukan duplikat UI).
  */
 export function OwnerPenginapanPage() {
@@ -46,28 +45,45 @@ export function OwnerPenginapanPage() {
   const [customRange, setCustomRange] = useState<CustomRange>({ from: '', to: '' });
   const ref = { today: new Date(), custom: customRange };
 
-  const [bookings, setBookings] = useState<AdminBooking[] | null>(null);
+  const [reservations, setReservations] = useState<AdminReservation[] | null>(null);
   const [rooms, setRooms] = useState<OwnerRoomSummary[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
     try {
-      setLoadError(null);
-      const [bookingList, roomTypes] = await Promise.all([
-        fetchAdminBookings(token),
+      const [reservationList, roomTypes] = await Promise.all([
+        fetchAdminReservations(token),
         fetchAdminRoomTypes(token),
       ]);
-      setBookings(bookingList.map(toAdminBooking));
+      setReservations(reservationList.map(toAdminReservation));
       setRooms(roomTypes.filter((r) => r.isActive));
+      setLoadError(null);
     } catch (e) {
       setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
     }
   }, [token, t]);
 
+  // Pemuatan awal: setState hanya di dalam callback promise, bukan sinkron di
+  // badan effect (`refresh` tetap dipakai untuk tombol Coba lagi).
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (!token) return;
+    let active = true;
+    Promise.all([fetchAdminReservations(token), fetchAdminRoomTypes(token)])
+      .then(([reservationList, roomTypes]) => {
+        if (!active) return;
+        setReservations(reservationList.map(toAdminReservation));
+        setRooms(roomTypes.filter((r) => r.isActive));
+        setLoadError(null);
+      })
+      .catch((e) => {
+        if (active)
+          setLoadError(e instanceof ApiError ? e.message : t('admin.loadError'));
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, t]);
 
   if (loadError) {
     return (
@@ -75,7 +91,10 @@ export function OwnerPenginapanPage() {
         <div className="rounded-2xl border border-[#e8e2d5] bg-white px-4 py-8 text-center">
           <p className="text-sm text-red-600">{loadError}</p>
           <button
-            onClick={() => void refresh()}
+            onClick={() => {
+              setLoadError(null);
+              void refresh();
+            }}
             className="text-accent mt-2 text-sm font-semibold underline"
           >
             {t('admin.retry')}
@@ -85,7 +104,7 @@ export function OwnerPenginapanPage() {
     );
   }
 
-  if (bookings === null || rooms === null) {
+  if (reservations === null || rooms === null) {
     return (
       <OwnerLayout title={t('owner.navPenginapan')}>
         <div className="text-muted rounded-2xl border border-[#e8e2d5] bg-white px-4 py-8 text-center text-sm">
@@ -95,23 +114,23 @@ export function OwnerPenginapanPage() {
     );
   }
 
-  const performance = calcRoomTypePerformance(bookings, rooms, range, ref);
-  const bookingByType = calcBookingByType(bookings, rooms, range, ref);
-  const bySource = calcBySource(bookings, range, ref);
-  const stats = calcPenginapanStats(bookings, range, ref);
+  const performance = calcRoomTypePerformance(reservations, rooms, range, ref);
+  const reservationByType = calcReservationByType(reservations, rooms, range, ref);
+  const bySource = calcBySource(reservations, range, ref);
+  const stats = calcPenginapanStats(reservations, range, ref);
   const compareLabel = t(`owner.${COMPARE_LABEL_KEY[range]}`);
   const newLabel = t('owner.newThisPeriod');
 
-  // Total dari `stats` (dihitung langsung dari booking), bukan penjumlahan
+  // Total dari `stats` (dihitung langsung dari reservasi), bukan penjumlahan
   // `performance` yang tiap tipenya sudah dibulatkan sendiri-sendiri.
   const totalRevenue = stats.revenue.raw;
-  const totalBookings = stats.bookings.raw;
+  const totalReservations = stats.reservations.raw;
   const topType = performance.reduce<(typeof performance)[number] | null>(
-    (best, r) => (r.bookingsCount > 0 && (!best || r.revenue > best.revenue) ? r : best),
+    (best, r) => (r.reservationsCount > 0 && (!best || r.revenue > best.revenue) ? r : best),
     null,
   );
 
-  function toBreakdownRows(segments: typeof bookingByType) {
+  function toBreakdownRows(segments: typeof reservationByType) {
     const total = segments.reduce((sum, s) => sum + s.value, 0);
     return segments.map((s) => ({
       label: s.label,
@@ -126,11 +145,11 @@ export function OwnerPenginapanPage() {
       theme: OWNER_REPORT_THEME,
       stats: [
         { label: t('owner.statRevenue'), value: formatIDR(totalRevenue), deltaText: '', deltaTone: 'neutral' },
-        { label: t('owner.statBooking'), value: String(totalBookings), deltaText: '', deltaTone: 'neutral' },
+        { label: t('owner.statReservation'), value: String(totalReservations), deltaText: '', deltaTone: 'neutral' },
       ],
       breakdowns: [
-        { title: t('owner.bookingByType'), rows: toBreakdownRows(bookingByType) },
-        { title: t('owner.onlineVsWalkin'), rows: toBreakdownRows(bySource) },
+        { title: t('owner.reservationByType'), rows: toBreakdownRows(reservationByType) },
+        { title: t('owner.reservasiVsLangsung'), rows: toBreakdownRows(bySource) },
       ],
       table: {
         sectionTitle: t('owner.roomPerfTitle'),
@@ -138,17 +157,17 @@ export function OwnerPenginapanPage() {
           t('owner.roomPerfType'),
           t('owner.roomPerfCategory'),
           t('owner.roomPerfTotalUnits'),
-          t('owner.roomPerfBookings'),
+          t('owner.roomPerfReservations'),
           t('owner.roomPerfRevenue'),
         ],
         rows: performance.map((r) => [
           r.name,
           r.category,
           String(r.totalUnits),
-          String(r.bookingsCount),
+          String(r.reservationsCount),
           formatIDR(r.revenue),
         ]),
-        noDataText: t('owner.reportNoBookings'),
+        noDataText: t('owner.reportNoReservations'),
         rightAlignColumns: [4],
       },
       labels: {
@@ -202,14 +221,14 @@ export function OwnerPenginapanPage() {
           newLabel={newLabel}
         />
         <StatCard
-          stat={stats.bookings}
-          label={t('owner.statBooking')}
+          stat={stats.reservations}
+          label={t('owner.statReservation')}
           compareLabel={compareLabel}
           newLabel={newLabel}
         />
         <StatCard
-          stat={stats.avgPerBooking}
-          label={t('owner.statAvgPerBooking')}
+          stat={stats.avgPerReservation}
+          label={t('owner.statAvgPerReservation')}
           compareLabel={compareLabel}
           newLabel={newLabel}
         />
@@ -224,24 +243,24 @@ export function OwnerPenginapanPage() {
               : undefined
           }
           shareLabel={t('owner.ofTotalRevenue')}
-          emptyText={t('owner.noBookingsInPeriod')}
+          emptyText={t('owner.noReservationsInPeriod')}
         />
       </div>
 
       <div className="mt-4.5 grid gap-4.5 sm:grid-cols-2">
         <Panel>
-          <div className="text-[15px] font-bold">{t('owner.bookingByType')}</div>
+          <div className="text-[15px] font-bold">{t('owner.reservationByType')}</div>
           <DonutChart
-            segments={bookingByType}
-            centerLabel={t('owner.donutCenterBookings')}
+            segments={reservationByType}
+            centerLabel={t('owner.donutCenterReservations')}
             centerUnit="count"
           />
         </Panel>
         <Panel>
-          <div className="text-[15px] font-bold">{t('owner.onlineVsWalkin')}</div>
+          <div className="text-[15px] font-bold">{t('owner.reservasiVsLangsung')}</div>
           <DonutChart
             segments={bySource}
-            centerLabel={t('owner.donutCenterBookings')}
+            centerLabel={t('owner.donutCenterReservations')}
             centerUnit="count"
           />
         </Panel>
@@ -250,12 +269,6 @@ export function OwnerPenginapanPage() {
       <Panel className="mt-4.5">
         <div className="mb-3.5 flex items-center justify-between gap-3">
           <div className="text-[15px] font-bold">{t('owner.roomPerfTitle')}</div>
-          <Link
-            href="/admin/penginapan/booking"
-            className="text-accent inline-flex items-center gap-1 text-[13px] font-semibold hover:underline"
-          >
-            {t('owner.viewBookingDetailCta')}
-          </Link>
         </div>
         <RoomTypeLeaderboard rows={performance} />
         <p className="text-muted mt-3 text-[11.5px]">{t('owner.roomPerfApproxNote')}</p>

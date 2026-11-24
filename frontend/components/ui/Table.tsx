@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
  * ancestor, walau tingginya auto/tidak dibatasi. Akibatnya <THead sticky>
  * TIDAK BISA nempel ke halaman dari sini (akan salah tempel — sudah pernah
  * kejadian). Kalau butuh sticky header, itu cuma bisa didapat dengan
- * mengorbankan scroll horizontal yang kekontain (lihat BookingsPage.tsx).
+ * mengorbankan scroll horizontal yang kekontain (lihat ReservationsPage.tsx).
  */
 /**
  * `bare`: pas Table dipakai di dalam `Card` (sudah punya border+rounded+bg

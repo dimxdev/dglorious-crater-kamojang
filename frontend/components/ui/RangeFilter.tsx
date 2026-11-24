@@ -14,7 +14,7 @@ type RangeFilterProps = {
 };
 
 /** Filter rentang tanggal dipakai bareng lintas dashboard (Owner: Ringkasan &
- *  Penginapan; Admin: Data Booking) — biar polanya konsisten di mana-mana. */
+ *  Penginapan; Admin: Data Reservasi) — biar polanya konsisten di mana-mana. */
 export function RangeFilter({ range, onRangeChange, customRange, onCustomRangeChange }: RangeFilterProps) {
   const { t } = useTranslation();
 

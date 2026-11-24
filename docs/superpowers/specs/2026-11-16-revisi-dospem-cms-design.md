@@ -1,7 +1,9 @@
+> Catatan 24 Nov 2026: istilah "booking" (dulu disebut booking) diganti "reservasi" di seluruh sistem. Kunci `contact.waMessages.booking` kini `reservation`, "walk-in" kini "Tamu Langsung". Lihat `docs/PROJECT.md` (§5, §6.1) dan `docs/fitur/fitur-catat-reservasi.md`.
+
 # Revisi dosen pembimbing — desain (disetujui user 2026-11-16, opsi A)
 
 ## Revisi
-1. **Validasi tanggal check-in** (form buat & edit reservasi): tanggal sebelum hari ini (WIB, Asia/Jakarta) ditolak. Hari ini boleh (walk-in). Frontend (input date `min`) + backend (400, pesan Indonesia). Saat edit, validasi hanya jika `checkIn` diubah — reservasi lama (mis. COMPLETED) tetap bisa diedit catatannya.
+1. **Validasi tanggal check-in** (form buat & edit reservasi): tanggal sebelum hari ini (WIB, Asia/Jakarta) ditolak. Hari ini boleh (tamu langsung). Frontend (input date `min`) + backend (400, pesan Indonesia). Saat edit, validasi hanya jika `checkIn` diubah — reservasi lama (mis. COMPLETED) tetap bisa diedit catatannya.
 2. **Company profile dikelola SUPER_ADMIN, dwibahasa ID/EN** — semua konten bisnis halaman publik yang hardcode dipindah ke DB. Kelola tenda (room types, gambar, harga) pindah dari ADMIN_PENGINAPAN ke SUPER_ADMIN; Admin Penginapan & Owner hanya baca.
 
 ## Non-goal / anti-goal
@@ -71,7 +73,7 @@ model ContentItem {
 | `listing` | `{ title: L, lead: L, helpTitle: L, helpBody: L }` |
 | `room_detail` | `{ childrenRule: L, universalFacilitiesNote: L, priceNote: L }` |
 | `terms` | `{ title: L, subtitle: L, questionTitle: L, questionBody: L }` |
-| `contact` | `{ address: L, mapsQuery: string, footerTagline: L, waMessages: { general: L, booking: L, room: L, terms: L } }` — `room` boleh memuat placeholder `{room}` |
+| `contact` | `{ address: L, mapsQuery: string, footerTagline: L, waMessages: { general: L, reservation: L, room: L, terms: L } }` — `room` boleh memuat placeholder `{room}` |
 | `site_meta` | `{ description: L }` (meta description/OG) |
 
 ### Koleksi (collection → bentuk `content`; `imageUrl` di kolom tabel)

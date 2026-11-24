@@ -45,7 +45,34 @@ const str =
     return t;
   };
 
-const url: Validator<string> = str(MAX_URL);
+/** Tautan aman: https/http, mailto, tel, atau path situs "/..." — bukan javascript:, data:, dst. */
+const url: Validator<string> = (v, path) => {
+  const s = str(MAX_URL)(v, path);
+  const safe =
+    /^(https?:\/\/|mailto:|tel:)\S+$/i.test(s) || /^\/(?!\/)\S*$/.test(s);
+  if (
+    !safe ||
+    [...s].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)
+  ) {
+    throw new BadRequestException(
+      `Tautan tidak valid. Gunakan alamat yang diawali https://, mailto:, tel:, atau /. (${path})`,
+    );
+  }
+  return s;
+};
+
+const IMAGE_URL_RE = /^(\/(images|uploads)\/[^\s]+|https:\/\/[^\s]+)$/i;
+const IMAGE_URL_MSG =
+  'Alamat gambar tidak valid. Gunakan path /uploads/..., /images/..., atau alamat https://.';
+
+/** Gambar: hanya path situs /uploads/ atau /images/ (tanpa "..") atau URL https. */
+const imageUrl: Validator<string> = (v, path) => {
+  const s = str(MAX_URL)(v, path);
+  if (!IMAGE_URL_RE.test(s) || s.includes('..')) {
+    throw new BadRequestException(`${IMAGE_URL_MSG} (${path})`);
+  }
+  return s;
+};
 const icon: Validator<string> = str(MAX_ICON);
 
 const int: Validator<number> = (v, path) => {
@@ -95,16 +122,16 @@ const opt = (validator: Validator) => ({ optional: validator });
 const stat = obj({ label: L, value: L });
 
 export const SECTION_SCHEMAS: Record<string, Validator> = {
-  home_hero: obj({ title: L, subtitle: L, imageUrl: url }),
+  home_hero: obj({ title: L, subtitle: L, imageUrl: imageUrl }),
   home_attractions: obj({ title: L }),
   home_facilities_teaser: obj({ body: L }),
   home_lodging: obj({ title: L, subtitle: L }),
-  home_info: obj({ title: L, imageUrl: url }),
+  home_info: obj({ title: L, imageUrl: imageUrl }),
   home_routes: obj({ title: L, lead: L, mapsUrl: url }),
   home_faq: obj({ title: L, lead: L }),
-  home_cta: obj({ title: L, subtitle: L, imageUrl: url }),
+  home_cta: obj({ title: L, subtitle: L, imageUrl: imageUrl }),
   about_intro: obj({ title: L, lead: L, stats: arrayOf(stat, 0, 4) }),
-  about_history: obj({ body: L, imageUrl: url }),
+  about_history: obj({ body: L, imageUrl: imageUrl }),
   about_attractions: obj({ title: L }),
   about_gallery: obj({ title: L }),
   about_tickets: obj({ title: L, note: L }),
@@ -119,9 +146,9 @@ export const SECTION_SCHEMAS: Record<string, Validator> = {
   terms: obj({ title: L, subtitle: L, questionTitle: L, questionBody: L }),
   contact: obj({
     address: L,
-    mapsQuery: url,
+    mapsQuery: str(MAX_URL),
     footerTagline: L,
-    waMessages: obj({ general: L, booking: L, room: L, terms: L }),
+    waMessages: obj({ general: L, reservation: L, room: L, terms: L }),
   }),
   site_meta: obj({ description: L }),
 };
@@ -171,12 +198,8 @@ export function validateItemContent(
   return COLLECTION_SCHEMAS[collection](content, '');
 }
 
-/** `imageUrl` item: path `/images/...`, `/uploads/...`, atau URL http(s). */
+/** `imageUrl` item: path `/images/...` atau `/uploads/...`, atau URL https. */
 export function validateImageUrl(value: unknown): string | null {
   if (value === null || value === '') return null;
-  const s = str(MAX_URL)(value, 'imageUrl');
-  if (!/^(\/|https?:\/\/)/.test(s)) {
-    fail('imageUrl', 'harus diawali "/" atau http(s)://');
-  }
-  return s;
+  return imageUrl(value, 'imageUrl');
 }

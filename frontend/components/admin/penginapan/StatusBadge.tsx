@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui';
-import { statusLabelId, type BookingChannel, type BookingStatus } from '@/lib/data/admin';
+import { statusLabelId, type ReservationChannel, type ReservationStatus } from '@/lib/data/admin';
 
-// Tone status booking: DP kuning, Lunas biru, Check-in hijau, dst.
-const adminTone: Record<BookingStatus, React.ComponentProps<typeof Badge>['tone']> = {
+// Tone status reservasi: DP kuning, Lunas biru, Check-in hijau, dst.
+const adminTone: Record<ReservationStatus, React.ComponentProps<typeof Badge>['tone']> = {
   DP: 'warning',
   LUNAS: 'info',
   CHECKED_IN: 'success',
@@ -11,14 +11,14 @@ const adminTone: Record<BookingStatus, React.ComponentProps<typeof Badge>['tone'
   NO_SHOW: 'terracotta',
 };
 
-export function StatusBadge({ status }: { status: BookingStatus }) {
+export function StatusBadge({ status }: { status: ReservationStatus }) {
   return <Badge tone={adminTone[status]}>{statusLabelId[status]}</Badge>;
 }
 
-export function SourceBadge({ source }: { source: BookingChannel }) {
+export function SourceBadge({ source }: { source: ReservationChannel }) {
   return (
-    <Badge tone={source === 'WHATSAPP' ? 'info' : 'terracotta'}>
-      {source === 'WHATSAPP' ? 'WhatsApp' : 'Walk-in'}
+    <Badge tone={source === 'RESERVASI' ? 'info' : 'terracotta'}>
+      {source === 'RESERVASI' ? 'Reservasi' : 'Langsung'}
     </Badge>
   );
 }

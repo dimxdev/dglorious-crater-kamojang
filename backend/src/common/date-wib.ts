@@ -16,3 +16,8 @@ export function isBeforeTodayWib(
 ): boolean {
   return dateStr.slice(0, 10) < todayWib(now);
 }
+
+/** True kalau tanggal (string 'YYYY-MM-DD' atau ISO) tepat hari ini WIB. */
+export function isTodayWib(dateStr: string, now: Date = new Date()): boolean {
+  return dateStr.slice(0, 10) === todayWib(now);
+}

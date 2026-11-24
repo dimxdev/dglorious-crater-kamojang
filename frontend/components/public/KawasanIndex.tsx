@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { HeadingSkeleton, Contour, Skeleton } from '@/components/public/ui';
 import { pickL } from '@/lib/api/siteContent';
 import { resolveIcon } from '@/lib/icons';
@@ -190,21 +190,23 @@ export function KawasanIndex() {
  */
 function useDrawOnEnter<T extends HTMLElement>() {
   const ref = useRef<T>(null);
-  const [shown, setShown] = useState(false);
+  const [seen, setSeen] = useState(false);
+  // Kalau browser tidak punya IntersectionObserver, tampilkan saja langsung
+  // daripada menyembunyikan konten selamanya. Server/hidrasi selalu false.
+  const unsupported = useSyncExternalStore(
+    () => () => {},
+    () => typeof IntersectionObserver === 'undefined',
+    () => false,
+  );
+  const shown = seen || unsupported;
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    // Kalau browser tidak punya IntersectionObserver, tampilkan saja langsung
-    // daripada menyembunyikan konten selamanya.
-    if (typeof IntersectionObserver === 'undefined') {
-      setShown(true);
-      return;
-    }
+    if (!el || typeof IntersectionObserver === 'undefined') return;
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setShown(true);
+          setSeen(true);
           io.disconnect();
         }
       },

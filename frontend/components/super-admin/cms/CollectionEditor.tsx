@@ -21,6 +21,7 @@ import { cn } from '@/lib/cn';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { ErrorBlock, LoadingBlock, CardShell } from './SectionEditor';
 import { ImageField, Switch, ghostBtn } from './controls';
+import { contentErrors, errorMessage } from '@/lib/validation';
 import { useReportDirty } from './dirty';
 
 export type RowSummary = {
@@ -123,8 +124,11 @@ export function CollectionEditor<C extends ContentCollection>(props: Props<C>) {
     setEditing(null);
   }
 
+  const imageMissing = hasImage && !!editing && !editing.imageUrl;
+  const editInvalid = imageMissing ? t('superAdmin.cms.imageRequired') : editing ? contentErrors(editing.content, t) : null;
+
   async function saveEditing() {
-    if (!token || !editing) return;
+    if (!token || !editing || editInvalid) return;
     setEditing({ ...editing, saving: true, error: null });
     try {
       if (editing.id === null) {
@@ -147,7 +151,7 @@ export function CollectionEditor<C extends ContentCollection>(props: Props<C>) {
       setEditing(null);
     } catch (e) {
       setEditing((cur) =>
-        cur ? { ...cur, saving: false, error: e instanceof Error ? e.message : t('admin.saveError') } : cur,
+        cur ? { ...cur, saving: false, error: errorMessage(e, t('admin.saveError')) } : cur,
       );
     }
   }
@@ -370,7 +374,7 @@ export function CollectionEditor<C extends ContentCollection>(props: Props<C>) {
                 <ImageField
                   label={imageLabel ?? t('superAdmin.cms.imageLabel')}
                   value={editing.imageUrl || null}
-                  allowClear
+                  hint={imageMissing ? t('superAdmin.cms.imageRequired') : undefined}
                   onChange={(url) => setEditing((cur) => (cur ? { ...cur, imageUrl: url } : cur))}
                 />
               )}
@@ -379,6 +383,7 @@ export function CollectionEditor<C extends ContentCollection>(props: Props<C>) {
                 onChange={(v) => setEditing((cur) => (cur ? { ...cur, isActive: v } : cur))}
                 label={t('superAdmin.cms.showOnSite')}
               />
+              {editInvalid && <ErrorBlock message={editInvalid} />}
               {editing.error && <ErrorBlock message={editing.error} />}
             </div>
             <div className="mt-5 flex justify-end gap-2 border-t border-[#f1ecdf] pt-4">
@@ -387,7 +392,7 @@ export function CollectionEditor<C extends ContentCollection>(props: Props<C>) {
               </button>
               <button
                 type="submit"
-                disabled={editing.saving}
+                disabled={editing.saving || !!editInvalid}
                 className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg bg-green-700 px-5 text-[13.5px] font-semibold text-white transition-colors hover:bg-green-800 focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {editing.saving ? t('superAdmin.cms.saving') : t('superAdmin.cms.save')}

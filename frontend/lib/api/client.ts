@@ -42,12 +42,22 @@ export async function apiFetch<T>(
 
   // 204/empty responses (none yet, but keep this resilient).
   const text = await res.text();
-  const data = text ? JSON.parse(text) : undefined;
+  let data: { message?: unknown } | undefined;
+  try {
+    data = text ? JSON.parse(text) : undefined;
+  } catch {
+    data = undefined; // balasan non-JSON (mis. halaman galat proxy)
+  }
 
   if (!res.ok) {
+    const raw = data?.message;
     const message =
-      (data && typeof data.message === 'string' && data.message) ||
-      (Array.isArray(data?.message) && data.message.join(', ')) ||
+      (typeof raw === 'string' && raw) ||
+      (Array.isArray(raw) &&
+        raw
+          .map((m) => (typeof m === 'string' ? m : ''))
+          .filter(Boolean)
+          .join('; ')) ||
       `Request failed (${res.status})`;
     throw new ApiError(res.status, message);
   }

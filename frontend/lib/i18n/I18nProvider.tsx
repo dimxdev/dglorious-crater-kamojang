@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from 'react';
 import { defaultLocale, LOCALE_STORAGE_KEY, type Locale, locales } from './config';
 import { dictionaries } from './dictionaries';
@@ -18,6 +17,22 @@ type I18nContextValue = {
    *  Params opsional mengganti token {nama} di dalam teks. */
   t: (key: string, params?: Record<string, string | number>) => string;
 };
+
+const localeListeners = new Set<() => void>();
+
+function subscribeLocale(listener: () => void) {
+  localeListeners.add(listener);
+  return () => {
+    localeListeners.delete(listener);
+  };
+}
+
+function getStoredLocale(): Locale {
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  return stored && locales.includes(stored as Locale)
+    ? (stored as Locale)
+    : defaultLocale;
+}
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
@@ -33,20 +48,18 @@ function lookup(dict: unknown, key: string): string | undefined {
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
-
-  // Baca preferensi tersimpan setelah mount (hindari mismatch hidrasi).
-  useEffect(() => {
-    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (stored && locales.includes(stored as Locale)) {
-      setLocaleState(stored as Locale);
-    }
-  }, []);
+  // Server & hidrasi memakai defaultLocale; setelah mount React membaca
+  // preferensi tersimpan dari localStorage (tanpa mismatch hidrasi).
+  const locale = useSyncExternalStore(
+    subscribeLocale,
+    getStoredLocale,
+    () => defaultLocale,
+  );
 
   const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
     window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
     document.documentElement.lang = next;
+    localeListeners.forEach((l) => l());
   }, []);
 
   const t = useCallback(

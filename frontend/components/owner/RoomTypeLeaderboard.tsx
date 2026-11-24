@@ -7,7 +7,7 @@ import type { RoomTypePerformance } from '@/lib/data/owner';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
-type SortKey = 'name' | 'totalUnits' | 'bookingsCount' | 'revenue';
+type SortKey = 'name' | 'totalUnits' | 'reservationsCount' | 'revenue';
 type SortDir = 'asc' | 'desc';
 
 /**
@@ -112,10 +112,10 @@ export function RoomTypeLeaderboard({ rows }: { rows: RoomTypePerformance[] }) {
             />
             <SortHeader
               {...sortProps}
-              label={t('owner.roomPerfBookings')}
-              sortBy="bookingsCount"
+              label={t('owner.roomPerfReservations')}
+              sortBy="reservationsCount"
               align="right"
-              ariaLabel={t('owner.sortBy', { column: t('owner.roomPerfBookings') })}
+              ariaLabel={t('owner.sortBy', { column: t('owner.roomPerfReservations') })}
             />
             <SortHeader
               {...sortProps}
@@ -131,7 +131,7 @@ export function RoomTypeLeaderboard({ rows }: { rows: RoomTypePerformance[] }) {
           {sorted.map((r, i) => {
             const share = totalRevenue > 0 ? (r.revenue / totalRevenue) * 100 : 0;
             const barPct = maxRevenue > 0 ? (r.revenue / maxRevenue) * 100 : 0;
-            const idle = r.bookingsCount === 0;
+            const idle = r.reservationsCount === 0;
             return (
               <tr key={r.slug} className="group transition-colors hover:bg-[#faf8f3]">
                 <td className="px-2 py-2.5 text-center">
@@ -162,7 +162,7 @@ export function RoomTypeLeaderboard({ rows }: { rows: RoomTypePerformance[] }) {
                     idle ? 'text-[#c2bcae]' : 'text-muted',
                   )}
                 >
-                  {r.bookingsCount}
+                  {r.reservationsCount}
                 </td>
                 <td
                   className={cn(
@@ -175,7 +175,7 @@ export function RoomTypeLeaderboard({ rows }: { rows: RoomTypePerformance[] }) {
                 <td className="px-2 py-2.5">
                   {idle ? (
                     <span className="text-[11px] text-[#c2bcae]">
-                      {t('owner.noBookingsInPeriod')}
+                      {t('owner.noReservationsInPeriod')}
                     </span>
                   ) : (
                     <div className="flex items-center gap-2">

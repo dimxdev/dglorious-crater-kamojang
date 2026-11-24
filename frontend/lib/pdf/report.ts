@@ -4,7 +4,7 @@
 // pemanggil (komponen React yang punya akses `t()`) — file ini murni layout,
 // sengaja tidak bergantung ke i18n biar tetap reusable & gampang ditest.
 // Dipakai bareng oleh dashboard Owner (Ringkasan/Penginapan) & Admin (Data
-// Booking) — warna brand tiap dashboard beda (`theme`), tapi polanya
+// Reservasi) — warna brand tiap dashboard beda (`theme`), tapi polanya
 // (header band, stat card, breakdown, tabel, footer bernomor halaman) sama.
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -49,7 +49,7 @@ export type ReportBreakdown = {
   rows: ReportBreakdownRow[];
 };
 
-/** Tabel data generik (dipakai buat "Detail Booking", "Performa per Tipe Tenda", dst). */
+/** Tabel data generik (dipakai buat "Detail Reservasi", "Performa per Tipe Tenda", dst). */
 export type ReportTable = {
   sectionTitle: string;
   headers: string[];
@@ -95,7 +95,7 @@ export function exportReportPdf(input: {
   table: ReportTable;
   labels: ReportLabels;
   fileName: string;
-  /** 'landscape' buat tabel yang kolomnya banyak/lebar (mis. Data Booking Admin,
+  /** 'landscape' buat tabel yang kolomnya banyak/lebar (mis. Data Reservasi Admin,
    *  10 kolom) — biar gak sumpek/wrap parah kayak di potret. Default 'portrait'. */
   orientation?: 'portrait' | 'landscape';
 }): void {
@@ -208,7 +208,7 @@ export function exportReportPdf(input: {
     y += 14;
   });
 
-  // ---- Tabel detail (generik: booking, performa per tipe tenda, dst) ----
+  // ---- Tabel detail (generik: reservasi, performa per tipe tenda, dst) ----
   // Selalu mulai di halaman baru — halaman 1 murni ringkasan/breakdown,
   // halaman 2 dst. tabel detail, biar gak numpuk/kepotong di tengah halaman 1.
   doc.addPage();

@@ -1,4 +1,4 @@
-/** Tipe unit yang bisa dipilih di form booking — dibentuk dari API admin (harga dari database, bukan data statis). */
+/** Tipe unit yang bisa dipilih di form reservasi — dibentuk dari API admin (harga dari database, bukan data statis). */
 export type BookableRoom = {
   id: number;
   slug: string;
@@ -101,7 +101,7 @@ export function calcGroupSubtotal(
   return stay + extra;
 }
 
-/** Total harga seluruh grup tenda dalam satu booking. */
+/** Total harga seluruh grup tenda dalam satu reservasi. */
 export function calcGroupsTotal(
   rooms: BookableRoom[],
   groups: PricedRoomGroup[],

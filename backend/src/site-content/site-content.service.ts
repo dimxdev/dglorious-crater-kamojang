@@ -20,6 +20,8 @@ import type {
 
 const ALL_COLLECTIONS = Object.values(ContentCollection);
 
+const IMAGE_REQUIRED_MESSAGE = 'Gambar wajib diunggah dan tidak dapat dikosongkan; gunakan Ganti gambar.';
+
 @Injectable()
 export class SiteContentService {
   constructor(private readonly prisma: PrismaService) {}
@@ -92,6 +94,9 @@ export class SiteContentService {
 
   async createItem(dto: CreateItemDto, userId: number) {
     const content = validateItemContent(dto.collection, dto.content) as object;
+    if (dto.imageUrl === undefined && COLLECTIONS_WITH_IMAGE.includes(dto.collection)) {
+      throw new BadRequestException(IMAGE_REQUIRED_MESSAGE);
+    }
     const imageUrl = this.resolveImage(dto.collection, dto.imageUrl);
 
     const max = await this.prisma.contentItem.aggregate({
@@ -171,6 +176,11 @@ export class SiteContentService {
   ): string | null | undefined {
     if (value === undefined) return undefined;
     const url = validateImageUrl(value);
+    // Koleksi bergambar (atraksi, galeri) wajib punya gambar — gambar hanya
+    // bisa diganti, tidak bisa dikosongkan, supaya tampilan publik tidak kosong.
+    if (!url && COLLECTIONS_WITH_IMAGE.includes(collection)) {
+      throw new BadRequestException(IMAGE_REQUIRED_MESSAGE);
+    }
     if (url && !COLLECTIONS_WITH_IMAGE.includes(collection)) {
       throw new BadRequestException(
         `Koleksi ${collection} tidak memakai gambar`,

@@ -4,11 +4,14 @@ import { cn } from '@/lib/cn';
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   error?: string;
+  /** Teks bantu kecil di bawah kolom (disembunyikan saat ada galat). */
+  hint?: string;
 };
 
 export function Input({
   label,
   error,
+  hint,
   className,
   id,
   type,
@@ -55,7 +58,12 @@ export function Input({
           {...props}
         />
       </div>
-      {error && <span className="text-sm text-red-600">{error}</span>}
+      {error && (
+        <span role="alert" className="text-sm text-red-600">
+          {error}
+        </span>
+      )}
+      {!error && hint && <span className="text-muted text-[12px]">{hint}</span>}
     </div>
   );
 }

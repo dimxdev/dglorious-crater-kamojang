@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   UploadedFile,
+  UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,6 +25,7 @@ import { AvailabilityQueryDto } from './dto/availability-query.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import {
+  ImageTooLargeFilter,
   ROOM_IMAGE_UPLOAD_DIR,
   roomImageMulterOptions,
 } from './room-image.multer';
@@ -83,19 +85,20 @@ export class RoomTypesAdminController {
       id,
       checkIn,
       checkOut,
-      query.excludeBookingId,
+      query.excludeReservationId,
     );
   }
 
   @Roles(RoleName.SUPER_ADMIN)
   @Post(':id/images')
+  @UseFilters(ImageTooLargeFilter)
   @UseInterceptors(FileInterceptor('file', roomImageMulterOptions))
   uploadImage(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {
-      throw new BadRequestException('File gambar wajib diisi');
+      throw new BadRequestException('File gambar wajib diisi.');
     }
     return this.roomTypesService.addImage(
       id,

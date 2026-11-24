@@ -23,8 +23,13 @@ type Status = 'loading' | 'ready' | 'error';
 
 export function ListingPage() {
   const { t, locale } = useTranslation();
-  const [rooms, setRooms] = useState<PublicRoomTypeSummary[]>([]);
-  const [status, setStatus] = useState<Status>('loading');
+  // Hasil fetch dibawa bersama kunci (bahasa + percobaan); kunci tak cocok
+  // berarti sedang memuat ulang, jadi status diturunkan saat render.
+  const [result, setResult] = useState<{
+    key: string;
+    rooms: PublicRoomTypeSummary[];
+    status: Status;
+  } | null>(null);
   const { settings } = usePublicSettings();
   const { content, failed: contentFailed } = useSiteContent();
   const listing = content?.sections.listing;
@@ -32,7 +37,7 @@ export function ListingPage() {
   // membuka chat tanpa teks awal, bukan dengan teks yang di-hardcode.
   const waHref = waLink(
     settings?.whatsapp_number,
-    content ? pickL(content.sections.contact.waMessages.booking, locale) : '',
+    content ? pickL(content.sections.contact.waMessages.reservation, locale) : '',
   );
   // "Mulai 14.00" / "From 14.00": jamnya dari settings (`check_in_time`,
   // format HH:mm), cuma kata depannya yang bergantung bahasa.
@@ -46,23 +51,24 @@ export function ListingPage() {
   // Dinaikkan tombol "Coba lagi" supaya percobaan ulang lewat effect yang sama
   // dengan pemuatan pertama — satu jalur fetch, bukan dua yang bisa berbeda.
   const [attempt, setAttempt] = useState(0);
+  const fetchKey = `${locale}|${attempt}`;
+  const current = result && result.key === fetchKey ? result : null;
+  const rooms = current?.rooms ?? [];
+  const status: Status = current?.status ?? 'loading';
 
   useEffect(() => {
     let active = true;
-    setStatus('loading');
     fetchPublicRoomTypes(locale)
       .then((data) => {
-        if (!active) return;
-        setRooms(data);
-        setStatus('ready');
+        if (active) setResult({ key: fetchKey, rooms: data, status: 'ready' });
       })
       .catch(() => {
-        if (active) setStatus('error');
+        if (active) setResult({ key: fetchKey, rooms: [], status: 'error' });
       });
     return () => {
       active = false;
     };
-  }, [locale, attempt]);
+  }, [locale, fetchKey]);
 
   return (
     <div className="pb-24">

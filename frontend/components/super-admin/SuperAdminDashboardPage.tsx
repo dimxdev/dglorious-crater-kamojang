@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, ChevronRight, FileText, Home, Images, Info, Phone, Settings, Tent, Ticket, Trees, type LucideIcon } from 'lucide-react';
+import { ChevronRight, FileText, Home, Images, Info, Phone, Settings, Tent, Ticket, Trees, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -85,14 +85,14 @@ export function SuperAdminDashboardPage() {
           </Link>
 
           <Link
-            href="/admin/penginapan"
-            className={`group flex items-start justify-between gap-3 rounded-2xl border border-dashed border-[#c9c3b3] px-5 py-4 transition-colors hover:bg-white ${focusRing}`}
+            href="/super-admin/akun"
+            className={`group rounded-2xl border border-[#ece6d8] bg-white p-5 transition-shadow hover:shadow-md ${focusRing}`}
           >
-            <span>
-              <span className="text-foreground block text-[14px] font-semibold">{t('superAdmin.hub.adminTitle')}</span>
-              <span className="text-muted mt-0.5 block text-[12.5px] leading-snug">{t('superAdmin.hub.adminDesc')}</span>
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+              <Users size={19} strokeWidth={1.75} aria-hidden />
             </span>
-            <ArrowUpRight size={17} strokeWidth={1.75} className="text-muted mt-0.5 shrink-0" aria-hidden />
+            <h2 className="text-forest-800 mt-3.5 font-serif text-[17px] font-bold">{t('superAdmin.nav.accounts')}</h2>
+            <p className="text-muted mt-1 text-[13px] leading-snug">{t('superAdmin.hub.accounts')}</p>
           </Link>
         </div>
       </div>

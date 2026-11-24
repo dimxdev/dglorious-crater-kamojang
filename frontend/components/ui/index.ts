@@ -7,3 +7,5 @@ export { Modal } from './Modal';
 export { Table, THead, TBody, Tr, Th, Td } from './Table';
 export { RangeFilter } from './RangeFilter';
 export { InstagramIcon, FacebookIcon, TiktokIcon } from './SocialIcons';
+export { IntInput, RupiahInput } from './NumberInputs';
+export { PasswordFields } from './PasswordFields';

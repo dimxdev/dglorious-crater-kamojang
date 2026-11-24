@@ -227,9 +227,9 @@ export function HeroRevenueCard({
 
 const STAT_ICONS: Record<string, typeof Users> = {
   statRevenue: Wallet,
-  statBooking: CalendarCheck,
+  statReservation: CalendarCheck,
   statVisitors: Users,
-  statAvgPerBooking: Receipt,
+  statAvgPerReservation: Receipt,
 };
 
 /**
@@ -260,7 +260,7 @@ export function StatCard({
     // sampai memaksa kartunya melebar.
     <div className="group rounded-2xl border border-[#ece6d8] bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-[#D4A04A]/45 hover:shadow-[0_10px_28px_-12px_rgba(26,20,16,0.22)] sm:p-5">
       <div className="flex items-start justify-between gap-2">
-        {/* Tinggi 2 baris dijatah di mobile: label sependek "Total Booking" muat
+        {/* Tinggi 2 baris dijatah di mobile: label sependek "Total Reservasi" muat
             1 baris sedangkan "Total Pengunjung" jadi 2, dan tanpa jatah ini
             angka di kartu sebelah-sebelahan jadi gak sejajar. */}
         <div className="text-muted min-h-8 text-[11.5px] leading-snug font-medium sm:min-h-0 sm:text-[12.5px]">
@@ -330,7 +330,7 @@ export function TopTypeCard({
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-[#ece6d8] bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-[#D4A04A]/45 hover:shadow-[0_10px_28px_-12px_rgba(26,20,16,0.22)] sm:p-5">
       <div className="flex items-start justify-between gap-2">
-        {/* Tinggi 2 baris dijatah di mobile: label sependek "Total Booking" muat
+        {/* Tinggi 2 baris dijatah di mobile: label sependek "Total Reservasi" muat
             1 baris sedangkan "Total Pengunjung" jadi 2, dan tanpa jatah ini
             angka di kartu sebelah-sebelahan jadi gak sejajar. */}
         <div className="text-muted min-h-8 text-[11.5px] leading-snug font-medium sm:min-h-0 sm:text-[12.5px]">

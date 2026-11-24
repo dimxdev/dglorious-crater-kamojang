@@ -38,15 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!stored) {
-      setIsLoading(false);
-      return;
-    }
+    // Tanpa token tersimpan, tetap lewat promise agar setState terjadi di callback.
+    const verify = stored
+      ? apiFetch<AuthUser>('/auth/me', { token: stored })
+      : Promise.resolve(null);
 
-    apiFetch<AuthUser>('/auth/me', { token: stored })
+    verify
       .then((me) => {
-        setToken(stored);
-        setUser(me);
+        if (stored && me) {
+          setToken(stored);
+          setUser(me);
+        }
       })
       .catch(() => {
         // Token expired/invalid/user deleted — drop it silently.

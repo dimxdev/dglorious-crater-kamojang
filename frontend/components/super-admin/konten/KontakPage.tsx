@@ -34,11 +34,11 @@ export function KontakPage() {
                   onChange={(v) => patch({ waMessages: { ...draft.waMessages, general: v } })}
                 />
                 <BilingualField
-                  label={t('superAdmin.f.waBooking')}
-                  value={draft.waMessages.booking}
+                  label={t('superAdmin.f.waReservation')}
+                  value={draft.waMessages.reservation}
                   multiline
                   rows={2}
-                  onChange={(v) => patch({ waMessages: { ...draft.waMessages, booking: v } })}
+                  onChange={(v) => patch({ waMessages: { ...draft.waMessages, reservation: v } })}
                 />
                 <BilingualField
                   label={t('superAdmin.f.waRoom')}

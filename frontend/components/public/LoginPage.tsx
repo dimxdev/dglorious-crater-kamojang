@@ -21,6 +21,7 @@ import { roleHomePath } from '@/lib/auth/roleHome';
 import { cn } from '@/lib/cn';
 import { getImage } from '@/lib/data/images';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { emailError, errorMessage } from '@/lib/validation';
 
 /** Field terkontrol dengan ikon depan + slot aksi (mis. tombol lihat sandi). */
 function Field({
@@ -60,6 +61,7 @@ function Field({
           type={type}
           autoComplete={autoComplete}
           required
+          maxLength={254}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
@@ -104,9 +106,18 @@ export function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const emailErr = emailError(email, t);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+    if (!password) {
+      setError(t('validation.passwordRequired'));
+      return;
+    }
     setPending(true);
     try {
-      const loggedIn = await login(email, password);
+      const loggedIn = await login(email.trim().toLowerCase(), password);
       router.push(roleHomePath(loggedIn.role));
     } catch (err) {
       // 401 = email/password salah (backend sengaja memberi pesan sama untuk
@@ -114,7 +125,9 @@ export function LoginPage() {
       setError(
         err instanceof ApiError && err.status === 401
           ? t('login.errorInvalid')
-          : t('login.errorGeneric'),
+          : err instanceof ApiError && err.status === 400
+            ? errorMessage(err, t('login.errorGeneric'))
+            : t('login.errorGeneric'),
       );
       setPending(false);
     }
@@ -197,7 +210,7 @@ export function LoginPage() {
           </h1>
           <p className="text-ash-600 mt-2 text-sm">{t('login.subtitle')}</p>
 
-          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+          <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-4">
             <Field
               id="email"
               label={t('login.email')}

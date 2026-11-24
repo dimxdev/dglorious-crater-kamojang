@@ -8,9 +8,9 @@ export class AvailabilityQueryDto {
   @IsDateString()
   checkOut: string;
 
-  /** ID booking yang sedang diedit — dikecualikan dari cek ketersediaan. */
+  /** ID reservation yang sedang diedit — dikecualikan dari cek ketersediaan. */
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  excludeBookingId?: number;
+  excludeReservationId?: number;
 }

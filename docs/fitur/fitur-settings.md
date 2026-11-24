@@ -1,11 +1,11 @@
 # Modul Settings
 
-**Route API:** `GET /settings` (publik, tanpa login)
-**Status:** ✅ Selesai — read-only; nilai diubah lewat database
+**Route API:** `GET /settings` (publik, tanpa login); `GET`/`PUT /admin/settings` (hanya `SUPER_ADMIN`, UI di `/super-admin/pengaturan`)
+**Status:** ✅ Selesai — dibaca publik, diubah Super Admin
 **File utama:** `backend/src/settings/` (`settings-public.controller.ts`, `settings.service.ts`)
 
 ## Ringkasan
-Penyimpanan konfigurasi global lintas-unit-bisnis — jam operasional, kontak, rekening pembayaran, teks S&K. Prinsipnya semua yang bisa berubah **wajib** di sini, tidak boleh hardcode (§4 PROJECT.md poin 6). Saat ini nilainya bisa dibaca lewat API, tapi diubah masih lewat database langsung.
+Penyimpanan konfigurasi global lintas-unit-bisnis — jam operasional, kontak, rekening pembayaran, teks S&K. Prinsipnya semua yang bisa berubah **wajib** di sini, tidak boleh hardcode (§4 PROJECT.md poin 6). Nilainya dibaca publik lewat API dan diubah Super Admin lewat halaman Pengaturan.
 
 ## Cara Kerja
 Ada satu endpoint, `GET /settings`, tanpa autentikasi (tamu memang tidak pernah login, jadi tidak perlu auth). Ia menjalankan `prisma.setting.findMany()` dan mengembalikan objek flat `{key: value}`. Di frontend, konsumsinya melewati `usePublicSettings()` — hook dengan cache promise tingkat-modul, sehingga beberapa komponen di satu halaman (navbar, footer, CTA) berbagi satu request alih-alih memicu `GET /settings` berkali-kali. Kegagalan tidak di-cache, jadi retry berikutnya bisa berhasil kalau backend sempat down.

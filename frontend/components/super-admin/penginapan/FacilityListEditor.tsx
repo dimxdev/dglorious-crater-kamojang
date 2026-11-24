@@ -7,6 +7,7 @@ import { icons, type IconName } from '@/lib/icons';
 /** Satu baris fasilitas: ikon berlaku universal, label per-bahasa. */
 export type FacilityRow = { icon: IconName; label: Record<string, string> };
 
+const MAX_FACILITIES = 40;
 const ALL_ICON_NAMES = Object.keys(icons) as IconName[];
 
 type FacilityListEditorProps = {
@@ -50,6 +51,8 @@ export function FacilityListEditor({
           <IconPickerButton icon={row.icon} onSelect={(icon) => updateIcon(i, icon)} />
           <input
             value={row.label[lang] ?? ''}
+            maxLength={100}
+            aria-label={labelPlaceholder}
             onChange={(e) => updateLabel(i, e.target.value)}
             placeholder={labelPlaceholder}
             className="border-input focus:border-forest-500 focus:ring-forest-500/20 h-10 flex-1 rounded-lg border px-3 text-sm focus:ring-2 focus:outline-none"
@@ -64,6 +67,7 @@ export function FacilityListEditor({
           </button>
         </div>
       ))}
+      {value.length < MAX_FACILITIES && (
       <button
         type="button"
         onClick={addRow}
@@ -72,6 +76,7 @@ export function FacilityListEditor({
         <span aria-hidden>+</span>
         {addLabel}
       </button>
+      )}
     </div>
   );
 }

@@ -3,6 +3,11 @@
 import { cn } from '@/lib/cn';
 import { formatIDR } from '@/lib/format';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { clampInt, isBadNumericPaste, parseRupiah, sanitizeDigits } from '@/lib/validation';
+
+function blockBadPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+  if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+}
 
 export type DiscountMode = 'amount' | 'percent';
 
@@ -70,21 +75,19 @@ export function DiscountField({
             type="text"
             inputMode="numeric"
             value={amount != null ? amount.toLocaleString('id-ID') : ''}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^0-9]/g, '');
-              onAmountChange(raw === '' ? null : Number(raw));
-            }}
+            onPaste={blockBadPaste}
+            onChange={(e) => onAmountChange(parseRupiah(e.target.value))}
             className="border-input focus:border-forest-500 focus:ring-forest-500/20 h-11 w-full min-w-0 rounded-l-none rounded-r-[10px] border bg-white px-3.5 text-sm placeholder:text-muted/60 focus:ring-2 focus:outline-none"
           />
         ) : (
           <input
-            type="number"
-            min={0}
-            max={100}
+            type="text"
+            inputMode="numeric"
             value={percent ?? ''}
+            onPaste={blockBadPaste}
             onChange={(e) => {
-              const val = e.target.value === '' ? null : Number(e.target.value);
-              onPercentChange(val);
+              const digits = sanitizeDigits(e.target.value, 3);
+              onPercentChange(digits === '' ? null : clampInt(Number(digits), 0, 100));
             }}
             className="border-input focus:border-forest-500 focus:ring-forest-500/20 h-11 w-full min-w-0 rounded-l-none rounded-r-[10px] border bg-white px-3.5 text-sm placeholder:text-muted/60 focus:ring-2 focus:outline-none"
           />
@@ -92,8 +95,8 @@ export function DiscountField({
       </div>
 
       {mode === 'amount' && amount != null && amount > grossTotal && grossTotal > 0 ? (
-        <p className="mt-1 text-[12px] font-medium text-red-600">
-          Diskon melebihi total — maksimal {formatIDR(grossTotal)}
+        <p role="alert" className="mt-1 text-[12px] font-medium text-red-600">
+          {t('validation.discountOverTotal', { max: formatIDR(grossTotal) })}
         </p>
       ) : (
         <p className="text-muted mt-1 text-[12px]">

@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { icons } from '@/lib/icons';
+import { CMS_MAX_TEXT, errorMessage, LIMITS, linkError, validateImageFile } from '@/lib/validation';
 
 /* ── Gaya dasar ─────────────────────────────────────────────── */
 
@@ -85,6 +86,8 @@ type TextFieldProps = {
 
 export function TextField({ label, hint, value, onChange, multiline, rows = 4, placeholder, inputMode }: TextFieldProps) {
   const id = useId();
+  const { t } = useTranslation();
+  const urlError = inputMode === 'url' ? linkError(value, t) : null;
   return (
     <div>
       <FieldLabel htmlFor={id} hint={hint}>
@@ -94,6 +97,7 @@ export function TextField({ label, hint, value, onChange, multiline, rows = 4, p
         <textarea
           id={id}
           rows={rows}
+          maxLength={CMS_MAX_TEXT}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
@@ -104,10 +108,17 @@ export function TextField({ label, hint, value, onChange, multiline, rows = 4, p
           id={id}
           value={value}
           inputMode={inputMode}
+          maxLength={inputMode === 'url' ? 500 : CMS_MAX_TEXT}
+          aria-invalid={urlError ? true : undefined}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className={fieldClass}
+          className={cn(fieldClass, urlError && 'border-red-600')}
         />
+      )}
+      {urlError && (
+        <p role="alert" className="mt-1.5 text-[12.5px] font-medium text-red-700">
+          {urlError}
+        </p>
       )}
     </div>
   );
@@ -133,7 +144,9 @@ export function BilingualField({
 }) {
   const idBase = useId();
   const groupId = `${idBase}-label`;
+  const { t } = useTranslation();
   const enEmpty = value.id.trim() !== '' && value.en.trim() === '';
+  const idBlank = value.id !== '' && value.id.trim() === '';
   const Tag = multiline ? 'textarea' : 'input';
 
   return (
@@ -154,6 +167,7 @@ export function BilingualField({
             <Tag
               id={`${idBase}-${lang}`}
               lang={lang}
+              maxLength={CMS_MAX_TEXT}
               {...(multiline ? { rows } : {})}
               value={value[lang]}
               placeholder={placeholder?.[lang]}
@@ -165,6 +179,11 @@ export function BilingualField({
           </div>
         ))}
       </div>
+      {idBlank && (
+        <p role="alert" className="mt-1.5 text-[12.5px] font-medium text-red-700">
+          {t('validation.cmsIdRequired')}
+        </p>
+      )}
       {enEmpty && <EnEmptyNotice />}
     </div>
   );
@@ -204,7 +223,7 @@ export function PriceField({
           value={value ? new Intl.NumberFormat('id-ID').format(value) : ''}
           onChange={(e) => {
             const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-            onChange(digits === '' ? 0 : Number(digits));
+            onChange(digits === '' ? 0 : Math.min(Number(digits), LIMITS.maxRupiah));
           }}
           className={cn(fieldClass, 'pl-10 tabular-nums')}
         />
@@ -362,8 +381,6 @@ export function IconPicker({
 
 /* ── Gambar ─────────────────────────────────────────────────── */
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-
 export function ImageField({
   label,
   hint,
@@ -388,12 +405,10 @@ export function ImageField({
   async function handleFile(file: File | undefined) {
     if (!file) return;
     setError(null);
-    if (!file.type.startsWith('image/')) {
-      setError(t('superAdmin.cms.imageNotImage'));
-      return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      setError(t('superAdmin.cms.imageTooLarge'));
+    const fileError = validateImageFile(file, t);
+    if (fileError) {
+      setError(fileError);
+      if (inputRef.current) inputRef.current.value = '';
       return;
     }
     if (!token) return;
@@ -402,7 +417,7 @@ export function ImageField({
       const { url } = await uploadSiteImage(token, file);
       onChange(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('superAdmin.cms.imageUploadError'));
+      setError(errorMessage(e, t('superAdmin.cms.imageUploadError')));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -437,7 +452,7 @@ export function ImageField({
             ref={inputRef}
             id={id}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             className="sr-only"
             onChange={(e) => void handleFile(e.target.files?.[0])}
           />

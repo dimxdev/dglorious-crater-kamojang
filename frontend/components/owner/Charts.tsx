@@ -199,7 +199,7 @@ export function DonutChart({
   centerLabel?: string;
   /**
    * Satuan `value` tiap segmen. Wajib diisi 'count' kalau donatnya menghitung
-   * jumlah booking, bukan rupiah — kalau tidak, totalnya kerender jadi "Rp5".
+   * jumlah reservasi, bukan rupiah — kalau tidak, totalnya kerender jadi "Rp5".
    */
   centerUnit?: 'idr' | 'count';
 }) {
@@ -289,7 +289,7 @@ export function DonutChart({
             {active === a.label && (
               <div className="text-muted flex items-center justify-between px-1.5 pb-1.5 text-[11.5px]">
                 {typeof a.count === 'number' && (
-                  <span>{t('owner.donutDetailBookings', { count: a.count })}</span>
+                  <span>{t('owner.donutDetailReservations', { count: a.count })}</span>
                 )}
                 {typeof a.revenue === 'number' && (
                   <span className="text-forest-700 font-semibold">{formatIDR(a.revenue)}</span>

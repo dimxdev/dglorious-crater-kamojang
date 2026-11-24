@@ -1,10 +1,12 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { trim } from './trim';
 
 /**
  * One facility entry with its own inline per-language label — chosen over a
@@ -13,20 +15,26 @@ import {
  * language, with no separate facility dictionary anywhere in the app.
  */
 export class FacilityLabelDto {
-  @IsString()
-  @IsNotEmpty()
+  @Transform(trim)
+  @IsString({ message: 'Nama fasilitas harus berupa teks.' })
+  @IsNotEmpty({ message: 'Nama fasilitas wajib diisi.' })
+  @MaxLength(100, { message: 'Nama fasilitas maksimal 100 karakter.' })
   id: string;
 
   @IsOptional()
-  @IsString()
+  @Transform(trim)
+  @IsString({ message: 'Nama fasilitas (EN) harus berupa teks.' })
+  @MaxLength(100, { message: 'Nama fasilitas (EN) maksimal 100 karakter.' })
   en?: string;
 }
 
 export class FacilityDto {
   /** Lucide icon name (frontend/lib/icons.ts). Not validated against that
    *  list here — keeping backend decoupled from a frontend-only registry. */
-  @IsString()
-  @IsNotEmpty()
+  @Transform(trim)
+  @IsString({ message: 'Ikon fasilitas harus berupa teks.' })
+  @IsNotEmpty({ message: 'Ikon fasilitas wajib diisi.' })
+  @MaxLength(100, { message: 'Ikon fasilitas maksimal 100 karakter.' })
   icon: string;
 
   @ValidateNested()

@@ -17,15 +17,22 @@ type Status = 'loading' | 'ready' | 'error';
 
 export function TermsPage() {
   const { t, locale } = useTranslation();
-  const [terms, setTerms] = useState<string[]>([]);
-  const [status, setStatus] = useState<Status>('loading');
+  // Hasil fetch dibawa bersama bahasanya; bahasa berganti = memuat ulang
+  // (status diturunkan saat render, bukan di-set dari dalam effect).
+  const [result, setResult] = useState<{
+    locale: string;
+    terms: string[];
+    status: Status;
+  } | null>(null);
+  const current = result && result.locale === locale ? result : null;
+  const terms = current?.terms ?? [];
+  const status: Status = current?.status ?? 'loading';
   const { settings } = usePublicSettings();
   const { content, failed: contentFailed } = useSiteContent();
   const page = content?.sections.terms;
 
   useEffect(() => {
     let active = true;
-    setStatus('loading');
     // Dipanggil terpisah dari `usePublicSettings` karena isinya bergantung
     // bahasa aktif: `Setting.value` bukan per-bahasa, jadi teks S&K disimpan
     // sebagai dua key berbeda dan harus dipilih ulang saat locale berganti.
@@ -34,11 +41,14 @@ export function TermsPage() {
         if (!active) return;
         const raw =
           locale === 'en' ? s.terms_conditions_en : s.terms_conditions_id;
-        setTerms((raw ?? '').split('\n').filter(Boolean));
-        setStatus('ready');
+        setResult({
+          locale,
+          terms: (raw ?? '').split('\n').filter(Boolean),
+          status: 'ready',
+        });
       })
       .catch(() => {
-        if (active) setStatus('error');
+        if (active) setResult({ locale, terms: [], status: 'error' });
       });
     return () => {
       active = false;

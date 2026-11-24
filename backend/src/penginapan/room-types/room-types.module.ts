@@ -11,7 +11,7 @@ import { RoomTypesService } from './room-types.service';
     RoomImagesAdminController,
   ],
   providers: [RoomTypesService],
-  // Exported so BookingsModule (FASE 7) can reuse checkAvailability/calcStayTotal.
+  // Exported so ReservationsModule (FASE 7) can reuse checkAvailability/calcStayTotal.
   exports: [RoomTypesService],
 })
 export class RoomTypesModule {}

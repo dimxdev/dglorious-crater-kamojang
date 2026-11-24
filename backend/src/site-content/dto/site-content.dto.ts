@@ -8,6 +8,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
 import { ContentCollection } from '../../generated/prisma/enums';
 
@@ -31,11 +32,12 @@ export class CreateItemDto {
   content!: Record<string, unknown>;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'imageUrl harus berupa teks' })
+  @MaxLength(500, { message: 'imageUrl maksimal 500 karakter' })
   imageUrl?: string;
 
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean({ message: 'isActive harus berupa true/false' })
   isActive?: boolean;
 }
 
@@ -46,11 +48,12 @@ export class UpdateItemDto {
 
   // null atau "" = hapus gambar
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'imageUrl harus berupa teks' })
+  @MaxLength(500, { message: 'imageUrl maksimal 500 karakter' })
   imageUrl?: string | null;
 
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean({ message: 'isActive harus berupa true/false' })
   isActive?: boolean;
 }
 
@@ -58,9 +61,9 @@ export class ReorderItemsDto {
   @IsEnum(ContentCollection, { message: 'collection tidak valid' })
   collection!: ContentCollection;
 
-  @IsArray()
+  @IsArray({ message: 'ids harus berupa daftar' })
   @ArrayNotEmpty({ message: 'ids tidak boleh kosong' })
   @Type(() => Number)
-  @IsInt({ each: true })
+  @IsInt({ each: true, message: 'ids harus berupa bilangan bulat' })
   ids!: number[];
 }

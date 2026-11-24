@@ -1,5 +1,6 @@
 import type { Locale } from '@/lib/i18n/config';
 import type { BookableRoom } from '@/lib/pricing';
+import { errorMessage } from '@/lib/validation';
 import { apiFetch } from './client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -87,7 +88,7 @@ export function fetchAdminRoomTypes(token: string) {
   return apiFetch<AdminRoomTypeListItem[]>('/admin/room-types', { token });
 }
 
-/** Bentuk yang dipakai form booking: harga & nama dari database, jadi ikut berubah kalau diedit di Kelola. */
+/** Bentuk yang dipakai form reservasi: harga & nama dari database, jadi ikut berubah kalau diedit di Kelola. */
 export function toBookableRoom(r: AdminRoomTypeListItem): BookableRoom {
   return {
     id: r.id,
@@ -137,9 +138,9 @@ export async function uploadRoomImage(token: string, roomTypeId: number, file: F
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => undefined);
   if (!res.ok) {
-    throw new Error(data?.message ?? `Upload gagal (${res.status})`);
+    throw new Error(errorMessage(data, `Upload gagal (${res.status})`));
   }
   return data as AdminRoomImage;
 }
@@ -211,10 +212,10 @@ export function checkRoomTypeAvailability(
   id: number,
   checkIn: string,
   checkOut: string,
-  excludeBookingId?: number,
+  excludeReservationId?: number,
 ) {
   let url = `/admin/room-types/${id}/availability?checkIn=${checkIn}&checkOut=${checkOut}`;
-  if (excludeBookingId) url += `&excludeBookingId=${excludeBookingId}`;
+  if (excludeReservationId) url += `&excludeReservationId=${excludeReservationId}`;
   return apiFetch<AvailabilityResult>(url, { token });
 }
 

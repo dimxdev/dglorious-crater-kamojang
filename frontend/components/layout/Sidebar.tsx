@@ -3,6 +3,7 @@
 import {
   ClipboardList,
   Footprints,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   MessageCircle,
@@ -12,7 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -29,6 +30,19 @@ export type AdminNavItem = {
 
 const SIDEBAR_COLLAPSED_KEY = 'dgc_sidebar_collapsed';
 
+const collapsedListeners = new Set<() => void>();
+
+function subscribeCollapsed(listener: () => void) {
+  collapsedListeners.add(listener);
+  return () => {
+    collapsedListeners.delete(listener);
+  };
+}
+
+function getCollapsed() {
+  return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+}
+
 /** Sumber tunggal menu Admin — dipakai bareng sidebar desktop & bottom nav mobile. */
 export function useAdminNavItems(): AdminNavItem[] {
   const { t } = useTranslation();
@@ -41,21 +55,21 @@ export function useAdminNavItems(): AdminNavItem[] {
       exact: true,
     },
     {
-      href: '/admin/penginapan/booking-whatsapp',
-      label: t('dashboard.bookingWhatsapp'),
-      shortLabel: t('dashboard.navShortWhatsapp'),
+      href: '/admin/penginapan/reservasi-baru',
+      label: t('dashboard.reservasiBaru'),
+      shortLabel: t('dashboard.navShortReservasi'),
       icon: MessageCircle,
     },
     {
-      href: '/admin/penginapan/walk-in',
-      label: t('dashboard.walkin'),
-      shortLabel: t('dashboard.navShortWalkin'),
+      href: '/admin/penginapan/tamu-langsung',
+      label: t('dashboard.tamuLangsung'),
+      shortLabel: t('dashboard.navShortLangsung'),
       icon: Footprints,
     },
     {
-      href: '/admin/penginapan/booking',
-      label: t('dashboard.bookings'),
-      shortLabel: t('dashboard.navShortBookings'),
+      href: '/admin/penginapan/reservasi',
+      label: t('dashboard.reservations'),
+      shortLabel: t('dashboard.navShortReservations'),
       icon: ClipboardList,
     },
   ];
@@ -63,8 +77,8 @@ export function useAdminNavItems(): AdminNavItem[] {
 
 /**
  * Cek menu aktif. Sengaja pakai `href + '/'`, BUKAN `startsWith(href)` polos —
- * kalau polos, `/admin/penginapan/booking-whatsapp` juga bikin menu "Data
- * Booking" (`/admin/penginapan/booking`) ikut nyala barengan.
+ * kalau polos, `/admin/penginapan/reservasi-baru` juga bikin menu "Data
+ * Reservasi" (`/admin/penginapan/reservasi`) ikut nyala barengan.
  */
 export function isAdminNavActive(item: AdminNavItem, pathname: string): boolean {
   if (item.exact) return pathname === item.href;
@@ -77,20 +91,17 @@ export function Sidebar({ className }: { className?: string }) {
   const router = useRouter();
   const { logout } = useAuth();
   const items = useAdminNavItems();
-  const [collapsed, setCollapsed] = useState(false);
-
-  // Baca preferensi tersimpan setelah mount — hindari mismatch SSR/klien
-  // (server selalu render versi expanded).
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
-  }, []);
+  // Server selalu render versi expanded; preferensi tersimpan dibaca setelah
+  // hidrasi lewat useSyncExternalStore (tanpa mismatch SSR/klien).
+  const collapsed = useSyncExternalStore(
+    subscribeCollapsed,
+    getCollapsed,
+    () => false,
+  );
 
   function toggleCollapsed() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
-      return next;
-    });
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '0' : '1');
+    collapsedListeners.forEach((l) => l());
   }
 
   return (
@@ -164,6 +175,20 @@ export function Sidebar({ className }: { className?: string }) {
         )}
         {!collapsed && t('admin.collapseSidebar')}
       </button>
+
+      {/* Ganti kata sandi */}
+      <Link
+        href="/akun/kata-sandi"
+        title={collapsed ? t('account.changePassword') : undefined}
+        aria-label={collapsed ? t('account.changePassword') : undefined}
+        className={cn(
+          'mx-3 mb-1 flex items-center gap-3 rounded-[10px] px-3.5 py-3 text-left text-sm font-medium text-green-200/70 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-green-300 focus-visible:outline-none',
+          collapsed && 'justify-center px-0',
+        )}
+      >
+        <KeyRound size={18} strokeWidth={1.75} className="shrink-0" aria-hidden />
+        {!collapsed && t('account.changePassword')}
+      </Link>
 
       {/* Logout */}
       <button

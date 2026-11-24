@@ -1,6 +1,6 @@
 'use client';
 
-import { Mountain } from 'lucide-react';
+import { KeyRound, Mountain } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -91,6 +91,13 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
             );
           })}
         </nav>
+        <Link
+          href="/akun/kata-sandi"
+          className="mx-3 mt-3 -mb-2 flex items-center gap-3 rounded-[10px] px-3.5 py-3 text-sm font-medium text-[#b8ab9c] hover:bg-[#D4A04A]/10 focus-visible:ring-2 focus-visible:ring-[#D4A04A] focus-visible:outline-none"
+        >
+          <KeyRound size={16} strokeWidth={1.75} className="w-4.5 shrink-0" aria-hidden />
+          {t('account.changePassword')}
+        </Link>
         <button
           type="button"
           onClick={handleLogout}
@@ -155,6 +162,13 @@ export function OwnerLayout({ title, children }: { title: string; children: Reac
                         {roleLabel}
                       </div>
                     </div>
+                    <Link
+                      href="/akun/kata-sandi"
+                      className="text-muted-strong mt-1 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium hover:bg-[#f6ecd8]/60"
+                    >
+                      <KeyRound size={15} strokeWidth={1.75} aria-hidden />
+                      {t('account.changePassword')}
+                    </Link>
                     <button
                       type="button"
                       onClick={handleLogout}

@@ -8,6 +8,7 @@ import { pickL } from '@/lib/api/siteContent';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useSiteContent } from '@/lib/useSiteContent';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
+import { formatPhoneDisplay } from '@/lib/phone';
 
 // Embed Google Maps tanpa API key. `output=embed` adalah jalur publik yang
 // tidak butuh kunci maupun tagihan — sesuai permintaan ketua supaya biaya
@@ -43,8 +44,7 @@ export function Footer() {
    *  database, tampilannya ikut berubah otomatis, bukan teks hardcode. */
   function formatWaNumber(raw?: string): string | null {
     if (!raw) return null;
-    const local = raw.startsWith('62') ? `0${raw.slice(2)}` : raw;
-    return local.replace(/(\d{4})(\d{4})(\d+)/, '$1-$2-$3');
+    return formatPhoneDisplay(raw) || raw;
   }
 
   return (

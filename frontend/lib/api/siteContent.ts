@@ -1,4 +1,5 @@
 import type { Locale } from '@/lib/i18n/config';
+import { errorMessage } from '@/lib/validation';
 import { apiFetch } from './client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -54,7 +55,7 @@ export type SiteSections = {
     /** `room` memuat placeholder `{room}` (nama tipe unit). */
     waMessages: {
       general: Localized;
-      booking: Localized;
+      reservation: Localized;
       room: Localized;
       terms: Localized;
     };
@@ -241,9 +242,9 @@ export async function uploadSiteImage(token: string, file: File) {
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => undefined);
   if (!res.ok) {
-    throw new Error(data?.message ?? `Upload gagal (${res.status})`);
+    throw new Error(errorMessage(data, `Upload gagal (${res.status})`));
   }
   return data as { url: string };
 }

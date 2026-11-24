@@ -13,7 +13,7 @@
   netral + aksen berwarna.
 
   `basalt-*` / `teal-*` / `terracotta-*` / `forest-*` / `cream-*` adalah nama
-  token LAMA yang masih dipakai ~140x di 30+ file (admin, owner, booking,
+  token LAMA yang masih dipakai ~140x di 30+ file (admin, owner, reservasi,
   komponen dasar). Supaya halaman-halaman itu ikut berganti warna TANPA perlu
   diedit satu-satu, semuanya di-alias ke green/blue/orange/stone di bagian
   "Kompatibilitas" di bawah. Kalau menulis komponen baru, pakai token

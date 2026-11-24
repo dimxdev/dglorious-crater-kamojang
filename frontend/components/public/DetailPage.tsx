@@ -21,36 +21,52 @@ import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useSiteContent } from '@/lib/useSiteContent';
 import { usePublicSettings, waLink } from '@/lib/usePublicSettings';
 
-// Situs tidak punya booking online, jadi CTA mengarah ke WhatsApp reservasi
-// (bukan form booking). Nomor & jam check-in/out dari `GET /settings`
+// Situs tidak punya reservasi online, jadi CTA mengarah ke WhatsApp reservasi
+// (bukan form reservasi). Nomor & jam check-in/out dari `GET /settings`
 // (§8.3 PROJECT.md) — config global, bukan bagian dari room-types.
 
 export function DetailPage({ slug }: { slug: string }) {
   const { t, locale } = useTranslation();
-  const [room, setRoom] = useState<PublicRoomTypeDetail | null>(null);
-  const [notFoundState, setNotFoundState] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Hasil fetch disimpan bersama kunci (slug+bahasa); kalau kunci tak cocok
+  // dengan yang aktif, tampilan dianggap sedang memuat (reset tanpa effect).
+  const fetchKey = `${slug}|${locale}`;
+  const [result, setResult] = useState<{
+    key: string;
+    room: PublicRoomTypeDetail | null;
+    notFound: boolean;
+    error: string | null;
+  } | null>(null);
+  const current = result && result.key === fetchKey ? result : null;
+  const room = current?.room ?? null;
+  const notFoundState = current?.notFound ?? false;
+  const error = current?.error ?? null;
   const { settings } = usePublicSettings();
   const { content } = useSiteContent();
   const detail = content?.sections.room_detail;
 
   useEffect(() => {
     let active = true;
-    setRoom(null);
-    setNotFoundState(false);
-    setError(null);
 
     fetchPublicRoomTypeBySlug(slug, locale)
-      .then((data) => active && setRoom(data))
+      .then((data) => {
+        if (active) setResult({ key: fetchKey, room: data, notFound: false, error: null });
+      })
       .catch((e) => {
         if (!active) return;
-        if (e instanceof ApiError && e.status === 404) setNotFoundState(true);
-        else setError(e instanceof Error ? e.message : t('common.loadError'));
+        if (e instanceof ApiError && e.status === 404)
+          setResult({ key: fetchKey, room: null, notFound: true, error: null });
+        else
+          setResult({
+            key: fetchKey,
+            room: null,
+            notFound: false,
+            error: e instanceof Error ? e.message : t('common.loadError'),
+          });
       });
     return () => {
       active = false;
     };
-  }, [slug, locale, t]);
+  }, [slug, locale, t, fetchKey]);
 
   if (notFoundState) {
     return (

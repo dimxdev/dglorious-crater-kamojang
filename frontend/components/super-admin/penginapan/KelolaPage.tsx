@@ -37,6 +37,14 @@ import { formatIDR } from '@/lib/format';
 import type { IconName } from '@/lib/icons';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
+import {
+  errorMessage,
+  isBadNumericPaste,
+  LIMITS,
+  sanitizeDigits,
+  validateImageFile,
+  type TFn,
+} from '@/lib/validation';
 import { FacilityListEditor, type FacilityRow } from './FacilityListEditor';
 
 // Bahasa konten: ID (wajib) + EN (opsional).
@@ -106,19 +114,67 @@ function emptyForm(): FormState {
   };
 }
 
+/** Nilai harga dari API (bisa "850000.00") -> teks bilangan bulat; kosong tetap kosong. */
+function wholeStr(v: string | number | null | undefined): string {
+  if (v === null || v === undefined || v === '') return '';
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? String(n) : '';
+}
+
+type FieldErrors = Partial<Record<string, string>>;
+
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Validasi form tipe unit. `tab`/`lang` menunjuk tempat galat pertama supaya bisa dibuka. */
+function validateRoomForm(
+  form: FormState,
+  t: TFn,
+): { errors: FieldErrors; first: { tab: DrawerTab; lang?: Lang; message: string } | null } {
+  const errors: FieldErrors = {};
+  let first: { tab: DrawerTab; lang?: Lang; message: string } | null = null;
+  const add = (key: string, message: string, tab: DrawerTab, lang?: Lang) => {
+    errors[key] = message;
+    first ??= { tab, lang, message };
+  };
+  const intIn = (v: string, min: number, max: number) =>
+    /^\d+$/.test(v) && Number(v) >= min && Number(v) <= max;
+
+  if (form.id == null) {
+    const slug = form.slug.trim();
+    if (!slug) add('slug', t('admin.cmsRequiredFields'), 'general');
+    else if (slug.length > 100 || !SLUG_RE.test(slug)) add('slug', t('validation.slugInvalid'), 'general');
+  }
+  if (!intIn(form.capacity, LIMITS.roomCapacity.min, LIMITS.roomCapacity.max))
+    add('capacity', t('validation.capacityRange', LIMITS.roomCapacity), 'general');
+  if (!intIn(form.totalUnits, LIMITS.roomUnits.min, LIMITS.roomUnits.max))
+    add('totalUnits', t('validation.unitsRange', LIMITS.roomUnits), 'general');
+  for (const k of ['priceWeekday', 'priceWeekend'] as const) {
+    if (!intIn(form[k], 1, LIMITS.maxRupiah)) add(k, t('validation.priceRange'), 'general');
+  }
+  for (const k of ['extraBedPrice', 'extraNoBedPrice', 'extraFlatPrice'] as const) {
+    if (form[k] !== '' && !intIn(form[k], 0, LIMITS.maxRupiah)) add(k, t('validation.priceExtraRange'), 'general');
+  }
+  const idT = form.translations.ID;
+  if (idT.name.trim() === '') add('name', t('admin.cmsRequiredFields'), 'content', 'ID');
+  if (idT.category.trim() === '') add('category', t('admin.cmsRequiredFields'), 'content', 'ID');
+  if (form.facilities.some((f) => (f.label.ID ?? '').trim() === ''))
+    add('facilities', t('validation.facilityIdRequired'), 'content', 'ID');
+  return { errors, first };
+}
+
 function detailToForm(detail: AdminRoomTypeDetail): FormState {
   const idT = detail.translations.find((t) => t.languageCode === 'ID');
   const enT = detail.translations.find((t) => t.languageCode === 'EN');
   return {
     id: detail.id,
     slug: detail.slug,
-    priceWeekday: detail.priceWeekday,
-    priceWeekend: detail.priceWeekend,
+    priceWeekday: wholeStr(detail.priceWeekday),
+    priceWeekend: wholeStr(detail.priceWeekend),
     capacity: String(detail.capacity),
     totalUnits: String(detail.totalUnits),
-    extraBedPrice: detail.extraBedPrice ?? '',
-    extraNoBedPrice: detail.extraNoBedPrice ?? '',
-    extraFlatPrice: detail.extraFlatPrice ?? '',
+    extraBedPrice: wholeStr(detail.extraBedPrice),
+    extraNoBedPrice: wholeStr(detail.extraNoBedPrice),
+    extraFlatPrice: wholeStr(detail.extraFlatPrice),
     isActive: detail.isActive,
     translations: { ID: translationToForm(idT), EN: translationToForm(enT) },
     facilities: detail.facilities.map((f) => ({
@@ -242,22 +298,16 @@ export function KelolaPage() {
     if (!drawer || !token) return;
 
     // Dicegat di sini biar admin gak nunggu roundtrip cuma buat tahu ada
-    // field wajib yang kosong — sekalian arahkan ke tab yang salah.
-    const { form } = drawer;
-    const idT = form.translations.ID;
-    if (
-      (form.id == null && form.slug.trim() === '') ||
-      idT.name.trim() === '' ||
-      idT.category.trim() === ''
-    ) {
-      const missingSlug = form.id == null && form.slug.trim() === '';
+    // isian yang salah — sekalian arahkan ke tab yang salah.
+    const { first } = validateRoomForm(drawer.form, t);
+    if (first) {
       setDrawer((d) =>
         d
           ? {
               ...d,
-              tab: missingSlug ? 'general' : 'content',
-              lang: missingSlug ? d.lang : 'ID',
-              error: t('admin.cmsRequiredFields'),
+              tab: first.tab,
+              lang: first.lang ?? d.lang,
+              error: first.message,
             }
           : d,
       );
@@ -287,20 +337,25 @@ export function KelolaPage() {
       await refreshList();
     } catch (e) {
       setDrawer((d) =>
-        d ? { ...d, saving: false, error: e instanceof ApiError ? e.message : t('admin.saveError') } : d,
+        d ? { ...d, saving: false, error: errorMessage(e, t('admin.saveError')) } : d,
       );
     }
   }
 
   async function handleUploadImage(file: File) {
     if (!drawer?.form.id || !token) return;
+    const fileError = validateImageFile(file, t);
+    if (fileError) {
+      setDrawer((d) => (d ? { ...d, error: fileError } : d));
+      return;
+    }
     try {
       const image = await uploadRoomImage(token, drawer.form.id, file);
       setDrawer((d) => (d ? { ...d, form: { ...d.form, images: [...d.form.images, image] } } : d));
       // First image also becomes the cover (backend rule) — card thumbnail needs it too.
       if (image.isCover) await refreshList();
     } catch (e) {
-      setDrawer((d) => (d ? { ...d, error: e instanceof Error ? e.message : t('admin.uploadError') } : d));
+      setDrawer((d) => (d ? { ...d, error: errorMessage(e, t('admin.uploadError')) } : d));
     }
   }
 
@@ -579,6 +634,7 @@ function CmsDrawer({
 }) {
   const { t } = useTranslation();
   const { form, lang, tab, loadingDetail, saving, error } = state;
+  const fe = error ? validateRoomForm(form, t).errors : {};
   const isCreating = form.id == null;
 
   useBodyScrollLock(true);
@@ -678,6 +734,8 @@ function CmsDrawer({
                       label={t('admin.cmsSlug')}
                       name="slug"
                       value={form.slug}
+                      maxLength={100}
+                      error={fe.slug}
                       disabled={!isCreating}
                       onChange={
                         isCreating ? (e) => updateForm({ slug: e.target.value }) : undefined
@@ -689,58 +747,93 @@ function CmsDrawer({
                   <Input
                     label={t('admin.capacity')}
                     name="capacity"
-                    type="number"
-                    min={1}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={form.capacity}
-                    onChange={(e) => updateForm({ capacity: e.target.value })}
+                    error={fe.capacity}
+                    onPaste={(e) => {
+                      if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+                    }}
+                    onChange={(e) => updateForm({ capacity: sanitizeDigits(e.target.value, 3) })}
                   />
                   <Input
                     label={t('admin.cmsUnitCount')}
                     name="totalUnits"
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={form.totalUnits}
-                    onChange={(e) => updateForm({ totalUnits: e.target.value })}
+                    error={fe.totalUnits}
+                    onPaste={(e) => {
+                      if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+                    }}
+                    onChange={(e) => updateForm({ totalUnits: sanitizeDigits(e.target.value, 3) })}
                   />
                   <Input
                     label={t('admin.priceWeekday')}
                     name="priceWeekday"
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={form.priceWeekday}
-                    onChange={(e) => updateForm({ priceWeekday: e.target.value })}
+                    error={fe.priceWeekday}
+                    onPaste={(e) => {
+                      if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+                    }}
+                    onChange={(e) => updateForm({ priceWeekday: sanitizeDigits(e.target.value, 10) })}
                   />
                   <Input
                     label={t('admin.priceWeekend')}
                     name="priceWeekend"
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={form.priceWeekend}
-                    onChange={(e) => updateForm({ priceWeekend: e.target.value })}
+                    error={fe.priceWeekend}
+                    onPaste={(e) => {
+                      if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+                    }}
+                    onChange={(e) => updateForm({ priceWeekend: sanitizeDigits(e.target.value, 10) })}
                   />
                   <Input
                     label={t('admin.extraBedPrice')}
                     name="extraBedPrice"
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={form.extraBedPrice}
-                    onChange={(e) => updateForm({ extraBedPrice: e.target.value })}
+                    error={fe.extraBedPrice}
+                    onPaste={(e) => {
+                      if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+                    }}
+                    onChange={(e) => updateForm({ extraBedPrice: sanitizeDigits(e.target.value, 10) })}
                   />
                   <Input
                     label={t('admin.extraNoBedPrice')}
                     name="extraNoBedPrice"
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={form.extraNoBedPrice}
-                    onChange={(e) => updateForm({ extraNoBedPrice: e.target.value })}
+                    error={fe.extraNoBedPrice}
+                    onPaste={(e) => {
+                      if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+                    }}
+                    onChange={(e) => updateForm({ extraNoBedPrice: sanitizeDigits(e.target.value, 10) })}
                   />
                   <Input
                     label={t('admin.extraFlatPrice')}
                     name="extraFlatPrice"
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={form.extraFlatPrice}
-                    onChange={(e) => updateForm({ extraFlatPrice: e.target.value })}
+                    error={fe.extraFlatPrice}
+                    onPaste={(e) => {
+                      if (isBadNumericPaste(e.clipboardData.getData('text'))) e.preventDefault();
+                    }}
+                    onChange={(e) => updateForm({ extraFlatPrice: sanitizeDigits(e.target.value, 10) })}
                   />
                   <Select
                     label={t('admin.tStatus')}
@@ -808,6 +901,8 @@ function CmsDrawer({
                         label={`${t('admin.cmsName')} (${lang})`}
                         name="name"
                         value={t9n.name}
+                        maxLength={LIMITS.roomName}
+                        error={lang === 'ID' ? fe.name : undefined}
                         onChange={(e) => updateTranslation(lang, { name: e.target.value })}
                         placeholder="Nama penginapan"
                       />
@@ -815,6 +910,8 @@ function CmsDrawer({
                         label={`${t('admin.cmsCategory')} (${lang})`}
                         name="category"
                         value={t9n.category}
+                        maxLength={LIMITS.roomCategory}
+                        error={lang === 'ID' ? fe.category : undefined}
                         onChange={(e) => updateTranslation(lang, { category: e.target.value })}
                         placeholder={t('admin.cmsCategoryHint')}
                       />
@@ -822,6 +919,7 @@ function CmsDrawer({
                         label={`${t('admin.cmsTagline')} (${lang})`}
                         name="tagline"
                         value={t9n.tagline}
+                        maxLength={LIMITS.roomTagline}
                         onChange={(e) => updateTranslation(lang, { tagline: e.target.value })}
                       />
                       <LabeledTextarea
@@ -829,18 +927,21 @@ function CmsDrawer({
                         value={t9n.description}
                         onChange={(v) => updateTranslation(lang, { description: v })}
                         placeholder="Deskripsi penginapan"
+                        maxLength={LIMITS.roomDescription}
                         rows={3}
                       />
                       <Input
                         label={`${t('admin.cmsBedInfo')} (${lang})`}
                         name="bedInfo"
                         value={t9n.bedInfo}
+                        maxLength={200}
                         onChange={(e) => updateTranslation(lang, { bedInfo: e.target.value })}
                       />
                       <Input
                         label={`${t('admin.cmsBathroomInfo')} (${lang})`}
                         name="bathroomInfo"
                         value={t9n.bathroomInfo}
+                        maxLength={200}
                         onChange={(e) => updateTranslation(lang, { bathroomInfo: e.target.value })}
                       />
                       <div>
@@ -862,6 +963,7 @@ function CmsDrawer({
                         value={t9n.rules}
                         onChange={(v) => updateTranslation(lang, { rules: v })}
                         placeholder="Aturan menginap"
+                        maxLength={1000}
                         rows={2}
                       />
                     </div>
@@ -892,7 +994,7 @@ function CmsDrawer({
                         <span className="text-[11px] font-medium">Upload</span>
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/webp"
                           className="hidden"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -913,7 +1015,11 @@ function CmsDrawer({
             yang panjangnya bisa 3–4 layar. */}
         {!loadingDetail && (
           <div className="border-border border-t bg-white px-5 py-3.5 sm:px-6">
-            {error && <p className="mb-2.5 text-[13px] text-red-600">{error}</p>}
+            {error && (
+              <p role="alert" className="mb-2.5 text-[13px] text-red-600">
+                {error}
+              </p>
+            )}
             <div className="flex gap-2">
               <Button onClick={onSave} disabled={saving}>
                 {saving ? t('admin.saving') : t('admin.cmsSave')}
@@ -985,18 +1091,21 @@ function LabeledTextarea({
   onChange,
   placeholder,
   rows,
+  maxLength,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   rows: number;
+  maxLength?: number;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-foreground text-sm font-medium">{label}</label>
       <textarea
         rows={rows}
+        maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
